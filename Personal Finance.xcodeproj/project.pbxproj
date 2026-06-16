@@ -22,6 +22,7 @@
 		402701E7763CD1241602A7F5 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62514F436416338A82625D20 /* AppConfig.swift */; };
 		41A37F21F6B2CA268F53BA83 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB1D06BFC5D226A7083DB0E7 /* CategoriesView.swift */; };
 		486E1CF41EDB00C99AAB6115 /* AddEditCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BF435250E4FBEE93C8039E /* AddEditCategoryView.swift */; };
+		4CD605F9FA9CAA07A33E7F35 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */; };
 		4DEB23D65ED71EFEA3E3A46C /* CategoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5990C03C2F82819D1CFBCFE6 /* CategoryService.swift */; };
 		4F6F542CF9D41E878A64DA9A /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD880D4AEBFEEA72177182C0 /* BudgetsView.swift */; };
 		559B91071B25A3AD3A94F8EB /* AddEditDebtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4A10BA445886ED82719B71 /* AddEditDebtView.swift */; };
@@ -104,6 +105,7 @@
 		79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingGoalService.swift; sourceTree = "<group>"; };
 		7A87D61DA3670C98CAAFA441 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
 		7B647D38742EC2C9E4A02C53 /* TransactionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionService.swift; sourceTree = "<group>"; };
+		884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		897E4AE88520EB6ACA8A2039 /* BalanceCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCardView.swift; sourceTree = "<group>"; };
 		8A8D7C799F421AAC8521FFC5 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		912990C2BEDF8C13F54D92D8 /* SpendingChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingChartView.swift; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 			isa = PBXGroup;
 			children = (
 				F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */,
+				884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -568,6 +571,7 @@
 				8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */,
 				37C3DB63B08F87D41E0BACCD /* SavingGoalsView.swift in Sources */,
 				09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */,
+				4CD605F9FA9CAA07A33E7F35 /* SkeletonView.swift in Sources */,
 				C8B128142F8645C0615782C2 /* SpendingChartView.swift in Sources */,
 				87E9B4F5CFF2F5D26AE73A97 /* SupabaseService.swift in Sources */,
 				ECC8D8F1E3801E9D308783EA /* SyncManager.swift in Sources */,

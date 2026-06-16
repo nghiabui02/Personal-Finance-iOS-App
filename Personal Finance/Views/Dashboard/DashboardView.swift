@@ -155,6 +155,18 @@ struct DashboardView: View {
                 .padding(.vertical)
             }
             .background(Color(.systemGroupedBackground))
+            .gesture(
+                DragGesture(minimumDistance: 40)
+                    .onEnded { value in
+                        let h = value.translation.width
+                        let v = value.translation.height
+                        guard abs(h) > abs(v) * 2, abs(h) > 60 else { return }
+                        let delta = h < 0 ? 1 : -1
+                        if let next = Calendar.current.date(byAdding: .month, value: delta, to: selectedMonth) {
+                            withAnimation { selectedMonth = next }
+                        }
+                    }
+            )
             .navigationTitle("Overview")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { statusIcon }
@@ -176,9 +188,7 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        if sync.isSyncing {
-            ProgressView().scaleEffect(0.8)
-        } else if !sync.isOnline {
+        if !sync.isOnline {
             Label("No Internet", systemImage: "wifi.slash")
                 .labelStyle(.iconOnly)
                 .foregroundColor(.orange)

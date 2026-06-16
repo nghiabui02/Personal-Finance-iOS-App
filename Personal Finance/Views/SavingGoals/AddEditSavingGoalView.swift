@@ -17,7 +17,7 @@ struct AddEditSavingGoalView: View {
     @State private var errorMsg: String?
 
     var body: some View {
-        NavigationStack {
+        NavigationStack {   
             Form {
                 Section {
                     HStack {
