@@ -1,0 +1,15 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+*.resolved
+
+# macOS
+.DS_Store
