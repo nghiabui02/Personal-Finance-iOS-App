@@ -59,9 +59,9 @@ struct ReportsView: View {
 
                     // Summary cards
                     HStack(spacing: 10) {
-                        summaryCard("Income", income, .green, "arrow.down.circle.fill")
-                        summaryCard("Expense", expense, .red, "arrow.up.circle.fill")
-                        summaryCard("Net", income - expense, income >= expense ? .blue : .red, "equal.circle.fill")
+                        summaryCard("Income", income, .income, "arrow.down.circle.fill")
+                        summaryCard("Expense", expense, .expense, "arrow.up.circle.fill")
+                        summaryCard("Net", income - expense, income >= expense ? .blue : .expense, "equal.circle.fill")
                     }
                     .padding(.horizontal)
 
@@ -72,10 +72,10 @@ struct ReportsView: View {
                             ForEach(last6Months) { data in
                                 BarMark(x: .value("Month", data.label),
                                         y: .value("Income", data.income / 1_000_000))
-                                .foregroundStyle(Color.green.opacity(0.8)).position(by: .value("Type", "Income"))
+                                .foregroundStyle(Color.income.opacity(0.8)).position(by: .value("Type", "Income"))
                                 BarMark(x: .value("Month", data.label),
                                         y: .value("Expense", data.expense / 1_000_000))
-                                .foregroundStyle(Color.red.opacity(0.8)).position(by: .value("Type", "Expense"))
+                                .foregroundStyle(Color.expense.opacity(0.8)).position(by: .value("Type", "Expense"))
                             }
                         }
                         .chartYAxis { AxisMarks { v in AxisValueLabel { if let d = v.as(Double.self) { Text("\(Int(d))M") } } } }

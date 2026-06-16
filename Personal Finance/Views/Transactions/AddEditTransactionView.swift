@@ -11,6 +11,7 @@ struct AddEditTransactionView: View {
 
     @State private var type = "expense"
     @State private var amount: Double = 0
+    @State private var amountText = ""
     @State private var date = Date()
     @State private var selectedCategoryId: UUID?
     @State private var selectedWalletId: UUID?
@@ -54,10 +55,13 @@ struct AddEditTransactionView: View {
                     HStack {
                         Text("Amount")
                         Spacer()
-                        TextField("0", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
                         Text("₫").foregroundColor(.secondary)
                     }
                 }
@@ -150,6 +154,7 @@ struct AddEditTransactionView: View {
         if let tx = transaction {
             type = tx.type
             amount = tx.amount
+            amountText = tx.amount.formattedDecimal()
             date = tx.transactionDate
             selectedCategoryId = tx.categoryId
             selectedWalletId = tx.walletId

@@ -49,10 +49,10 @@ struct TransactionsView: View {
                         .padding(.horizontal)
 
                     HStack(spacing: 0) {
-                        summaryCell(label: "Income", amount: totalIncome, color: .green,
+                        summaryCell(label: "Income", amount: totalIncome, color: .income,
                                     icon: "arrow.down.circle.fill")
                         Divider().frame(height: 32)
-                        summaryCell(label: "Expense", amount: totalExpense, color: .red,
+                        summaryCell(label: "Expense", amount: totalExpense, color: .expense,
                                     icon: "arrow.up.circle.fill")
                     }
                     .padding(.horizontal)
@@ -197,7 +197,7 @@ struct TransactionRow: View {
 
             Text("\(transaction.type == "income" ? "+" : "-")\(transaction.amount.formatted(currency: "VND"))")
                 .font(.subheadline).fontWeight(.semibold)
-                .foregroundColor(transaction.type == "income" ? .green : .red)
+                .foregroundColor(transaction.type == "income" ? .income : .expense)
         }
         .padding(.vertical, 2)
     }

@@ -104,9 +104,9 @@ struct DashboardView: View {
 
                     // Stat cards
                     HStack(spacing: 10) {
-                        StatCardView(title: "Income",  amount: monthlyIncome,  color: .green, icon: "arrow.down.circle.fill", currency: primaryCurrency)
-                        StatCardView(title: "Expenses", amount: monthlyExpense, color: .red,   icon: "arrow.up.circle.fill",   currency: primaryCurrency)
-                        StatCardView(title: "Balance",  amount: netBalance,    color: netBalance >= 0 ? .blue : .red, icon: "equal.circle.fill", currency: primaryCurrency)
+                        StatCardView(title: "Income",  amount: monthlyIncome,  color: .income,  icon: "arrow.down.circle.fill", currency: primaryCurrency)
+                        StatCardView(title: "Expenses", amount: monthlyExpense, color: .expense, icon: "arrow.up.circle.fill",   currency: primaryCurrency)
+                        StatCardView(title: "Balance",  amount: netBalance,    color: netBalance >= 0 ? .blue : .expense, icon: "equal.circle.fill", currency: primaryCurrency)
                     }
                     .padding(.horizontal)
 

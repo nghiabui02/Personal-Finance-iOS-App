@@ -68,7 +68,7 @@ private struct RecurringRow: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(rec.type == "income" ? Color.green.opacity(0.12) : Color.red.opacity(0.12))
+                    .fill(rec.type == "income" ? Color.income.opacity(0.12) : Color.expense.opacity(0.12))
                     .frame(width: 44, height: 44)
                 Text(rec.categoryIcon ?? (rec.type == "income" ? "💰" : "💸")).font(.system(size: 22))
             }
@@ -87,7 +87,7 @@ private struct RecurringRow: View {
             Spacer()
             Text("\(rec.type == "income" ? "+" : "-")\(rec.amount.formatted(currency: "VND"))")
                 .fontWeight(.semibold)
-                .foregroundColor(rec.type == "income" ? .green : .red)
+                .foregroundColor(rec.type == "income" ? .income : .expense)
         }
         .padding(.vertical, 2)
     }

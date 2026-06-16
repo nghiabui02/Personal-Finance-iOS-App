@@ -11,6 +11,7 @@ struct AddEditBudgetView: View {
 
     @State private var selectedCategoryId: UUID?
     @State private var amount: Double = 0
+    @State private var amountText = ""
     @State private var month: Date
     @State private var isSaving = false
     @State private var errorMsg: String?
@@ -22,24 +23,18 @@ struct AddEditBudgetView: View {
     }
 
     private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" } }
-    private var selectedCategory: LocalCategory? { allCategories.first { $0.serverId == selectedCategoryId } }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     if budget == nil {
-                        // Month picker
                         DatePicker("Month", selection: $month, displayedComponents: [.date])
                             .environment(\.locale, Locale(identifier: "en_US"))
-                        // Category
                         Picker("Category", selection: $selectedCategoryId) {
                             Text("None").tag(UUID?.none)
                             ForEach(expenseCategories, id: \.serverId) { cat in
-                                HStack {
-                                    Text(cat.icon ?? "📦")
-                                    Text(cat.name)
-                                }.tag(Optional(cat.serverId))
+                                Text("\(cat.icon ?? "📦") \(cat.name)").tag(Optional(cat.serverId))
                             }
                         }
                     } else {
@@ -52,10 +47,13 @@ struct AddEditBudgetView: View {
                     HStack {
                         Text("Budget Amount")
                         Spacer()
-                        TextField("0", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
                         Text("₫").foregroundColor(.secondary)
                     }
                 }
@@ -77,7 +75,11 @@ struct AddEditBudgetView: View {
             } message: { Text(errorMsg ?? "") }
         }
         .onAppear {
-            if let b = budget { amount = b.amount; month = b.month }
+            if let b = budget {
+                amount = b.amount
+                amountText = b.amount.formattedDecimal()
+                month = b.month
+            }
         }
     }
 

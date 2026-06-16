@@ -10,4 +10,9 @@ extension Color {
         let b = Double(int & 0xFF) / 255
         self.init(.sRGB, red: r, green: g, blue: b)
     }
+
+    static let income  = Color(hex: "#22c55e")
+    static let expense = Color(hex: "#ef4444")
+    static let lend    = Color(hex: "#3b82f6")
+    static let borrow  = Color(hex: "#f97316")
 }

@@ -11,6 +11,7 @@ struct AddEditRecurringView: View {
 
     @State private var type = "expense"
     @State private var amount: Double = 0
+    @State private var amountText = ""
     @State private var frequency = "monthly"
     @State private var startDate = Date()
     @State private var hasEndDate = false
@@ -41,8 +42,13 @@ struct AddEditRecurringView: View {
                     HStack {
                         Text("Amount")
                         Spacer()
-                        TextField("0", value: $amount, format: .number)
-                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
                         Text("₫").foregroundColor(.secondary)
                     }
                     Picker("Frequency", selection: $frequency) {
@@ -66,7 +72,7 @@ struct AddEditRecurringView: View {
                     Picker("Category", selection: $selectedCategoryId) {
                         Text("None").tag(UUID?.none)
                         ForEach(filteredCategories, id: \.serverId) { cat in
-                            HStack { Text(cat.icon ?? "📦"); Text(cat.name) }.tag(Optional(cat.serverId))
+                            Text("\(cat.icon ?? "📦") \(cat.name)").tag(Optional(cat.serverId))
                         }
                     }
                     Picker("Wallet", selection: $selectedWalletId) {
@@ -97,7 +103,8 @@ struct AddEditRecurringView: View {
         }
         .onAppear {
             if let r = recurring {
-                type = r.type; amount = r.amount; frequency = r.frequency
+                type = r.type; frequency = r.frequency
+                amount = r.amount; amountText = r.amount.formattedDecimal()
                 selectedCategoryId = r.categoryId; selectedWalletId = r.walletId
                 note = r.note ?? ""
                 if let ed = r.endDate { hasEndDate = true; endDate = ed }

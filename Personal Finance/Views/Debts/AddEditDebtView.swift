@@ -12,6 +12,7 @@ struct AddEditDebtView: View {
     @State private var personName = ""
     @State private var personContact = ""
     @State private var amount: Double = 0
+    @State private var amountText = ""
     @State private var selectedWalletId: UUID?
     @State private var hasDueDate = false
     @State private var dueDate = Date()
@@ -34,8 +35,11 @@ struct AddEditDebtView: View {
                         HStack {
                             Text("Amount")
                             Spacer()
-                            TextField("0", value: $amount, format: .number)
-                                .keyboardType(.decimalPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                            TextField("0", text: $amountText)
+                                .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                                .onChange(of: amountText) { _, new in
+                                    applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                                }
                             Text("₫").foregroundColor(.secondary)
                         }
                     } else {

@@ -9,6 +9,7 @@ struct AddEditSavingGoalView: View {
     @State private var name = ""
     @State private var icon = "🎯"
     @State private var targetAmount: Double = 0
+    @State private var targetAmountText = ""
     @State private var hasDeadline = false
     @State private var deadline = Date()
     @State private var note = ""
@@ -31,8 +32,11 @@ struct AddEditSavingGoalView: View {
                     HStack {
                         Text("Target Amount")
                         Spacer()
-                        TextField("0", value: $targetAmount, format: .number)
-                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                        TextField("0", text: $targetAmountText)
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                            .onChange(of: targetAmountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &targetAmountText, amount: &targetAmount)
+                            }
                         Text("₫").foregroundColor(.secondary)
                     }
                 }
@@ -63,7 +67,9 @@ struct AddEditSavingGoalView: View {
         .onAppear {
             if let g = goal {
                 name = g.name; icon = g.icon ?? "🎯"
-                targetAmount = g.targetAmount; note = g.note ?? ""
+                targetAmount = g.targetAmount
+                targetAmountText = g.targetAmount.formattedDecimal()
+                note = g.note ?? ""
                 if let dl = g.deadline { hasDeadline = true; deadline = dl }
             }
         }

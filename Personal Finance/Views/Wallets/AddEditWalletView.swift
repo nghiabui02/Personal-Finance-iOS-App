@@ -9,6 +9,7 @@ struct AddEditWalletView: View {
     @State private var name = ""
     @State private var type = "cash"
     @State private var initialBalance: Double = 0
+    @State private var initialBalanceText = ""
     @State private var icon = ""
     @State private var colorHex = "3B82F6"
     @State private var isDefault = false
@@ -35,9 +36,12 @@ struct AddEditWalletView: View {
                         HStack {
                             Text("Initial Balance")
                             Spacer()
-                            TextField("0", value: $initialBalance, format: .number)
-                                .keyboardType(.decimalPad)
+                            TextField("0", text: $initialBalanceText)
+                                .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
+                                .onChange(of: initialBalanceText) { _, new in
+                                    applyAmountFormat(new: new, amountText: &initialBalanceText, amount: &initialBalance)
+                                }
                         }
                     }
                 }

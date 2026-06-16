@@ -101,10 +101,10 @@ private struct DebtRow: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(debt.type == "lend" ? Color.blue.opacity(0.12) : Color.orange.opacity(0.12))
+                    .fill(debt.type == "lend" ? Color.lend.opacity(0.12) : Color.borrow.opacity(0.12))
                     .frame(width: 44, height: 44)
                 Image(systemName: debt.type == "lend" ? "arrow.up.right" : "arrow.down.left")
-                    .foregroundColor(debt.type == "lend" ? .blue : .orange)
+                    .foregroundColor(debt.type == "lend" ? .lend : .borrow)
                     .font(.system(size: 18, weight: .semibold))
             }
             VStack(alignment: .leading, spacing: 3) {
@@ -154,6 +154,7 @@ struct DebtPaymentSheet: View {
     let wallets: [LocalWallet]
 
     @State private var amount: Double = 0
+    @State private var amountText = ""
     @State private var note = ""
     @State private var selectedWalletId: UUID?
     @State private var isSaving = false
@@ -166,8 +167,11 @@ struct DebtPaymentSheet: View {
                     HStack {
                         Text("Amount")
                         Spacer()
-                        TextField("0", value: $amount, format: .number)
-                            .keyboardType(.decimalPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
                         Text("₫").foregroundColor(.secondary)
                     }
                     TextField("Note (optional)", text: $note)
@@ -197,7 +201,10 @@ struct DebtPaymentSheet: View {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
         }
-        .onAppear { amount = debt.remainingAmount }
+        .onAppear {
+            amount = debt.remainingAmount
+            amountText = debt.remainingAmount.formattedDecimal()
+        }
     }
 
     private func pay() async {
