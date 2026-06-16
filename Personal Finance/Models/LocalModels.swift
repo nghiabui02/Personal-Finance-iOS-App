@@ -119,3 +119,101 @@ final class LocalBudget {
         month = yyyyMMdd.date(from: r.month) ?? Date()
     }
 }
+
+@Model
+final class LocalDebt {
+    var serverId: UUID
+    var walletId: UUID?
+    var type: String
+    var personName: String
+    var personContact: String?
+    var amount: Double
+    var remainingAmount: Double
+    var dueDate: Date?
+    var status: String
+    var note: String?
+    var updatedAt: Date
+
+    init(from r: RemoteDebt) {
+        serverId = r.id; walletId = r.walletId; type = r.type
+        personName = r.personName; personContact = r.personContact
+        amount = r.amount; remainingAmount = r.remainingAmount
+        dueDate = r.dueDate.flatMap { yyyyMMdd.date(from: $0) }
+        status = r.status; note = r.note; updatedAt = r.updatedAt
+    }
+    func update(from r: RemoteDebt) {
+        walletId = r.walletId; type = r.type
+        personName = r.personName; personContact = r.personContact
+        amount = r.amount; remainingAmount = r.remainingAmount
+        dueDate = r.dueDate.flatMap { yyyyMMdd.date(from: $0) }
+        status = r.status; note = r.note; updatedAt = r.updatedAt
+    }
+}
+
+@Model
+final class LocalSavingGoal {
+    var serverId: UUID
+    var name: String
+    var icon: String?
+    var targetAmount: Double
+    var currentAmount: Double
+    var deadline: Date?
+    var status: String
+    var note: String?
+    var updatedAt: Date
+
+    var progress: Double { targetAmount > 0 ? min(currentAmount / targetAmount, 1.0) : 0 }
+
+    init(from r: RemoteSavingGoal) {
+        serverId = r.id; name = r.name; icon = r.icon
+        targetAmount = r.targetAmount; currentAmount = r.currentAmount
+        deadline = r.deadline.flatMap { yyyyMMdd.date(from: $0) }
+        status = r.status; note = r.note; updatedAt = r.updatedAt
+    }
+    func update(from r: RemoteSavingGoal) {
+        name = r.name; icon = r.icon
+        targetAmount = r.targetAmount; currentAmount = r.currentAmount
+        deadline = r.deadline.flatMap { yyyyMMdd.date(from: $0) }
+        status = r.status; note = r.note; updatedAt = r.updatedAt
+    }
+}
+
+@Model
+final class LocalRecurringTransaction {
+    var serverId: UUID
+    var walletId: UUID?
+    var walletName: String?
+    var categoryId: UUID?
+    var categoryName: String?
+    var categoryIcon: String?
+    var categoryColor: String?
+    var type: String
+    var amount: Double
+    var note: String?
+    var frequency: String
+    var startDate: Date
+    var endDate: Date?
+    var nextRunDate: Date?
+    var updatedAt: Date
+
+    init(from r: RemoteRecurringTransaction) {
+        serverId = r.id; walletId = r.walletId; walletName = r.wallets?.name
+        categoryId = r.categoryId; categoryName = r.categories?.name
+        categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
+        type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
+        startDate = yyyyMMdd.date(from: r.startDate) ?? Date()
+        endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
+        nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
+        updatedAt = r.updatedAt
+    }
+    func update(from r: RemoteRecurringTransaction) {
+        walletId = r.walletId; walletName = r.wallets?.name
+        categoryId = r.categoryId; categoryName = r.categories?.name
+        categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
+        type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
+        startDate = yyyyMMdd.date(from: r.startDate) ?? Date()
+        endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
+        nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
+        updatedAt = r.updatedAt
+    }
+}

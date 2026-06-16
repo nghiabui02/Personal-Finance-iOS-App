@@ -46,30 +46,28 @@ final class SyncManager: ObservableObject {
         do {
             let userId = try await client.auth.session.user.id
 
-            // Wallets + Categories in parallel (categories needs userId for OR filter)
-            async let walletsTask: [RemoteWallet] = client
-                .from("wallets")
-                .select()
-                .execute()
-                .value
-            async let categoriesTask: [RemoteCategory] = client
-                .from("categories")
-                .select()
-                .or("user_id.is.null,user_id.eq.\(userId)")
-                .execute()
-                .value
+            async let walletsTask: [RemoteWallet] = client.from("wallets").select().execute().value
+            async let categoriesTask: [RemoteCategory] = client.from("categories").select()
+                .or("user_id.is.null,user_id.eq.\(userId)").execute().value
             let (wallets, categories) = try await (walletsTask, categoriesTask)
-
             upsertWallets(wallets, in: modelContext)
             upsertCategories(categories, in: modelContext)
 
-            // Transactions (JOIN) + Budgets (JOIN) in parallel
             async let txTask = fetchTransactions(months: 3)
             async let budgetsTask = fetchBudgets(months: 2)
-            let (transactions, budgets) = try await (txTask, budgetsTask)
+            async let debtsTask: [RemoteDebt] = client.from("debts").select().execute().value
+            async let goalsTask: [RemoteSavingGoal] = client.from("saving_goals").select().execute().value
+            async let recurringTask: [RemoteRecurringTransaction] = client
+                .from("recurring_transactions")
+                .select("*, categories(id, name, icon, color), wallets(id, name)")
+                .execute().value
+            let (transactions, budgets, debts, goals, recurring) = try await (txTask, budgetsTask, debtsTask, goalsTask, recurringTask)
 
             upsertTransactions(transactions, in: modelContext)
             upsertBudgets(budgets, in: modelContext)
+            upsertDebts(debts, in: modelContext)
+            upsertSavingGoals(goals, in: modelContext)
+            upsertRecurring(recurring, in: modelContext)
 
             try modelContext.save()
             lastSyncDate = Date()
@@ -148,6 +146,33 @@ final class SyncManager: ObservableObject {
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
             else { ctx.insert(LocalBudget(from: r)) }
+        }
+    }
+
+    private func upsertDebts(_ remotes: [RemoteDebt], in ctx: ModelContext) {
+        let existing = (try? ctx.fetch(FetchDescriptor<LocalDebt>())) ?? []
+        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for r in remotes {
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalDebt(from: r)) }
+        }
+    }
+
+    private func upsertSavingGoals(_ remotes: [RemoteSavingGoal], in ctx: ModelContext) {
+        let existing = (try? ctx.fetch(FetchDescriptor<LocalSavingGoal>())) ?? []
+        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for r in remotes {
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalSavingGoal(from: r)) }
+        }
+    }
+
+    private func upsertRecurring(_ remotes: [RemoteRecurringTransaction], in ctx: ModelContext) {
+        let existing = (try? ctx.fetch(FetchDescriptor<LocalRecurringTransaction>())) ?? []
+        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for r in remotes {
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalRecurringTransaction(from: r)) }
         }
     }
 }

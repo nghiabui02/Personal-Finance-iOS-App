@@ -1,3 +1,6 @@
+# Secrets — never commit real credentials
+Config/Secrets.xcconfig
+
 # Xcode
 *.xcuserstate
 xcuserdata/

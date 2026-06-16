@@ -9,6 +9,9 @@ struct Personal_FinanceApp: App {
             LocalCategory.self,
             LocalTransaction.self,
             LocalBudget.self,
+            LocalDebt.self,
+            LocalSavingGoal.self,
+            LocalRecurringTransaction.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
