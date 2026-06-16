@@ -37,6 +37,7 @@ struct AddEditRecurringView: View {
                             Text("Income").tag("income")
                         }
                         .pickerStyle(.segmented)
+                        .tint(type == "income" ? .income : .expense)
                         .onChange(of: type) { _, _ in selectedCategoryId = nil }
                     }
                     HStack {

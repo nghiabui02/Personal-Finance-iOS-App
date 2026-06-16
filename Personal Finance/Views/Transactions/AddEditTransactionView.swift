@@ -46,6 +46,7 @@ struct AddEditTransactionView: View {
                         Text("Income").tag("income")
                     }
                     .pickerStyle(.segmented)
+                    .tint(type == "income" ? .income : .expense)
                     .onChange(of: type) { _, newType in
                         if let cat = selectedCategory, cat.type != newType {
                             selectedCategoryId = nil

@@ -32,6 +32,7 @@ struct AddEditDebtView: View {
                             Text("I Borrow").tag("borrow")
                         }
                         .pickerStyle(.segmented)
+                        .tint(type == "lend" ? .lend : .borrow)
                         HStack {
                             Text("Amount")
                             Spacer()

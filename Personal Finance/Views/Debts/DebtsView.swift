@@ -31,7 +31,9 @@ struct DebtsView: View {
                 Picker("Filter", selection: $filterType) {
                     ForEach(FilterType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
-                .pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
+                .pickerStyle(.segmented)
+                .tint(filterType == .lend ? .lend : filterType == .borrow ? .borrow : .blue)
+                .padding(.horizontal).padding(.vertical, 8)
                 .background(Color(.systemGroupedBackground))
 
                 if filtered.isEmpty {

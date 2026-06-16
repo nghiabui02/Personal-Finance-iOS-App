@@ -65,6 +65,7 @@ struct TransactionsView: View {
                     ForEach(FilterType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
+                .tint(filterType == .income ? .income : filterType == .expense ? .expense : .blue)
                 .padding(.horizontal).padding(.vertical, 8)
                 .background(Color(.systemGroupedBackground))
 
