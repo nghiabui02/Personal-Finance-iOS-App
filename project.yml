@@ -27,7 +27,7 @@ targets:
         UIApplicationSupportsIndirectInputEvents: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        SupabaseURL: $(SUPABASE_URL)
+        SupabaseHost: $(SUPABASE_HOST)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)
     dependencies:
       - package: Supabase
