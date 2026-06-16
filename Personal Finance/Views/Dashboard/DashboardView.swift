@@ -158,10 +158,6 @@ struct DashboardView: View {
             .navigationTitle("Overview")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { statusIcon }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Sign Out") { Task { await authVM.signOut() } }
-                        .foregroundColor(.red)
-                }
             }
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear {

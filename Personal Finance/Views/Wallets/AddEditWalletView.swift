@@ -48,11 +48,9 @@ struct AddEditWalletView: View {
 
                 Section("Appearance") {
                     HStack {
-                        Text("Icon (emoji)")
+                        Text("Icon")
                         Spacer()
-                        TextField("e.g. 🏦", text: $icon)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
+                        EmojiPickerButton(emoji: $icon)
                     }
 
                     HStack {

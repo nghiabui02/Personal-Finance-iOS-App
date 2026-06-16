@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @StateObject private var authVM = AuthViewModel()
+    @AppStorage("pf_colorScheme") private var colorScheme = "system"
 
     var body: some View {
         Group {
@@ -18,5 +19,9 @@ struct RootView: View {
                     .environmentObject(authVM)
             }
         }
+        .preferredColorScheme(
+            colorScheme == "light" ? .light :
+            colorScheme == "dark" ? .dark : nil
+        )
     }
 }

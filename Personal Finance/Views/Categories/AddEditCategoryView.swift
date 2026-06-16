@@ -28,9 +28,7 @@ struct AddEditCategoryView: View {
                     HStack {
                         Text("Icon")
                         Spacer()
-                        TextField("Emoji", text: $icon)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 60)
+                        EmojiPickerButton(emoji: $icon)
                     }
                     HStack {
                         Text("Name")
