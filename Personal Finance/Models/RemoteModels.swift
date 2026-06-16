@@ -1,7 +1,7 @@
 import Foundation
 
 struct RemoteWallet: Codable, Identifiable {
-    let id: String
+    let id: UUID
     let name: String
     let type: String
     let balance: Double
@@ -18,7 +18,7 @@ struct RemoteWallet: Codable, Identifiable {
 }
 
 struct RemoteCategory: Codable, Identifiable {
-    let id: String
+    let id: UUID
     let name: String
     let type: String
     let icon: String?
@@ -26,33 +26,56 @@ struct RemoteCategory: Codable, Identifiable {
 }
 
 struct RemoteTransaction: Codable, Identifiable {
-    let id: String
-    let walletId: String?             // nullable — on delete set null
-    let categoryId: String?
+    let id: UUID
+    let walletId: UUID?
+    let categoryId: UUID?
     let type: String
     let amount: Double
     let note: String?
-    let transactionDate: String       // PostgreSQL date → "2026-06-16"
+    let transactionDate: String       // "YYYY-MM-DD"
     let updatedAt: Date
+    // Joined via .select("*, categories(...), wallets(...)")
+    let categories: CategoryInfo?
+    let wallets: WalletInfo?
+
+    struct CategoryInfo: Codable {
+        let id: UUID
+        let name: String
+        let icon: String?
+        let color: String?
+    }
+
+    struct WalletInfo: Codable {
+        let id: UUID
+        let name: String
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id
+        case id, note, amount, type, categories, wallets
         case walletId = "wallet_id"
         case categoryId = "category_id"
-        case type, amount, note
         case transactionDate = "transaction_date"
         case updatedAt = "updated_at"
     }
 }
 
 struct RemoteBudget: Codable, Identifiable {
-    let id: String
-    let categoryId: String?           // nullable — on delete cascade
+    let id: UUID
+    let categoryId: UUID?
     let amount: Double
-    let month: String                 // PostgreSQL date → "2026-06-01"
+    let month: String                 // "YYYY-MM-01"
+    // Joined via .select("*, categories(...)")
+    let categories: CategoryInfo?
+
+    struct CategoryInfo: Codable {
+        let id: UUID
+        let name: String
+        let icon: String?
+        let color: String?
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, amount, month
+        case id, amount, month, categories
         case categoryId = "category_id"
     }
 }

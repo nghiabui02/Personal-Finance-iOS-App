@@ -38,38 +38,51 @@ final class SyncManager: ObservableObject {
     }
 
     func syncAll(modelContext: ModelContext) async {
-        guard isOnline, !isSyncing else { return }
+        guard !isSyncing else { return }
         isSyncing = true
+        syncError = nil
         defer { isSyncing = false }
 
         do {
-            // Fetch reference data in parallel
-            async let walletsTask: [RemoteWallet] = client.from("wallets").select().execute().value
-            async let categoriesTask: [RemoteCategory] = client.from("categories").select().execute().value
+            let userId = try await client.auth.session.user.id
+
+            // Wallets + Categories in parallel (categories needs userId for OR filter)
+            async let walletsTask: [RemoteWallet] = client
+                .from("wallets")
+                .select()
+                .execute()
+                .value
+            async let categoriesTask: [RemoteCategory] = client
+                .from("categories")
+                .select()
+                .or("user_id.is.null,user_id.eq.\(userId)")
+                .execute()
+                .value
             let (wallets, categories) = try await (walletsTask, categoriesTask)
 
             upsertWallets(wallets, in: modelContext)
             upsertCategories(categories, in: modelContext)
 
-            let categoryMap = Dictionary(uniqueKeysWithValues: categories.map {
-                ($0.id, (name: $0.name, icon: $0.icon, color: $0.color))
-            })
-            let walletMap = Dictionary(uniqueKeysWithValues: wallets.map { ($0.id, $0.name) })
-
-            // Fetch transactions (last 3 months) and budgets in parallel
+            // Transactions (JOIN) + Budgets (JOIN) in parallel
             async let txTask = fetchTransactions(months: 3)
             async let budgetsTask = fetchBudgets(months: 2)
             let (transactions, budgets) = try await (txTask, budgetsTask)
 
-            upsertTransactions(transactions, walletMap: walletMap, categoryMap: categoryMap, in: modelContext)
-            upsertBudgets(budgets, categoryMap: categoryMap, in: modelContext)
+            upsertTransactions(transactions, in: modelContext)
+            upsertBudgets(budgets, in: modelContext)
 
             try modelContext.save()
             lastSyncDate = Date()
         } catch is CancellationError {
-            // Task cancelled by SwiftUI lifecycle — not a real error
+            // Swift task cancellation — not a real error
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession task cancelled (app lifecycle transition) — not a real error
         } catch {
-            syncError = error.localizedDescription
+            if !isOnline {
+                syncError = "No internet connection. Data may be outdated."
+            } else {
+                syncError = error.localizedDescription
+            }
             print("[SyncManager] error: \(error)")
         }
     }
@@ -80,7 +93,7 @@ final class SyncManager: ObservableObject {
         let since = Calendar.current.date(byAdding: .month, value: -months, to: Date())!
         return try await client
             .from("transactions")
-            .select()
+            .select("*, categories(id, name, icon, color), wallets(id, name)")
             .gte("transaction_date", value: dateFormatter.string(from: since))
             .order("transaction_date", ascending: false)
             .execute()
@@ -89,10 +102,12 @@ final class SyncManager: ObservableObject {
 
     private func fetchBudgets(months: Int) async throws -> [RemoteBudget] {
         let since = Calendar.current.date(byAdding: .month, value: -months, to: Date())!
-        let start = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: since))!
+        let start = Calendar.current.date(
+            from: Calendar.current.dateComponents([.year, .month], from: since)
+        )!
         return try await client
             .from("budgets")
-            .select()
+            .select("*, categories(id, name, icon, color)")
             .gte("month", value: dateFormatter.string(from: start))
             .execute()
             .value
@@ -118,44 +133,21 @@ final class SyncManager: ObservableObject {
         }
     }
 
-    private func upsertTransactions(
-        _ remotes: [RemoteTransaction],
-        walletMap: [String: String],
-        categoryMap: [String: (name: String, icon: String?, color: String?)],
-        in ctx: ModelContext
-    ) {
+    private func upsertTransactions(_ remotes: [RemoteTransaction], in ctx: ModelContext) {
         let existing = (try? ctx.fetch(FetchDescriptor<LocalTransaction>())) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
-            let walletName = r.walletId.flatMap { walletMap[$0] } ?? "Unknown Wallet"
-            let cat = r.categoryId.flatMap { categoryMap[$0] }
-            if let local = map[r.id] {
-                local.update(from: r, walletName: walletName,
-                             categoryName: cat?.name, categoryIcon: cat?.icon, categoryColor: cat?.color)
-            } else {
-                ctx.insert(LocalTransaction(from: r, walletName: walletName,
-                                            categoryName: cat?.name, categoryIcon: cat?.icon, categoryColor: cat?.color))
-            }
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalTransaction(from: r)) }
         }
     }
 
-    private func upsertBudgets(
-        _ remotes: [RemoteBudget],
-        categoryMap: [String: (name: String, icon: String?, color: String?)],
-        in ctx: ModelContext
-    ) {
+    private func upsertBudgets(_ remotes: [RemoteBudget], in ctx: ModelContext) {
         let existing = (try? ctx.fetch(FetchDescriptor<LocalBudget>())) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
-            let cat = r.categoryId.flatMap { categoryMap[$0] }
-            let name = cat?.name ?? "Unknown"
-            let icon = cat?.icon
-            let color = cat?.color
-            if let local = map[r.id] {
-                local.update(from: r, categoryName: name, categoryIcon: icon, categoryColor: color)
-            } else {
-                ctx.insert(LocalBudget(from: r, categoryName: name, categoryIcon: icon, categoryColor: color))
-            }
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalBudget(from: r)) }
         }
     }
 }

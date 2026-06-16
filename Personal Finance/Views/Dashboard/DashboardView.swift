@@ -48,11 +48,10 @@ struct DashboardView: View {
     }
 
     // Group expense spending per categoryId
-    private var spendingByCategoryId: [String: Double] {
-        var result: [String: Double] = [:]
+    private var spendingByCategoryId: [UUID: Double] {
+        var result: [UUID: Double] = [:]
         for tx in monthlyTransactions where tx.type == "expense" {
-            let key = tx.categoryId ?? ""
-            result[key, default: 0] += tx.amount
+            if let key = tx.categoryId { result[key, default: 0] += tx.amount }
         }
         return result
     }
@@ -61,7 +60,7 @@ struct DashboardView: View {
     private var spendingItems: [CategorySpending] {
         var grouped: [String: (name: String, icon: String, color: String?, total: Double)] = [:]
         for tx in monthlyTransactions where tx.type == "expense" {
-            let key = tx.categoryId ?? tx.categoryName ?? "other"
+            let key = tx.categoryId?.uuidString ?? tx.categoryName ?? "other"
             let existing = grouped[key]
             grouped[key] = (
                 name: existing?.name ?? tx.categoryName ?? "Other",
@@ -87,8 +86,10 @@ struct DashboardView: View {
 
     // MARK: - View
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     MonthSelectorView(selectedMonth: $selectedMonth)
@@ -165,6 +166,11 @@ struct DashboardView: View {
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear {
                 Task { await sync.syncAll(modelContext: modelContext) }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    Task { await sync.syncAll(modelContext: modelContext) }
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
                 Task { await sync.syncAll(modelContext: modelContext) }

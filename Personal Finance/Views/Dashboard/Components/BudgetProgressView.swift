@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BudgetProgressView: View {
     let budgets: [LocalBudget]
-    let spendingByCategoryId: [String: Double]
+    let spendingByCategoryId: [UUID: Double]
     let currency: String
 
     var body: some View {
@@ -21,7 +21,7 @@ struct BudgetProgressView: View {
                     ForEach(budgets) { budget in
                         BudgetRowView(
                             budget: budget,
-                            spent: spendingByCategoryId[budget.categoryId] ?? 0,
+                            spent: budget.categoryId.flatMap { spendingByCategoryId[$0] } ?? 0,
                             currency: currency
                         )
                     }

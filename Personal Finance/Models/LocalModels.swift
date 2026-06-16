@@ -10,7 +10,7 @@ private let yyyyMMdd: DateFormatter = {
 
 @Model
 final class LocalWallet {
-    var serverId: String
+    var serverId: UUID
     var name: String
     var type: String
     var balance: Double
@@ -33,7 +33,7 @@ final class LocalWallet {
 
 @Model
 final class LocalCategory {
-    var serverId: String
+    var serverId: UUID
     var name: String
     var type: String
     var icon: String?
@@ -50,10 +50,10 @@ final class LocalCategory {
 
 @Model
 final class LocalTransaction {
-    var serverId: String
-    var walletId: String
+    var serverId: UUID
+    var walletId: UUID?
     var walletName: String
-    var categoryId: String?
+    var categoryId: UUID?
     var categoryName: String?
     var categoryIcon: String?
     var categoryColor: String?
@@ -64,27 +64,26 @@ final class LocalTransaction {
     var updatedAt: Date
     var syncStatus: String
 
-    init(from r: RemoteTransaction, walletName: String, categoryName: String?,
-         categoryIcon: String?, categoryColor: String?) {
+    init(from r: RemoteTransaction) {
         serverId = r.id
-        walletId = r.walletId ?? ""
-        self.walletName = walletName
+        walletId = r.walletId
+        walletName = r.wallets?.name ?? "Unknown Wallet"
         categoryId = r.categoryId
-        self.categoryName = categoryName
-        self.categoryIcon = categoryIcon
-        self.categoryColor = categoryColor
+        categoryName = r.categories?.name
+        categoryIcon = r.categories?.icon
+        categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
     }
 
-    func update(from r: RemoteTransaction, walletName: String, categoryName: String?,
-                categoryIcon: String?, categoryColor: String?) {
-        walletId = r.walletId ?? ""
-        self.walletName = walletName
-        self.categoryName = categoryName
-        self.categoryIcon = categoryIcon
-        self.categoryColor = categoryColor
+    func update(from r: RemoteTransaction) {
+        walletId = r.walletId
+        walletName = r.wallets?.name ?? "Unknown Wallet"
+        categoryId = r.categoryId
+        categoryName = r.categories?.name
+        categoryIcon = r.categories?.icon
+        categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
@@ -93,29 +92,29 @@ final class LocalTransaction {
 
 @Model
 final class LocalBudget {
-    var serverId: String
-    var categoryId: String
+    var serverId: UUID
+    var categoryId: UUID?
     var categoryName: String
     var categoryIcon: String?
     var categoryColor: String?
     var amount: Double
     var month: Date
 
-    init(from r: RemoteBudget, categoryName: String, categoryIcon: String?, categoryColor: String?) {
+    init(from r: RemoteBudget) {
         serverId = r.id
-        categoryId = r.categoryId ?? ""
-        self.categoryName = categoryName
-        self.categoryIcon = categoryIcon
-        self.categoryColor = categoryColor
+        categoryId = r.categoryId
+        categoryName = r.categories?.name ?? "Unknown"
+        categoryIcon = r.categories?.icon
+        categoryColor = r.categories?.color
         amount = r.amount
         month = yyyyMMdd.date(from: r.month) ?? Date()
     }
 
-    func update(from r: RemoteBudget, categoryName: String, categoryIcon: String?, categoryColor: String?) {
-        categoryId = r.categoryId ?? ""
-        self.categoryName = categoryName
-        self.categoryIcon = categoryIcon
-        self.categoryColor = categoryColor
+    func update(from r: RemoteBudget) {
+        categoryId = r.categoryId
+        categoryName = r.categories?.name ?? "Unknown"
+        categoryIcon = r.categories?.icon
+        categoryColor = r.categories?.color
         amount = r.amount
         month = yyyyMMdd.date(from: r.month) ?? Date()
     }
