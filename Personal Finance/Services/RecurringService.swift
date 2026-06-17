@@ -72,32 +72,45 @@ final class RecurringService {
 
     func processOverdue(transactions: [LocalRecurringTransaction], wallets: [LocalWallet], in ctx: ModelContext) async {
         let today = df.string(from: Date())
-        for rec in transactions {
-            guard let nextRun = rec.nextRunDate else { continue }
-            let nextStr = df.string(from: nextRun)
-            guard nextStr <= today else { continue }
-            if let end = rec.endDate, df.string(from: end) < today { continue }
 
-            let wallet = wallets.first { $0.serverId == rec.walletId }
-            do {
-                try await TransactionService.shared.create(
-                    type: rec.type, amount: rec.amount, date: nextRun,
-                    walletId: rec.walletId, categoryId: rec.categoryId,
-                    note: rec.note, wallet: wallet, in: ctx
-                )
-                let newNextRun = nextRunDate(after: nextRun, frequency: rec.frequency)
-                struct Body: Encodable { let next_run_date: String }
-                let updated: RemoteRecurringTransaction = try await client
-                    .from("recurring_transactions")
-                    .update(Body(next_run_date: df.string(from: newNextRun)))
-                    .eq("id", value: rec.serverId)
-                    .select("*, categories(id, name, icon, color), wallets(id, name)")
-                    .single().execute().value
-                rec.update(from: updated)
-            } catch {
-                print("[RecurringService] error: \(error)")
+        // Filter overdue first — avoid unnecessary Task spawning
+        let overdue = transactions.filter { rec in
+            guard let nextRun = rec.nextRunDate else { return false }
+            guard df.string(from: nextRun) <= today else { return false }
+            if let end = rec.endDate, df.string(from: end) < today { return false }
+            return true
+        }
+        guard !overdue.isEmpty else { return }
+
+        // Run each overdue item concurrently — network I/O overlaps even on @MainActor
+        // because Swift suspends at every await point, letting other tasks proceed
+        await withTaskGroup(of: Void.self) { group in
+            for rec in overdue {
+                group.addTask { @MainActor [self, rec] in
+                    guard let nextRun = rec.nextRunDate else { return }
+                    let wallet = wallets.first { $0.serverId == rec.walletId }
+                    do {
+                        try await TransactionService.shared.create(
+                            type: rec.type, amount: rec.amount, date: nextRun,
+                            walletId: rec.walletId, categoryId: rec.categoryId,
+                            note: rec.note, wallet: wallet, in: ctx
+                        )
+                        let newNextRun = self.nextRunDate(after: nextRun, frequency: rec.frequency)
+                        struct Body: Encodable { let next_run_date: String }
+                        let updated: RemoteRecurringTransaction = try await self.client
+                            .from("recurring_transactions")
+                            .update(Body(next_run_date: self.df.string(from: newNextRun)))
+                            .eq("id", value: rec.serverId)
+                            .select("*, categories(id, name, icon, color), wallets(id, name)")
+                            .single().execute().value
+                        rec.update(from: updated)
+                    } catch {
+                        print("[RecurringService] error processing \(rec.serverId): \(error)")
+                    }
+                }
             }
         }
+        try? ctx.save()
     }
 
     private func nextRunDate(after date: Date, frequency: String) -> Date {
