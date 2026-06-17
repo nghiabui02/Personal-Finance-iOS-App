@@ -88,7 +88,10 @@ struct TransactionsView: View {
                 transactionSections
                 paginationSection
             }
-            .listStyle(.insetGrouped)
+            .listStyle(.grouped)
+            .listSectionSpacing(8)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Transactions")
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
@@ -192,8 +195,8 @@ struct TransactionsView: View {
             } else {
                 ForEach(groups, id: \.0) { date, txs in
                     Section {
-                        ForEach(txs, id: \.serverId) { tx in
-                            TransactionRow(transaction: tx)
+                        ForEach(Array(txs.enumerated()), id: \.element.serverId) { idx, tx in
+                            TransactionRow(transaction: tx, showDivider: idx < txs.count - 1)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editing = tx }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -201,10 +204,23 @@ struct TransactionsView: View {
                                         Task { await deleteTx(tx) }
                                     } label: { Label("Delete", systemImage: "trash") }
                                 }
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 0, trailing: 32))
+                                .listRowBackground(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius:    idx == 0              ? 12 : 0,
+                                        bottomLeadingRadius: idx == txs.count - 1 ? 12 : 0,
+                                        bottomTrailingRadius: idx == txs.count - 1 ? 12 : 0,
+                                        topTrailingRadius:   idx == 0              ? 12 : 0
+                                    )
+                                    .fill(Color(.systemBackground))
+                                    .padding(.horizontal, 16)
+                                )
                         }
                     } header: {
                         txSectionHeader(date: date, txs: txs)
                     }
+                    .listSectionSeparator(.hidden)
                 }
             }
         }
@@ -251,6 +267,8 @@ struct TransactionsView: View {
                     .foregroundColor(net >= 0 ? .income : .expense)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
     }
 
     private func sectionTitle(for date: Date) -> String {
@@ -694,6 +712,7 @@ private struct TxStatBox: View {
 
 struct TransactionRow: View {
     let transaction: LocalTransaction
+    var showDivider: Bool = false
 
     private var icon: String {
         if let i = transaction.categoryIcon, !i.isEmpty { return i }
@@ -701,26 +720,32 @@ struct TransactionRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle().fill(Color(.systemGray6)).frame(width: 42, height: 42)
-                Text(icon).font(.system(size: 20))
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(transaction.categoryName ?? (transaction.type == "income" ? "Income" : "Expense"))
-                    .font(.subheadline).fontWeight(.medium).lineLimit(1)
-                HStack(spacing: 4) {
-                    if let note = transaction.note, !note.isEmpty { Text(note).lineLimit(1); Text("·") }
-                    Text(transaction.walletName)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().fill(Color(.systemGray6)).frame(width: 44, height: 44)
+                    Text(icon).font(.system(size: 22))
                 }
-                .font(.caption).foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(transaction.categoryName ?? (transaction.type == "income" ? "Income" : "Expense"))
+                        .font(.subheadline).fontWeight(.medium).lineLimit(1)
+                    HStack(spacing: 4) {
+                        if let note = transaction.note, !note.isEmpty { Text(note).lineLimit(1); Text("·") }
+                        Text(transaction.walletName)
+                    }
+                    .font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Text("\(transaction.type == "income" ? "+" : "-")\(transaction.amount.formatted(currency: "VND"))")
+                    .font(.subheadline).fontWeight(.semibold)
+                    .foregroundColor(transaction.type == "income" ? .income : .expense)
             }
-            Spacer()
-            Text("\(transaction.type == "income" ? "+" : "-")\(transaction.amount.formatted(currency: "VND"))")
-                .font(.subheadline).fontWeight(.semibold)
-                .foregroundColor(transaction.type == "income" ? .income : .expense)
+            .padding(.vertical, 8)
+
+            if showDivider {
+                Divider().padding(.leading, 56)
+            }
         }
-        .padding(.vertical, 2)
     }
 }
 
