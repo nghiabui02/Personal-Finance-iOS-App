@@ -12,6 +12,7 @@ struct TransactionsView: View {
     @State private var serverPage = 0
     @State private var isLoadingMore = false
     @State private var hasMore = true
+    @State private var loadedIds: Set<UUID> = []   // O(1) duplicate check
 
     @State private var periodMode: PeriodMode = .month
     @State private var selectedMonth: Date = {
@@ -211,6 +212,7 @@ struct TransactionsView: View {
 
     private func resetAndLoad() {
         loadedTxs = []
+        loadedIds = []
         serverPage = 0
         hasMore = true
         Task { await loadMore() }
@@ -249,18 +251,28 @@ struct TransactionsView: View {
     }
 
     private func upsert(_ remotes: [RemoteTransaction]) {
-        let existing = (try? modelContext.fetch(FetchDescriptor<LocalTransaction>())) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        guard !remotes.isEmpty else { return }
+        // Scope fetch to current period window — avoids loading full transaction history
+        let (startStr, endStr) = periodRange()
+        guard let start = df.date(from: startStr), let end = df.date(from: endStr) else { return }
+        let desc = FetchDescriptor<LocalTransaction>(
+            predicate: #Predicate<LocalTransaction> { $0.transactionDate >= start && $0.transactionDate < end }
+        )
+        let existing = (try? modelContext.fetch(desc)) ?? []
+        let localMap = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+
         for r in remotes {
-            if let local = map[r.id] {
+            if let local = localMap[r.id] {
                 local.update(from: r)
-                if !loadedTxs.contains(where: { $0.serverId == r.id }) {
+                if !loadedIds.contains(r.id) {
                     loadedTxs.append(local)
+                    loadedIds.insert(r.id)
                 }
             } else {
                 let local = LocalTransaction(from: r)
                 modelContext.insert(local)
                 loadedTxs.append(local)
+                loadedIds.insert(r.id)
             }
         }
         try? modelContext.save()

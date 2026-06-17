@@ -15,74 +15,16 @@ struct DashboardView: View {
     @Query private var wallets: [LocalWallet]
     @Query private var allBudgets: [LocalBudget]
 
-    // MARK: - Computed: filter by selected month
-
-    private var monthlyTransactions: [LocalTransaction] {
-        let cal = Calendar.current
-        return allTransactions.filter {
-            cal.isDate($0.transactionDate, equalTo: selectedMonth, toGranularity: .month)
-        }
-    }
-
-    private var monthlyIncome: Double {
-        monthlyTransactions.filter { $0.type == "income" }.reduce(0) { $0 + $1.amount }
-    }
-
-    private var monthlyExpense: Double {
-        monthlyTransactions.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount }
-    }
+    // Cached — computed once per month/data change, not on every render
+    @State private var monthlyIncome:  Double = 0
+    @State private var monthlyExpense: Double = 0
+    @State private var recentTransactions: [LocalTransaction] = []
+    @State private var spendingByCategoryId: [UUID: Double] = [:]
+    @State private var spendingItems: [CategorySpending] = []
+    @State private var currentBudgets: [LocalBudget] = []
 
     private var netBalance: Double { monthlyIncome - monthlyExpense }
-
-    private var recentTransactions: [LocalTransaction] {
-        Array(monthlyTransactions.prefix(7))
-    }
-
-    private var primaryCurrency: String { "VND" }
-
-    private var currentBudgets: [LocalBudget] {
-        let cal = Calendar.current
-        return allBudgets.filter {
-            cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
-        }
-    }
-
-    // Group expense spending per categoryId
-    private var spendingByCategoryId: [UUID: Double] {
-        var result: [UUID: Double] = [:]
-        for tx in monthlyTransactions where tx.type == "expense" {
-            if let key = tx.categoryId { result[key, default: 0] += tx.amount }
-        }
-        return result
-    }
-
-    // Top 5 expense categories for chart
-    private var spendingItems: [CategorySpending] {
-        var grouped: [String: (name: String, icon: String, color: String?, total: Double)] = [:]
-        for tx in monthlyTransactions where tx.type == "expense" {
-            let key = tx.categoryId?.uuidString ?? tx.categoryName ?? "other"
-            let existing = grouped[key]
-            grouped[key] = (
-                name: existing?.name ?? tx.categoryName ?? "Other",
-                icon: existing?.icon ?? tx.categoryIcon ?? "💸",
-                color: existing?.color ?? tx.categoryColor,
-                total: (existing?.total ?? 0) + tx.amount
-            )
-        }
-        let sorted = grouped.values.sorted { $0.total > $1.total }.prefix(5)
-        let total = sorted.reduce(0) { $0 + $1.total }
-        let palette: [Color] = [.blue, .indigo, .purple, .pink, .orange]
-        return sorted.enumerated().map { i, item in
-            CategorySpending(
-                id: item.name,
-                name: item.name,
-                icon: item.icon,
-                color: item.color.map { Color(hex: $0) } ?? palette[i % palette.count],
-                amount: item.total,
-                percentage: total > 0 ? (item.total / total) * 100 : 0
-            )
-        }
-    }
+    private let primaryCurrency = "VND"
 
     // MARK: - View
 
@@ -130,10 +72,11 @@ struct DashboardView: View {
                                                    description: Text("Pull down to refresh"))
                                 .padding(.vertical, 8)
                         } else {
+                            let lastId = recentTransactions.last?.serverId
                             VStack(spacing: 0) {
                                 ForEach(recentTransactions) { tx in
                                     RecentTransactionRowView(transaction: tx, currency: primaryCurrency)
-                                    if tx.serverId != recentTransactions.last?.serverId {
+                                    if tx.serverId != lastId {
                                         Divider().padding(.leading, 56)
                                     }
                                 }
@@ -173,8 +116,12 @@ struct DashboardView: View {
             }
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear {
+                recompute()
                 Task { await sync.syncAll(modelContext: modelContext) }
             }
+            .onChange(of: allTransactions) { _, _ in recompute() }
+            .onChange(of: allBudgets)      { _, _ in recompute() }
+            .onChange(of: selectedMonth)   { _, _ in recompute() }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     Task { await sync.syncAll(modelContext: modelContext) }
@@ -183,6 +130,56 @@ struct DashboardView: View {
             .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
                 Task { await sync.syncAll(modelContext: modelContext) }
             }
+        }
+    }
+
+    // MARK: - Single-pass recompute
+
+    private func recompute() {
+        let cal = Calendar.current
+        var inc = 0.0, exp = 0.0
+        var catMap: [String: (name: String, icon: String, color: String?, total: Double)] = [:]
+        var spending: [UUID: Double] = [:]
+        var recent: [LocalTransaction] = []
+
+        for tx in allTransactions {
+            guard cal.isDate(tx.transactionDate, equalTo: selectedMonth, toGranularity: .month) else { continue }
+            if tx.type == "income" {
+                inc += tx.amount
+            } else {
+                exp += tx.amount
+                let key = tx.categoryId?.uuidString ?? tx.categoryName ?? "other"
+                let ex = catMap[key]
+                catMap[key] = (
+                    name: ex?.name ?? tx.categoryName ?? "Other",
+                    icon: ex?.icon ?? tx.categoryIcon ?? "💸",
+                    color: ex?.color ?? tx.categoryColor,
+                    total: (ex?.total ?? 0) + tx.amount
+                )
+                if let cid = tx.categoryId { spending[cid, default: 0] += tx.amount }
+            }
+            if recent.count < 7 { recent.append(tx) }
+        }
+
+        monthlyIncome  = inc
+        monthlyExpense = exp
+        recentTransactions = recent
+        spendingByCategoryId = spending
+
+        let sorted = catMap.values.sorted { $0.total > $1.total }.prefix(5)
+        let total  = sorted.reduce(0) { $0 + $1.total }
+        let palette: [Color] = [.blue, .indigo, .purple, .pink, .orange]
+        spendingItems = sorted.enumerated().map { i, item in
+            CategorySpending(
+                id: item.name, name: item.name, icon: item.icon,
+                color: item.color.map { Color(hex: $0) } ?? palette[i % palette.count],
+                amount: item.total,
+                percentage: total > 0 ? item.total / total * 100 : 0
+            )
+        }
+
+        currentBudgets = allBudgets.filter {
+            cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
         }
     }
 
