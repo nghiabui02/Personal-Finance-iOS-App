@@ -12,20 +12,9 @@ struct BudgetsView: View {
     @State private var editing: LocalBudget?
     @State private var errorMsg: String?
 
-    private var budgets: [LocalBudget] {
-        let cal = Calendar.current
-        return allBudgets.filter { cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month) }
-    }
-
-    private var spentByCategoryId: [UUID: Double] {
-        let cal = Calendar.current
-        var result: [UUID: Double] = [:]
-        for tx in allTx where tx.type == "expense" &&
-            cal.isDate(tx.transactionDate, equalTo: selectedMonth, toGranularity: .month) {
-            if let id = tx.categoryId { result[id, default: 0] += tx.amount }
-        }
-        return result
-    }
+    // Cached — recomputed once via onChange, not every render
+    @State private var cachedBudgets: [LocalBudget] = []
+    @State private var cachedSpent: [UUID: Double] = [:]
 
     var body: some View {
         NavigationStack {
@@ -34,14 +23,14 @@ struct BudgetsView: View {
                     .padding(.horizontal).padding(.vertical, 8)
                     .background(Color(.systemBackground))
 
-                if budgets.isEmpty {
+                if cachedBudgets.isEmpty {
                     ContentUnavailableView("No Budgets", systemImage: "chart.bar",
                         description: Text("Tap + to add a budget for this month"))
                         .frame(maxHeight: .infinity)
                 } else {
                     List {
-                        ForEach(budgets, id: \.serverId) { budget in
-                            let spent = spentByCategoryId[budget.categoryId ?? UUID()] ?? 0
+                        ForEach(cachedBudgets, id: \.serverId) { budget in
+                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
                             BudgetRow(budget: budget, spent: spent)
                                 .onTapGesture { editing = budget }
                                 .swipeActions(edge: .trailing) {
@@ -61,12 +50,30 @@ struct BudgetsView: View {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
                 }
             }
+            .onAppear { recompute() }
+            .onChange(of: allBudgets)    { _, _ in recompute() }
+            .onChange(of: allTx)         { _, _ in recompute() }
+            .onChange(of: selectedMonth) { _, _ in recompute() }
             .sheet(isPresented: $showAdd) { AddEditBudgetView(budget: nil, defaultMonth: selectedMonth) }
             .sheet(item: $editing) { b in AddEditBudgetView(budget: b, defaultMonth: selectedMonth) }
             .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
         }
+    }
+
+    // Single pass: filter budgets + compute spent — O(n_budgets + n_transactions)
+    private func recompute() {
+        let cal = Calendar.current
+        cachedBudgets = allBudgets.filter {
+            cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
+        }
+        var spent: [UUID: Double] = [:]
+        for tx in allTx where tx.type == "expense" &&
+            cal.isDate(tx.transactionDate, equalTo: selectedMonth, toGranularity: .month) {
+            if let id = tx.categoryId { spent[id, default: 0] += tx.amount }
+        }
+        cachedSpent = spent
     }
 
     private func delete(_ budget: LocalBudget) async {
@@ -79,9 +86,7 @@ private struct BudgetRow: View {
     let budget: LocalBudget
     let spent: Double
 
-    private var progress: Double {
-        budget.amount > 0 ? min(spent / budget.amount, 1.0) : 0
-    }
+    private var progress: Double { budget.amount > 0 ? min(spent / budget.amount, 1.0) : 0 }
     private var remaining: Double { budget.amount - spent }
     private var overBudget: Bool { spent > budget.amount }
 

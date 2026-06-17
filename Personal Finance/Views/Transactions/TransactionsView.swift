@@ -14,6 +14,15 @@ struct TransactionsView: View {
     @State private var hasMore = true
     @State private var loadedIds: Set<UUID> = []   // O(1) duplicate check
 
+    // Period totals — fetched separately for the full period (not just loaded pages)
+    @State private var periodIncome:  Double = 0
+    @State private var periodExpense: Double = 0
+
+    // Grouped cache — recomputed only when loadedTxs changes, not every render
+    @State private var groupedAll:     [(Date, [LocalTransaction])] = []
+    @State private var groupedIncome:  [(Date, [LocalTransaction])] = []
+    @State private var groupedExpense: [(Date, [LocalTransaction])] = []
+
     @State private var periodMode: PeriodMode = .month
     @State private var selectedMonth: Date = {
         Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
@@ -34,23 +43,31 @@ struct TransactionsView: View {
     enum PeriodMode: String, CaseIterable { case month = "Month", week = "Week" }
     enum FilterType: String, CaseIterable { case all = "All", income = "Income", expense = "Expense" }
 
-    // MARK: - Computed
+    // MARK: - Grouped cache helper (single pass over loadedTxs)
 
-    private func filtered(for type: FilterType) -> [LocalTransaction] {
-        type == .all ? loadedTxs : loadedTxs.filter { $0.type == type.rawValue.lowercased() }
-    }
-
-    private func grouped(for type: FilterType) -> [(Date, [LocalTransaction])] {
+    private func recomputeGrouped() {
         let cal = Calendar.current
-        var dict: [Date: [LocalTransaction]] = [:]
-        for tx in filtered(for: type) {
-            dict[cal.startOfDay(for: tx.transactionDate), default: []].append(tx)
+        var all: [Date: [LocalTransaction]] = [:]
+        var inc: [Date: [LocalTransaction]] = [:]
+        var exp: [Date: [LocalTransaction]] = [:]
+        for tx in loadedTxs {
+            let day = cal.startOfDay(for: tx.transactionDate)
+            all[day, default: []].append(tx)
+            if tx.type == "income" { inc[day, default: []].append(tx) }
+            else                   { exp[day, default: []].append(tx) }
         }
-        return dict.sorted { $0.key > $1.key }
+        groupedAll     = all.sorted { $0.key > $1.key }
+        groupedIncome  = inc.sorted { $0.key > $1.key }
+        groupedExpense = exp.sorted { $0.key > $1.key }
     }
 
-    private var totalIncome:  Double { loadedTxs.filter { $0.type == "income"  }.reduce(0) { $0 + $1.amount } }
-    private var totalExpense: Double { loadedTxs.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount } }
+    private func cachedGroups(for type: FilterType) -> [(Date, [LocalTransaction])] {
+        switch type {
+        case .all:     return groupedAll
+        case .income:  return groupedIncome
+        case .expense: return groupedExpense
+        }
+    }
 
     // MARK: - Body
 
@@ -77,6 +94,7 @@ struct TransactionsView: View {
             .onChange(of: periodMode)        { _, _ in resetAndLoad() }
             .onChange(of: selectedMonth)     { _, _ in if periodMode == .month { resetAndLoad() } }
             .onChange(of: selectedWeekStart) { _, _ in if periodMode == .week  { resetAndLoad() } }
+            .onChange(of: loadedTxs)         { _, _ in recomputeGrouped() }
             .onAppear { if loadedTxs.isEmpty { resetAndLoad() } }
             .sheet(isPresented: $showAdd)  { AddEditTransactionView(transaction: nil) }
             .sheet(item: $editing) { tx in  AddEditTransactionView(transaction: tx) }
@@ -124,7 +142,7 @@ struct TransactionsView: View {
 
     @ViewBuilder
     private func transactionList(for type: FilterType) -> some View {
-        let groups = grouped(for: type)
+        let groups = cachedGroups(for: type)
         if groups.isEmpty && !isLoadingMore {
             ContentUnavailableView("No Transactions", systemImage: "tray",
                 description: Text("Tap + to add a transaction"))
@@ -186,9 +204,9 @@ struct TransactionsView: View {
             }
 
             HStack(spacing: 0) {
-                summaryCell(label: "Income",  amount: totalIncome,  color: .income,  icon: "arrow.down.circle.fill")
+                summaryCell(label: "Income",  amount: periodIncome,  color: .income,  icon: "arrow.down.circle.fill")
                 Divider().frame(height: 32)
-                summaryCell(label: "Expense", amount: totalExpense, color: .expense, icon: "arrow.up.circle.fill")
+                summaryCell(label: "Expense", amount: periodExpense, color: .expense, icon: "arrow.up.circle.fill")
             }
             .padding(.horizontal).padding(.bottom, 8)
         }
@@ -213,9 +231,43 @@ struct TransactionsView: View {
     private func resetAndLoad() {
         loadedTxs = []
         loadedIds = []
+        groupedAll = []; groupedIncome = []; groupedExpense = []
+        periodIncome = 0; periodExpense = 0
         serverPage = 0
         hasMore = true
+        Task { await fetchPeriodTotals() }
         Task { await loadMore() }
+    }
+
+    // Lightweight fetch — only type + amount, no joins, no pagination
+    private func fetchPeriodTotals() async {
+        let (startStr, endStr) = periodRange()
+        struct TotalRecord: Decodable { let type: String; let amount: Double }
+        do {
+            let userId = try await client.auth.session.user.id
+            let records: [TotalRecord] = try await client
+                .from("transactions")
+                .select("type,amount")
+                .eq("user_id", value: userId)
+                .gte("transaction_date", value: startStr)
+                .lt("transaction_date",  value: endStr)
+                .execute().value
+            var inc = 0.0, exp = 0.0
+            for r in records {
+                if r.type == "income" { inc += r.amount } else { exp += r.amount }
+            }
+            periodIncome  = inc
+            periodExpense = exp
+        } catch {
+            // Offline fallback — compute from local SwiftData cache
+            guard let start = df.date(from: startStr), let end = df.date(from: endStr) else { return }
+            let desc = FetchDescriptor<LocalTransaction>(
+                predicate: #Predicate<LocalTransaction> { $0.transactionDate >= start && $0.transactionDate < end }
+            )
+            let local = (try? modelContext.fetch(desc)) ?? []
+            periodIncome  = local.filter { $0.type == "income"  }.reduce(0) { $0 + $1.amount }
+            periodExpense = local.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount }
+        }
     }
 
     private func loadMore() async {
