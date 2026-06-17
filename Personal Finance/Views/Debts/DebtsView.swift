@@ -26,9 +26,8 @@ struct DebtsView: View {
     private var completed: [LocalDebt] { filtered.filter { $0.status == "completed" } }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                Picker("Filter", selection: $filterType) {
+        VStack(spacing: 0) {
+            Picker("Filter", selection: $filterType) {
                     ForEach(FilterType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
@@ -74,6 +73,7 @@ struct DebtsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Debts")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
@@ -87,7 +87,6 @@ struct DebtsView: View {
             .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
-        }
     }
 
     private func delete(_ debt: LocalDebt) async {

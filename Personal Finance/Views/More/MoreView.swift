@@ -47,6 +47,7 @@ struct MoreView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("More")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         }
     }
 }

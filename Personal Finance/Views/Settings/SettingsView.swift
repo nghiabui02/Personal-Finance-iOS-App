@@ -107,6 +107,7 @@ struct SettingsView: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         }
         .onChange(of: photoItem) { _, item in
             Task { await handlePhotoPick(item) }

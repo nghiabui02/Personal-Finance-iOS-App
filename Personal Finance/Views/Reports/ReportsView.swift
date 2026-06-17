@@ -84,6 +84,7 @@ struct ReportsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Reports")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear { recompute() }
             .onChange(of: allTx)          { _, _ in recompute() }

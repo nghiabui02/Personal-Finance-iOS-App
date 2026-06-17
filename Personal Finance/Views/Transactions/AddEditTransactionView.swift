@@ -5,6 +5,7 @@ struct AddEditTransactionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     let transaction: LocalTransaction?
+    var defaultDate: Date? = nil
 
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
@@ -161,7 +162,7 @@ struct AddEditTransactionView: View {
             selectedWalletId = tx.walletId
             note = tx.note ?? ""
         } else {
-            // Pre-select default wallet for new transactions
+            date = defaultDate ?? Date()
             selectedWalletId = wallets.first(where: { $0.isDefault })?.serverId
                 ?? wallets.first?.serverId
         }

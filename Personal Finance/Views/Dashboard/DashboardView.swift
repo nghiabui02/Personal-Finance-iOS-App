@@ -111,6 +111,7 @@ struct DashboardView: View {
                     }
             )
             .navigationTitle("Overview")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { statusIcon }
             }

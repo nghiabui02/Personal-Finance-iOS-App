@@ -23,6 +23,12 @@ struct RemoteCategory: Codable, Identifiable {
     let type: String
     let icon: String?
     let color: String?
+    let isDefault: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, type, icon, color
+        case isDefault = "is_default"
+    }
 }
 
 struct RemoteTransaction: Codable, Identifiable {

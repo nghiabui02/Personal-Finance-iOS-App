@@ -17,8 +17,7 @@ struct BudgetsView: View {
     @State private var cachedSpent: [UUID: Double] = [:]
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 MonthSelectorView(selectedMonth: $selectedMonth)
                     .padding(.horizontal).padding(.vertical, 8)
                     .background(Color(.systemBackground))
@@ -45,6 +44,7 @@ struct BudgetsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Budgets")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
@@ -59,7 +59,6 @@ struct BudgetsView: View {
             .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
-        }
     }
 
     // Single pass: filter budgets + compute spent — O(n_budgets + n_transactions)

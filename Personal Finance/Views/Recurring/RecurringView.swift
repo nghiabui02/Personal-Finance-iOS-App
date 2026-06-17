@@ -11,8 +11,7 @@ struct RecurringView: View {
     @State private var errorMsg: String?
 
     var body: some View {
-        NavigationStack {
-            Group {
+        Group {
                 if recurring.isEmpty {
                     ContentUnavailableView("No Recurring", systemImage: "arrow.clockwise.circle",
                         description: Text("Tap + to set up a recurring transaction"))
@@ -32,6 +31,7 @@ struct RecurringView: View {
                 }
             }
             .navigationTitle("Recurring")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
@@ -42,7 +42,6 @@ struct RecurringView: View {
             .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
-        }
     }
 
     private func delete(_ rec: LocalRecurringTransaction) async {

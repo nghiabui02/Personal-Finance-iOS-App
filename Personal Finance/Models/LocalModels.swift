@@ -38,13 +38,14 @@ final class LocalCategory {
     var type: String
     var icon: String?
     var color: String?
+    var isDefault: Bool = false
 
     init(from r: RemoteCategory) {
         serverId = r.id; name = r.name; type = r.type
-        icon = r.icon; color = r.color
+        icon = r.icon; color = r.color; isDefault = r.isDefault
     }
     func update(from r: RemoteCategory) {
-        name = r.name; type = r.type; icon = r.icon; color = r.color
+        name = r.name; type = r.type; icon = r.icon; color = r.color; isDefault = r.isDefault
     }
 }
 

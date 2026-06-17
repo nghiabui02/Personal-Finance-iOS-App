@@ -16,8 +16,7 @@ struct SavingGoalsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 Picker("Filter", selection: $filterStatus) {
                     Text("Active").tag("active")
                     Text("Completed").tag("completed")
@@ -54,6 +53,7 @@ struct SavingGoalsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Saving Goals")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
@@ -65,7 +65,6 @@ struct SavingGoalsView: View {
             .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
-        }
     }
 
     private func delete(_ goal: LocalSavingGoal) async {
