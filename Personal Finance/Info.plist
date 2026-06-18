@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>SupabaseAnonKey</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>SupabaseAvatarBucket</key>
+	<string>$(SUPABASE_AVATAR_BUCKET)</string>
 	<key>SupabaseHost</key>
 	<string>$(SUPABASE_HOST)</string>
 	<key>UIApplicationSceneManifest</key>

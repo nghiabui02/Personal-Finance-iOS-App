@@ -6,4 +6,5 @@ enum AppConfig {
         return "https://\(host)"
     }()
     static let supabaseAnonKey = Bundle.main.object(forInfoDictionaryKey: "SupabaseAnonKey") as? String ?? ""
+    static let supabaseAvatarBucket = Bundle.main.object(forInfoDictionaryKey: "SupabaseAvatarBucket") as? String ?? "Avatar"
 }

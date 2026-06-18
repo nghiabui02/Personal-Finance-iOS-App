@@ -102,14 +102,15 @@ final class AuthViewModel: ObservableObject {
 
     func uploadAvatar(_ imageData: Data) async throws {
         isUpdating = true; defer { isUpdating = false }
-        guard let userId = currentUser?.id.uuidString else { return }
+        let userId = try await auth.session.user.id.uuidString
+        let bucket = AppConfig.supabaseAvatarBucket
         let path = "\(userId)/avatar.jpg"
-        try await storage.from("avatars").upload(
+        try await storage.from(bucket).upload(
             path,
             data: imageData,
             options: FileOptions(contentType: "image/jpeg", upsert: true)
         )
-        let url = try storage.from("avatars").getPublicURL(path: path)
+        let url = try storage.from(bucket).getPublicURL(path: path)
         // Bust cache with timestamp
         var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         components?.queryItems = [URLQueryItem(name: "t", value: "\(Int(Date().timeIntervalSince1970))")]
@@ -119,8 +120,14 @@ final class AuthViewModel: ObservableObject {
 
     func deleteAvatar() async throws {
         isUpdating = true; defer { isUpdating = false }
-        guard let userId = currentUser?.id.uuidString else { return }
-        _ = try? await storage.from("avatars").remove(paths: ["\(userId)/avatar.jpg"])
+        let userId = try await auth.session.user.id.uuidString
+        let bucket = AppConfig.supabaseAvatarBucket
+        do {
+            _ = try await storage.from(bucket).remove(paths: ["\(userId)/avatar.jpg"])
+        } catch {
+            // Keep going so the avatar disappears from the app even if storage cleanup fails.
+            print("[AuthViewModel] avatar delete storage cleanup failed: \(error)")
+        }
         currentUser = try await auth.update(user: UserAttributes(data: ["avatar_url": .string("")]))
     }
 }

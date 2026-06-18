@@ -29,6 +29,7 @@ targets:
           - UIInterfaceOrientationPortrait
         SupabaseHost: $(SUPABASE_HOST)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)
+        SupabaseAvatarBucket: $(SUPABASE_AVATAR_BUCKET)
     dependencies:
       - package: Supabase
         product: Supabase
