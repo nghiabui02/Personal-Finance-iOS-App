@@ -259,6 +259,7 @@ struct EditFieldSheet: View {
                     }
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle("Edit \(title)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -186,6 +186,7 @@ struct DebtPaymentSheet: View {
                     }
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle("Record Payment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

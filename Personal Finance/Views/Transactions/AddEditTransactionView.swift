@@ -111,6 +111,7 @@ struct AddEditTransactionView: View {
                         .lineLimit(2...4)
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle(isEditing ? "Edit Transaction" : "New Transaction")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

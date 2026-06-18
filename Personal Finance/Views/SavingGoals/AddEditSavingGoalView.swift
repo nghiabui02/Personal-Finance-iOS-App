@@ -48,6 +48,7 @@ struct AddEditSavingGoalView: View {
                     TextField("Note (optional)", text: $note, axis: .vertical).lineLimit(2...4)
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle(goal != nil ? "Edit Goal" : "New Goal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

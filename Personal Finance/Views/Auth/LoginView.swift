@@ -68,5 +68,7 @@ struct LoginView: View {
             Spacer()
             Spacer()
         }
+        .contentShape(Rectangle())
+        .onTapGesture { hideKeyboard() }
     }
 }

@@ -147,6 +147,7 @@ struct ContributionSheet: View {
                     }
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle("Add Contribution")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

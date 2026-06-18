@@ -12,28 +12,13 @@ extension Color {
         self.init(.sRGB, red: r, green: g, blue: b)
     }
 
-    // Lighter variants in dark mode for better contrast on dark backgrounds
-    static let income = Color(UIColor { t in
-        t.userInterfaceStyle == .dark
-            ? UIColor(red: 0.290, green: 0.871, blue: 0.502, alpha: 1)
-            : UIColor(red: 0.086, green: 0.639, blue: 0.290, alpha: 1)
-    })
-    static let expense = Color(UIColor { t in
-        t.userInterfaceStyle == .dark
-            ? UIColor(red: 0.973, green: 0.443, blue: 0.443, alpha: 1)
-            : UIColor(red: 0.863, green: 0.149, blue: 0.149, alpha: 1)
-    })
-    static let lend = Color(UIColor { t in
-        t.userInterfaceStyle == .dark
-            ? UIColor(red: 0.376, green: 0.647, blue: 0.980, alpha: 1)
-            : UIColor(red: 0.145, green: 0.388, blue: 0.922, alpha: 1)
-    })
-    static let borrow = Color(UIColor { t in
-        t.userInterfaceStyle == .dark
-            ? UIColor(red: 0.984, green: 0.573, blue: 0.235, alpha: 1)
-            : UIColor(red: 0.918, green: 0.345, blue: 0.047, alpha: 1)
-    })
+    static let income  = Color(hex: "#22c55e")
+    static let expense = Color(hex: "#ef4444")
+    static let lend    = Color(hex: "#3b82f6")
+    static let borrow  = Color(hex: "#f97316")
 }
+
+// MARK: - View utilities
 
 extension View {
     func cardBackground(cornerRadius: CGFloat = 12) -> some View {
@@ -45,4 +30,31 @@ extension View {
                     .stroke(Color(.separator).opacity(0.4), lineWidth: 0.5)
             }
     }
+
+    /// scrollDismissesKeyboard + keyboard toolbar Done button.
+    /// UIKit (resignFirstResponder) is unavoidable for global keyboard dismissal —
+    /// SwiftUI has no equivalent API.
+    func formKeyboardHandling() -> some View {
+        self
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                    }
+                }
+            }
+    }
+}
+
+// Global helper so any file can dismiss keyboard without importing UIKit.
+func hideKeyboard() {
+    UIApplication.shared.sendAction(
+        #selector(UIResponder.resignFirstResponder),
+        to: nil, from: nil, for: nil
+    )
 }

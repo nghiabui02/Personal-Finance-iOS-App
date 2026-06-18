@@ -37,6 +37,7 @@ struct AddEditCategoryView: View {
                     }
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle(isEditing ? "Edit Category" : "New Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

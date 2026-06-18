@@ -64,6 +64,7 @@ struct AddEditWalletView: View {
                     Toggle("Set as default wallet", isOn: $isDefault)
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle(isEditing ? "Edit Wallet" : "New Wallet")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

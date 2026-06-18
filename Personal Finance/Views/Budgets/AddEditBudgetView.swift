@@ -58,6 +58,7 @@ struct AddEditBudgetView: View {
                     }
                 }
             }
+            .formKeyboardHandling()
             .navigationTitle(budget != nil ? "Edit Budget" : "New Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
