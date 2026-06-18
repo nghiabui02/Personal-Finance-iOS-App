@@ -218,7 +218,12 @@ struct TransactionsView: View {
     }
 
     private func loadMore() async {
-        guard hasMore, !isLoadingMore, sync.isOnline else { return }
+        guard hasMore, !isLoadingMore else { return }
+        guard sync.isOnline else {
+            if loadedTxs.isEmpty { fallbackFromCache() }
+            hasMore = false
+            return
+        }
         isLoadingMore = true
         defer { isLoadingMore = false }
 

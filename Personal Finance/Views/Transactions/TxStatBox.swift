@@ -5,6 +5,8 @@ struct TxStatBox: View {
     let amount: Double
     let color: Color
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
@@ -19,7 +21,7 @@ struct TxStatBox: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .padding(.horizontal, 10)
-        .background(color.opacity(0.08))
+        .background(color.opacity(colorScheme == .dark ? 0.15 : 0.08))
         .cornerRadius(10)
     }
 }

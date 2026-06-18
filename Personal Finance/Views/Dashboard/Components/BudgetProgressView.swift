@@ -29,8 +29,7 @@ struct BudgetProgressView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .cardBackground()
     }
 }
 
@@ -39,7 +38,7 @@ private struct BudgetRowView: View {
     let spent: Double
     let currency: String
 
-    private var progress: Double { min(spent / budget.amount, 1.0) }
+    private var progress: Double { budget.amount > 0 ? min(spent / budget.amount, 1.0) : 0 }
     private var remaining: Double { budget.amount - spent }
     private var isOver: Bool { spent > budget.amount }
 

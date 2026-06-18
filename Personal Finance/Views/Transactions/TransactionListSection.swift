@@ -74,14 +74,18 @@ struct TransactionListSection: View {
         .padding(.top, 4)
     }
 
+    private static let headerDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE, MMM d"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     private func sectionTitle(for date: Date) -> String {
         let cal = Calendar.current
         if cal.isDateInToday(date)     { return "TODAY" }
         if cal.isDateInYesterday(date) { return "YESTERDAY" }
-        let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: date).uppercased()
+        return Self.headerDateFormatter.string(from: date).uppercased()
     }
 
     private func netLabel(_ net: Double) -> String {

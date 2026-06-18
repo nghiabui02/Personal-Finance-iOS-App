@@ -77,7 +77,6 @@ struct SpendingChartView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .cardBackground()
     }
 }

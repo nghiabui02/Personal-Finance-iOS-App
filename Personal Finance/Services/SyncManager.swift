@@ -137,8 +137,7 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertTransactions(_ remotes: [RemoteTransaction], since: Date, in ctx: ModelContext) {
-        // Only fetch local transactions within the same window as the server query
-        var desc = FetchDescriptor<LocalTransaction>(
+        let desc = FetchDescriptor<LocalTransaction>(
             predicate: #Predicate<LocalTransaction> { $0.transactionDate >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []
@@ -150,8 +149,7 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertBudgets(_ remotes: [RemoteBudget], since: Date, in ctx: ModelContext) {
-        // Only fetch local budgets within the same month window as the server query
-        var desc = FetchDescriptor<LocalBudget>(
+        let desc = FetchDescriptor<LocalBudget>(
             predicate: #Predicate<LocalBudget> { $0.month >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []

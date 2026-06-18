@@ -4,6 +4,8 @@ struct BalanceCardView: View {
     let balance: Double
     let currency: String
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(spacing: 8) {
             Text("Total Balance")
@@ -26,6 +28,8 @@ struct BalanceCardView: View {
         )
         .cornerRadius(20)
         .padding(.horizontal)
-        .shadow(color: .blue.opacity(0.3), radius: 12, y: 6)
+        .shadow(color: .blue.opacity(colorScheme == .dark ? 0.5 : 0.25),
+                radius: colorScheme == .dark ? 20 : 12,
+                y: 6)
     }
 }

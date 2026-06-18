@@ -217,7 +217,6 @@ private struct StatCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .cardBackground()
     }
 }
