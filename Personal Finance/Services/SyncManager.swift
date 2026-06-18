@@ -119,7 +119,12 @@ final class SyncManager: ObservableObject {
     // MARK: - SwiftData upsert
 
     private func upsertWallets(_ remotes: [RemoteWallet], in ctx: ModelContext) {
-        let existing = (try? ctx.fetch(FetchDescriptor<LocalWallet>())) ?? []
+        let walletIds = remotes.map { $0.id }
+        let predicate = #Predicate<LocalWallet> { wallet in
+            walletIds.contains(wallet.serverId)
+        }
+        let desc = FetchDescriptor<LocalWallet>(predicate: predicate)
+        let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
@@ -128,7 +133,12 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertCategories(_ remotes: [RemoteCategory], in ctx: ModelContext) {
-        let existing = (try? ctx.fetch(FetchDescriptor<LocalCategory>())) ?? []
+        let categoryIds = remotes.map { $0.id }
+        let predicate = #Predicate<LocalCategory> { category in
+            categoryIds.contains(category.serverId)
+        }
+        let desc = FetchDescriptor<LocalCategory>(predicate: predicate)
+        let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
@@ -161,7 +171,12 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertDebts(_ remotes: [RemoteDebt], in ctx: ModelContext) {
-        let existing = (try? ctx.fetch(FetchDescriptor<LocalDebt>())) ?? []
+        let debtIds = remotes.map { $0.id }
+        let predicate = #Predicate<LocalDebt> { debt in
+            debtIds.contains(debt.serverId)
+        }
+        let desc = FetchDescriptor<LocalDebt>(predicate: predicate)
+        let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
@@ -170,7 +185,12 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertSavingGoals(_ remotes: [RemoteSavingGoal], in ctx: ModelContext) {
-        let existing = (try? ctx.fetch(FetchDescriptor<LocalSavingGoal>())) ?? []
+        let goalIds = remotes.map { $0.id }
+        let predicate = #Predicate<LocalSavingGoal> { goal in
+            goalIds.contains(goal.serverId)
+        }
+        let desc = FetchDescriptor<LocalSavingGoal>(predicate: predicate)
+        let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
@@ -179,7 +199,12 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertRecurring(_ remotes: [RemoteRecurringTransaction], in ctx: ModelContext) {
-        let existing = (try? ctx.fetch(FetchDescriptor<LocalRecurringTransaction>())) ?? []
+        let recurringIds = remotes.map { $0.id }
+        let predicate = #Predicate<LocalRecurringTransaction> { rec in
+            recurringIds.contains(rec.serverId)
+        }
+        let desc = FetchDescriptor<LocalRecurringTransaction>(predicate: predicate)
+        let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }

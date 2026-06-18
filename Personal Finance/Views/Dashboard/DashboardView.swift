@@ -22,6 +22,8 @@ struct DashboardView: View {
     @State private var spendingByCategoryId: [UUID: Double] = [:]
     @State private var spendingItems: [CategorySpending] = []
     @State private var currentBudgets: [LocalBudget] = []
+    
+    @State private var notificationSubscription: NSObjectProtocol?
 
     private var netBalance: Double { monthlyIncome - monthlyExpense }
     private let primaryCurrency = "VND"
@@ -128,8 +130,20 @@ struct DashboardView: View {
                     Task { await sync.syncAll(modelContext: modelContext) }
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
-                Task { await sync.syncAll(modelContext: modelContext) }
+            .onAppear {
+                notificationSubscription = NotificationCenter.default.addObserver(
+                    forName: .networkRestored,
+                    object: nil,
+                    queue: .main
+                ) { _ in
+                    Task { await sync.syncAll(modelContext: modelContext) }
+                }
+            }
+            .onDisappear {
+                if let subscription = notificationSubscription {
+                    NotificationCenter.default.removeObserver(subscription)
+                    notificationSubscription = nil
+                }
             }
         }
     }

@@ -165,8 +165,11 @@ struct TransactionsView: View {
         periodIncome = 0; periodExpense = 0
         dailyData = [:]; selectedDate = nil
         serverPage = 0; hasMore = true
-        Task { await fetchPeriodTotals() }
-        Task { await loadMore() }
+        Task {
+            async let totals = fetchPeriodTotals()
+            async let more = loadMore()
+            _ = try? await (totals, more)
+        }
     }
 
     private func fetchPeriodTotals() async {
@@ -257,7 +260,9 @@ struct TransactionsView: View {
         let start = cal.startOfDay(for: date)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
 
-        let alreadyHaveData = loadedTxs.contains { $0.transactionDate >= start && $0.transactionDate < end }
+        let alreadyHaveData = loadedTxs.contains { tx in
+            tx.transactionDate >= start && tx.transactionDate < end
+        }
         let dayHasData = (dailyData[start]?.income ?? 0) + (dailyData[start]?.expense ?? 0) > 0
         guard !alreadyHaveData && dayHasData else { return }
 

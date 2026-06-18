@@ -174,11 +174,10 @@ struct AddEditTransactionView: View {
         isSaving = true
         defer { isSaving = false }
 
-        let allWallets = (try? modelContext.fetch(FetchDescriptor<LocalWallet>())) ?? []
         do {
             if let tx = transaction {
-                let oldWallet = allWallets.first { $0.serverId == tx.walletId }
-                let newWallet = allWallets.first { $0.serverId == selectedWalletId }
+                let oldWallet = wallets.first { $0.serverId == tx.walletId }
+                let newWallet = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.update(
                     tx, type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
@@ -187,7 +186,7 @@ struct AddEditTransactionView: View {
                     in: modelContext
                 )
             } else {
-                let wallet = allWallets.first { $0.serverId == selectedWalletId }
+                let wallet = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.create(
                     type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,

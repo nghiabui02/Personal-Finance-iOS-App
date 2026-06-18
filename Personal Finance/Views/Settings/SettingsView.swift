@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var authVM: AuthViewModel
@@ -127,7 +128,7 @@ struct SettingsView: View {
                 title: "Email",
                 placeholder: "your@email.com",
                 currentValue: authVM.userEmail,
-                keyboardType: .emailAddress,
+                keyboardType: .email,
                 note: "A confirmation will be sent to the new email."
             ) { newValue in
                 try await authVM.updateEmail(newValue)
@@ -230,12 +231,26 @@ struct AvatarView: View {
 
 // MARK: - Edit Field Sheet
 
+enum TextFieldKeyboardType {
+    case `default`
+    case email
+    case phonePad
+    
+    var swiftUIKeyboardType: UIKeyboardType {
+        switch self {
+        case .default: return .default
+        case .email: return .emailAddress
+        case .phonePad: return .phonePad
+        }
+    }
+}
+
 struct EditFieldSheet: View {
     @Environment(\.dismiss) private var dismiss
     let title: String
     let placeholder: String
     let currentValue: String
-    let keyboardType: UIKeyboardType
+    let keyboardType: TextFieldKeyboardType
     var note: String? = nil
     let onSave: (String) async throws -> Void
 
@@ -248,9 +263,9 @@ struct EditFieldSheet: View {
             Form {
                 Section {
                     TextField(placeholder, text: $value)
-                        .keyboardType(keyboardType)
-                        .textInputAutocapitalization(keyboardType == .emailAddress ? .never : .words)
-                        .autocorrectionDisabled(keyboardType == .emailAddress)
+                        .keyboardType(keyboardType.swiftUIKeyboardType)
+                        .textInputAutocapitalization(keyboardType == .email ? .never : .words)
+                        .autocorrectionDisabled(keyboardType == .email)
                 }
                 if let note {
                     Section {
