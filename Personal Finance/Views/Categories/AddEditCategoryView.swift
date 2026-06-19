@@ -9,6 +9,7 @@ struct AddEditCategoryView: View {
     @State private var name = ""
     @State private var type = "expense"
     @State private var icon = "📦"
+    @State private var colorHex = "3B82F6"
     @State private var isSaving = false
     @State private var errorMsg: String?
 
@@ -35,6 +36,11 @@ struct AddEditCategoryView: View {
                         TextField("e.g. Food", text: $name)
                             .multilineTextAlignment(.trailing)
                     }
+                    HStack {
+                        Text("Color")
+                        Spacer()
+                        ColorSwatchPicker(selected: $colorHex)
+                    }
                 }
             }
             .formKeyboardHandling()
@@ -59,6 +65,9 @@ struct AddEditCategoryView: View {
                 name = cat.name
                 type = cat.type
                 icon = cat.icon ?? "📦"
+                if let c = cat.color {
+                    colorHex = c.hasPrefix("#") ? String(c.dropFirst()).uppercased() : c.uppercased()
+                }
             }
         }
     }
@@ -68,10 +77,11 @@ struct AddEditCategoryView: View {
         guard !trimmed.isEmpty else { return }
         isSaving = true; defer { isSaving = false }
         do {
+            let color = "#\(colorHex)"
             if let cat = category {
-                try await CategoryService.shared.update(cat, name: trimmed, icon: icon.isEmpty ? nil : icon, color: nil, in: modelContext)
+                try await CategoryService.shared.update(cat, name: trimmed, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             } else {
-                try await CategoryService.shared.create(name: trimmed, type: type, icon: icon.isEmpty ? nil : icon, color: nil, in: modelContext)
+                try await CategoryService.shared.create(name: trimmed, type: type, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             }
             dismiss()
         } catch { errorMsg = error.localizedDescription }

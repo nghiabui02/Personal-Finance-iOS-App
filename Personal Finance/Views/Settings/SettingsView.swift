@@ -185,15 +185,21 @@ struct SettingsView: View {
 
     private func handlePhotoPick(_ item: PhotosPickerItem?) async {
         guard let item else { return }
+        defer { photoItem = nil }
         do {
-            guard let data = try await item.loadTransferable(type: Data.self),
-                  let uiImage = UIImage(data: data),
-                  let compressed = uiImage.jpegData(compressionQuality: 0.75) else { return }
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                errorMsg = "Could not load the selected image."
+                return
+            }
+            guard let uiImage = UIImage(data: data),
+                  let compressed = uiImage.jpegData(compressionQuality: 0.75) else {
+                errorMsg = "Could not process the image."
+                return
+            }
             try await authVM.uploadAvatar(compressed)
         } catch {
             errorMsg = error.localizedDescription
         }
-        photoItem = nil
     }
 }
 
@@ -214,6 +220,7 @@ struct AvatarView: View {
                         placeholder
                     }
                 }
+                .id(url.absoluteString)
             } else {
                 placeholder
             }

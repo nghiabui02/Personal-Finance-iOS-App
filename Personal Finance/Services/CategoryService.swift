@@ -36,4 +36,24 @@ final class CategoryService {
         ctx.delete(cat)
         try ctx.save()
     }
+
+    func sync(in ctx: ModelContext) async throws {
+        let userId = try await client.auth.session.user.id
+        let remotes: [RemoteCategory] = try await client
+            .from("categories")
+            .select()
+            .or("user_id.is.null,user_id.eq.\(userId.uuidString)")
+            .execute().value
+        let ids = remotes.map { $0.id }
+        let desc = FetchDescriptor<LocalCategory>(
+            predicate: #Predicate<LocalCategory> { ids.contains($0.serverId) }
+        )
+        let existing = (try? ctx.fetch(desc)) ?? []
+        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for r in remotes {
+            if let local = map[r.id] { local.update(from: r) }
+            else { ctx.insert(LocalCategory(from: r)) }
+        }
+        try ctx.save()
+    }
 }

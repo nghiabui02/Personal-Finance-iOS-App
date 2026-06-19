@@ -128,6 +128,6 @@ final class AuthViewModel: ObservableObject {
             // Keep going so the avatar disappears from the app even if storage cleanup fails.
             print("[AuthViewModel] avatar delete storage cleanup failed: \(error)")
         }
-        currentUser = try await auth.update(user: UserAttributes(data: ["avatar_url": .string("")]))
+        currentUser = try await auth.update(user: UserAttributes(data: ["avatar_url": .null]))
     }
 }
