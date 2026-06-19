@@ -4,6 +4,7 @@ import SwiftData
 struct SavingGoalsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalSavingGoal.name) private var goals: [LocalSavingGoal]
+    @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
     @State private var editing: LocalSavingGoal?
@@ -25,30 +26,31 @@ struct SavingGoalsView: View {
                 .pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
                 .background(Color(.systemGroupedBackground))
 
-                if filtered.isEmpty {
-                    ContentUnavailableView("No Goals", systemImage: "star.circle",
-                        description: Text("Tap + to add a saving goal"))
-                        .frame(maxHeight: .infinity)
-                } else {
-                    List {
-                        ForEach(filtered, id: \.serverId) { goal in
-                            GoalRow(goal: goal)
-                                .onTapGesture { editing = goal }
-                                .swipeActions(edge: .leading) {
-                                    if goal.status == "active" {
-                                        Button { contributing = goal } label: {
-                                            Label("Add", systemImage: "plus.circle")
-                                        }.tint(.green)
-                                    }
+                List {
+                    ForEach(filtered, id: \.serverId) { goal in
+                        GoalRow(goal: goal)
+                            .onTapGesture { editing = goal }
+                            .swipeActions(edge: .leading) {
+                                if goal.status == "active" {
+                                    Button { contributing = goal } label: {
+                                        Label("Add", systemImage: "plus.circle")
+                                    }.tint(.green)
                                 }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        Task { await delete(goal) }
-                                    } label: { Label("Delete", systemImage: "trash") }
-                                }
-                        }
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    Task { await delete(goal) }
+                                } label: { Label("Delete", systemImage: "trash") }
+                            }
                     }
-                    .listStyle(.insetGrouped)
+                }
+                .listStyle(.insetGrouped)
+                .refreshable { await sync.syncAll(modelContext: modelContext) }
+                .overlay {
+                    if filtered.isEmpty {
+                        ContentUnavailableView("No Goals", systemImage: "star.circle",
+                            description: Text("Tap + to add a saving goal"))
+                    }
                 }
             }
             .background(Color(.systemGroupedBackground))

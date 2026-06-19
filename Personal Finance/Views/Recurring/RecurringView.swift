@@ -5,29 +5,30 @@ struct RecurringView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalRecurringTransaction.amount, order: .reverse) private var recurring: [LocalRecurringTransaction]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
+    @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
     @State private var editing: LocalRecurringTransaction?
     @State private var errorMsg: String?
 
     var body: some View {
-        Group {
+        List {
+                ForEach(recurring, id: \.serverId) { rec in
+                    RecurringRow(rec: rec)
+                        .onTapGesture { editing = rec }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                Task { await delete(rec) }
+                            } label: { Label("Delete", systemImage: "trash") }
+                        }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .refreshable { await sync.syncAll(modelContext: modelContext) }
+            .overlay {
                 if recurring.isEmpty {
                     ContentUnavailableView("No Recurring", systemImage: "arrow.clockwise.circle",
                         description: Text("Tap + to set up a recurring transaction"))
-                } else {
-                    List {
-                        ForEach(recurring, id: \.serverId) { rec in
-                            RecurringRow(rec: rec)
-                                .onTapGesture { editing = rec }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        Task { await delete(rec) }
-                                    } label: { Label("Delete", systemImage: "trash") }
-                                }
-                        }
-                    }
-                    .listStyle(.insetGrouped)
                 }
             }
             .navigationTitle("Recurring")

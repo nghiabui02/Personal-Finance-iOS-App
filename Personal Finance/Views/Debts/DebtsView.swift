@@ -5,6 +5,7 @@ struct DebtsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalDebt.personName) private var allDebts: [LocalDebt]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
+    @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
     @State private var editing: LocalDebt?
@@ -35,40 +36,41 @@ struct DebtsView: View {
                 .padding(.horizontal).padding(.vertical, 8)
                 .background(Color(.systemGroupedBackground))
 
-                if filtered.isEmpty {
-                    ContentUnavailableView("No Debts", systemImage: "dollarsign.circle",
-                        description: Text("Tap + to add a debt record"))
-                        .frame(maxHeight: .infinity)
-                } else {
-                    List {
-                        if !active.isEmpty {
-                            Section("Active") {
-                                ForEach(active, id: \.serverId) { debt in
-                                    DebtRow(debt: debt)
-                                        .onTapGesture { editing = debt }
-                                        .swipeActions(edge: .leading) {
-                                            Button {
-                                                payingDebt = debt
-                                            } label: { Label("Pay", systemImage: "checkmark.circle") }
-                                            .tint(.green)
-                                        }
-                                        .swipeActions(edge: .trailing) {
-                                            Button(role: .destructive) {
-                                                Task { await delete(debt) }
-                                            } label: { Label("Delete", systemImage: "trash") }
-                                        }
-                                }
-                            }
-                        }
-                        if !completed.isEmpty {
-                            Section("Completed") {
-                                ForEach(completed, id: \.serverId) { debt in
-                                    DebtRow(debt: debt)
-                                }
+                List {
+                    if !active.isEmpty {
+                        Section("Active") {
+                            ForEach(active, id: \.serverId) { debt in
+                                DebtRow(debt: debt)
+                                    .onTapGesture { editing = debt }
+                                    .swipeActions(edge: .leading) {
+                                        Button {
+                                            payingDebt = debt
+                                        } label: { Label("Pay", systemImage: "checkmark.circle") }
+                                        .tint(.green)
+                                    }
+                                    .swipeActions(edge: .trailing) {
+                                        Button(role: .destructive) {
+                                            Task { await delete(debt) }
+                                        } label: { Label("Delete", systemImage: "trash") }
+                                    }
                             }
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    if !completed.isEmpty {
+                        Section("Completed") {
+                            ForEach(completed, id: \.serverId) { debt in
+                                DebtRow(debt: debt)
+                            }
+                        }
+                    }
+                }
+                .listStyle(.insetGrouped)
+                .refreshable { await sync.syncAll(modelContext: modelContext) }
+                .overlay {
+                    if filtered.isEmpty {
+                        ContentUnavailableView("No Debts", systemImage: "dollarsign.circle",
+                            description: Text("Tap + to add a debt record"))
+                    }
                 }
             }
             .background(Color(.systemGroupedBackground))

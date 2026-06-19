@@ -4,12 +4,12 @@ import SwiftData
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
+    @StateObject private var sync = SyncManager.shared
 
     @State private var selectedType = "expense"
     @State private var showAdd = false
     @State private var editing: LocalCategory?
     @State private var errorMsg: String?
-    @State private var isSyncing = false
 
     private var filtered: [LocalCategory] { categories.filter { $0.type == selectedType } }
     private var customCategories: [LocalCategory] { filtered.filter { !$0.isDefault } }
@@ -47,7 +47,7 @@ struct CategoriesView: View {
                     }
                 }
 
-                if filtered.isEmpty && !isSyncing {
+                if filtered.isEmpty && !sync.isSyncing {
                     ContentUnavailableView(
                         "No Categories",
                         systemImage: "tag",
@@ -63,29 +63,18 @@ struct CategoriesView: View {
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if isSyncing {
+                if sync.isSyncing {
                     ProgressView().scaleEffect(0.8)
                 } else {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
                 }
             }
         }
-        .refreshable { await syncCategories() }
-        .onAppear { Task { await syncCategories() } }
+        .refreshable { await sync.syncAll(modelContext: modelContext) }
+        .onAppear { Task { @MainActor in await sync.syncAll(modelContext: modelContext) } }
         .sheet(isPresented: $showAdd) { AddEditCategoryView(category: nil) }
         .sheet(item: $editing) { cat in AddEditCategoryView(category: cat) }
         .errorAlert($errorMsg)
-    }
-
-    private func syncCategories() async {
-        guard !isSyncing else { return }
-        isSyncing = true
-        defer { isSyncing = false }
-        do {
-            try await CategoryService.shared.sync(in: modelContext)
-        } catch {
-            errorMsg = error.localizedDescription
-        }
     }
 
     private func delete(_ cat: LocalCategory) async {

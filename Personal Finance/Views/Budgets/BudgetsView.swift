@@ -5,6 +5,7 @@ struct BudgetsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allBudgets: [LocalBudget]
     @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
+    @StateObject private var sync = SyncManager.shared
 
     @State private var selectedMonth: Date = Calendar.current.date(
         from: Calendar.current.dateComponents([.year, .month], from: Date()))!
@@ -22,24 +23,25 @@ struct BudgetsView: View {
                     .padding(.horizontal).padding(.vertical, 8)
                     .background(Color(.systemBackground))
 
-                if cachedBudgets.isEmpty {
-                    ContentUnavailableView("No Budgets", systemImage: "chart.bar",
-                        description: Text("Tap + to add a budget for this month"))
-                        .frame(maxHeight: .infinity)
-                } else {
-                    List {
-                        ForEach(cachedBudgets, id: \.serverId) { budget in
-                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                            BudgetRow(budget: budget, spent: spent)
-                                .onTapGesture { editing = budget }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        Task { await delete(budget) }
-                                    } label: { Label("Delete", systemImage: "trash") }
-                                }
-                        }
+                List {
+                    ForEach(cachedBudgets, id: \.serverId) { budget in
+                        let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                        BudgetRow(budget: budget, spent: spent)
+                            .onTapGesture { editing = budget }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    Task { await delete(budget) }
+                                } label: { Label("Delete", systemImage: "trash") }
+                            }
                     }
-                    .listStyle(.insetGrouped)
+                }
+                .listStyle(.insetGrouped)
+                .refreshable { await sync.syncAll(modelContext: modelContext) }
+                .overlay {
+                    if cachedBudgets.isEmpty {
+                        ContentUnavailableView("No Budgets", systemImage: "chart.bar",
+                            description: Text("Tap + to add a budget for this month"))
+                    }
                 }
             }
             .background(Color(.systemGroupedBackground))

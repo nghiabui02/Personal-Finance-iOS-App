@@ -111,6 +111,7 @@ struct SettingsView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable { await authVM.fetchUser() }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)

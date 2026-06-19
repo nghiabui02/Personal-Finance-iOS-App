@@ -17,10 +17,10 @@ struct TransactionRow: View {
                     Text(icon).font(.system(size: 22))
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(transaction.categoryName ?? (transaction.type == "income" ? "Income" : "Expense"))
+                    Text(transaction.note ?? (transaction.type == "income" ? "Income" : "Expense"))
                         .font(.subheadline).fontWeight(.medium).lineLimit(1)
                     HStack(spacing: 4) {
-                        if let note = transaction.note, !note.isEmpty { Text(note).lineLimit(1); Text("·") }
+                        if let note = transaction.categoryName, !note.isEmpty { Text(note).lineLimit(1); Text("·") }
                         Text(transaction.walletName)
                     }
                     .font(.caption).foregroundColor(.secondary)
