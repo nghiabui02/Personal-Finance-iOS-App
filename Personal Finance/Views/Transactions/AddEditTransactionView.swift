@@ -141,14 +141,7 @@ struct AddEditTransactionView: View {
                     isPresented: $showWalletPicker
                 )
             }
-            .alert("Error", isPresented: Binding(
-                get: { errorMsg != nil },
-                set: { if !$0 { errorMsg = nil } }
-            )) {
-                Button("OK") { errorMsg = nil }
-            } message: {
-                Text(errorMsg ?? "")
-            }
+            .errorAlert($errorMsg)
         }
         .onAppear { prefill() }
     }
@@ -270,7 +263,7 @@ private struct WalletPickerSheet: View {
                             Circle()
                                 .fill((wallet.color.map { Color(hex: $0) } ?? .blue).opacity(0.15))
                                 .frame(width: 36, height: 36)
-                            Text(walletIcon(wallet)).font(.system(size: 18))
+                            Text(wallet.displayIcon).font(.system(size: 18))
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(wallet.name)
@@ -294,17 +287,6 @@ private struct WalletPickerSheet: View {
                     Button("Cancel") { isPresented = false }
                 }
             }
-        }
-    }
-
-    private func walletIcon(_ w: LocalWallet) -> String {
-        if let icon = w.icon, !icon.isEmpty { return icon }
-        switch w.type {
-        case "cash": return "💵"
-        case "bank": return "🏦"
-        case "e_wallet": return "📱"
-        case "investment": return "📈"
-        default: return "💼"
         }
     }
 }

@@ -56,9 +56,7 @@ struct BudgetsView: View {
             .onChange(of: selectedMonth) { _, _ in recompute() }
             .sheet(isPresented: $showAdd) { AddEditBudgetView(budget: nil, defaultMonth: selectedMonth) }
             .sheet(item: $editing) { b in AddEditBudgetView(budget: b, defaultMonth: selectedMonth) }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
     }
 
     // Single pass: filter budgets + compute spent — O(n_budgets + n_transactions)

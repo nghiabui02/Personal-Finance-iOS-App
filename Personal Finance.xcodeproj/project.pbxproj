@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36263D7531F4F4D9D014689 /* View+Helpers.swift */; };
+		0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2150573043CA45CB8F2F1630 /* StatusBadge.swift */; };
 		09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66976D0D1557A6ADFDEF5959 /* SettingsView.swift */; };
 		0F19CA358E96463CCDAEFFE7 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06AD3FC8ECF4136D90326F37 /* MonthCalendarView.swift */; };
 		11BE23FD160D549CBC22AC97 /* AddEditTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C18ED1919F0D6A302F10ED5 /* AddEditTransactionView.swift */; };
@@ -84,6 +86,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E36263D7531F4F4D9D014689 /* View+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Helpers.swift"; sourceTree = "<group>"; };
+		2150573043CA45CB8F2F1630 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		0003CC3E2DD2C23136CD5DF6 /* TransactionPaginationSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionPaginationSection.swift; sourceTree = "<group>"; };
 		0121FE993DAE0AD28005418E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		06AD3FC8ECF4136D90326F37 /* MonthCalendarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MonthCalendarView.swift; sourceTree = "<group>"; };
@@ -224,6 +228,7 @@
 			children = (
 				F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */,
 				884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */,
+				2150573043CA45CB8F2F1630 /* StatusBadge.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -364,6 +369,7 @@
 			children = (
 				A1C7C65870795A95A26C83C0 /* Color+Hex.swift */,
 				372B7BE7C7BC974EF1F4D121 /* Double+Currency.swift */,
+				E36263D7531F4F4D9D014689 /* View+Helpers.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -603,6 +609,8 @@
 				3BA7E5DBD691BD2837E03BD6 /* TransactionRow.swift in Sources */,
 				F0E57EBC59406BFBC97F1F77 /* TxStatBox.swift in Sources */,
 				CA2DFA5FC50279A2E37C68C8 /* WeekSelectorView.swift in Sources */,
+				F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */,
+				0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -84,9 +84,7 @@ struct DebtsView: View {
             .sheet(item: $payingDebt) { d in
                 DebtPaymentSheet(debt: d, wallets: wallets)
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
     }
 
     private func delete(_ debt: LocalDebt) async {
@@ -157,12 +155,7 @@ private struct DebtRow: View {
         case "overdue": ("Overdue", .red)
         default: ("Active", .blue)
         }
-        Text(label)
-            .font(.caption2).fontWeight(.medium)
-            .foregroundColor(color)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(color.opacity(0.12))
-            .cornerRadius(4)
+        StatusBadge(label: label, color: color)
     }
 }
 
@@ -219,9 +212,7 @@ struct DebtPaymentSheet: View {
                     }
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
         .onAppear { }
     }

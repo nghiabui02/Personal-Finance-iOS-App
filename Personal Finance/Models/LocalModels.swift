@@ -29,6 +29,27 @@ final class LocalWallet {
         isDefault = r.isDefault; color = r.color; icon = r.icon
         updatedAt = r.updatedAt
     }
+
+    var displayIcon: String {
+        if let icon, !icon.isEmpty { return icon }
+        switch type {
+        case "cash": return "💵"
+        case "bank": return "🏦"
+        case "e_wallet": return "📱"
+        case "investment": return "📈"
+        default: return "💼"
+        }
+    }
+
+    var typeLabel: String {
+        switch type {
+        case "cash": return "Cash"
+        case "bank": return "Bank"
+        case "e_wallet": return "E-Wallet"
+        case "investment": return "Investment"
+        default: return "Other"
+        }
+    }
 }
 
 @Model

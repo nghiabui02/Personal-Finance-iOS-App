@@ -160,11 +160,7 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
-        .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-            Button("OK") { errorMsg = nil }
-        } message: {
-            Text(errorMsg ?? "")
-        }
+        .errorAlert($errorMsg)
     }
 
     // MARK: - Helpers
@@ -308,9 +304,7 @@ struct ChangePasswordSheet: View {
                     }
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
     }
 
@@ -369,9 +363,7 @@ struct EditFieldSheet: View {
                     }
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
         .onAppear { value = currentValue }
     }

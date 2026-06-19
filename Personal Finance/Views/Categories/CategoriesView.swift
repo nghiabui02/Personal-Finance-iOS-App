@@ -74,9 +74,7 @@ struct CategoriesView: View {
         .onAppear { Task { await syncCategories() } }
         .sheet(isPresented: $showAdd) { AddEditCategoryView(category: nil) }
         .sheet(item: $editing) { cat in AddEditCategoryView(category: cat) }
-        .alert("Error", isPresented: Binding(
-            get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } }
-        )) { Button("OK") { errorMsg = nil } } message: { Text(errorMsg ?? "") }
+        .errorAlert($errorMsg)
     }
 
     private func syncCategories() async {

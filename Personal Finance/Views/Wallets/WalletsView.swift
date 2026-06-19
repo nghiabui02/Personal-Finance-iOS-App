@@ -72,14 +72,7 @@ struct WalletsView: View {
             .sheet(item: $editing) { w in
                 AddEditWalletView(wallet: w)
             }
-            .alert("Error", isPresented: Binding(
-                get: { errorMsg != nil },
-                set: { if !$0 { errorMsg = nil } }
-            )) {
-                Button("OK") { errorMsg = nil }
-            } message: {
-                Text(errorMsg ?? "")
-            }
+            .errorAlert($errorMsg)
         }
     }
 
@@ -97,27 +90,6 @@ struct WalletsView: View {
 struct WalletRow: View {
     let wallet: LocalWallet
 
-    var typeIcon: String {
-        guard wallet.icon == nil || wallet.icon!.isEmpty else { return wallet.icon! }
-        switch wallet.type {
-        case "cash":       return "💵"
-        case "bank":       return "🏦"
-        case "e_wallet":   return "📱"
-        case "investment": return "📈"
-        default:           return "💼"
-        }
-    }
-
-    var typeLabel: String {
-        switch wallet.type {
-        case "cash":       return "Cash"
-        case "bank":       return "Bank"
-        case "e_wallet":   return "E-Wallet"
-        case "investment": return "Investment"
-        default:           return "Other"
-        }
-    }
-
     var accentColor: Color {
         wallet.color.map { Color(hex: $0) } ?? .blue
     }
@@ -128,7 +100,7 @@ struct WalletRow: View {
                 Circle()
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 44, height: 44)
-                Text(typeIcon).font(.system(size: 22))
+                Text(wallet.displayIcon).font(.system(size: 22))
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -136,15 +108,10 @@ struct WalletRow: View {
                     Text(wallet.name)
                         .font(.subheadline).fontWeight(.medium)
                     if wallet.isDefault {
-                        Text("Default")
-                            .font(.caption2)
-                            .padding(.horizontal, 5).padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.12))
-                            .foregroundColor(.blue)
-                            .cornerRadius(4)
+                        StatusBadge(label: "Default", color: .blue)
                     }
                 }
-                Text(typeLabel)
+                Text(wallet.typeLabel)
                     .font(.caption).foregroundColor(.secondary)
             }
 

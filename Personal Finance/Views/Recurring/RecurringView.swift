@@ -39,9 +39,7 @@ struct RecurringView: View {
             }
             .sheet(isPresented: $showAdd) { AddEditRecurringView(recurring: nil) }
             .sheet(item: $editing) { r in AddEditRecurringView(recurring: r) }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
     }
 
     private func delete(_ rec: LocalRecurringTransaction) async {

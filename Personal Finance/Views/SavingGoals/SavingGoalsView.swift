@@ -62,9 +62,7 @@ struct SavingGoalsView: View {
             .sheet(isPresented: $showAdd) { AddEditSavingGoalView(goal: nil) }
             .sheet(item: $editing) { g in AddEditSavingGoalView(goal: g) }
             .sheet(item: $contributing) { g in ContributionSheet(goal: g) }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
     }
 
     private func delete(_ goal: LocalSavingGoal) async {
@@ -160,9 +158,7 @@ struct ContributionSheet: View {
                     }
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
     }
 

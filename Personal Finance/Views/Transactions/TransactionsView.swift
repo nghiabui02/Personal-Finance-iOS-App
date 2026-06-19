@@ -133,9 +133,7 @@ struct TransactionsView: View {
                 AddEditTransactionView(transaction: nil, defaultDate: selectedDate)
             }
             .sheet(item: $editing) { tx in AddEditTransactionView(transaction: tx) }
-            .alert("Error", isPresented: Binding(
-                get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } }
-            )) { Button("OK") { errorMsg = nil } } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
     }
 

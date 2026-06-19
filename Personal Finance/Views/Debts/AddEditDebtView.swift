@@ -101,9 +101,7 @@ struct AddEditDebtView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
-                Button("OK") { errorMsg = nil }
-            } message: { Text(errorMsg ?? "") }
+            .errorAlert($errorMsg)
         }
         .onAppear {
             if let d = debt {
