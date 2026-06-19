@@ -46,12 +46,13 @@ struct DashboardView: View {
                         .padding(.horizontal)
                     }
 
-                    // Stat cards
-                    HStack(spacing: 10) {
-                        StatCardView(title: "Income",  amount: monthlyIncome,  color: .income,  icon: "arrow.down.circle.fill", currency: primaryCurrency)
-                        StatCardView(title: "Expenses", amount: monthlyExpense, color: .expense, icon: "arrow.up.circle.fill",   currency: primaryCurrency)
-                        StatCardView(title: "Balance",  amount: netBalance,    color: netBalance >= 0 ? .blue : .expense, icon: "equal.circle.fill", currency: primaryCurrency)
-                    }
+                    // Overview card
+                    OverviewCard(
+                        netBalance: netBalance,
+                        income: monthlyIncome,
+                        expense: monthlyExpense,
+                        currency: primaryCurrency
+                    )
                     .padding(.horizontal)
 
                     // Spending chart
@@ -83,7 +84,7 @@ struct DashboardView: View {
                                     }
                                 }
                             }
-                            .background(Color(.systemBackground))
+                            .background(Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                             .padding(.horizontal)
                         }
@@ -208,29 +209,60 @@ struct DashboardView: View {
     }
 }
 
-// Compact stat card (3 in a row)
-private struct StatCardView: View {
-    let title: String
-    let amount: Double
-    let color: Color
-    let icon: String
+private struct OverviewCard: View {
+    let netBalance: Double
+    let income: Double
+    let expense: Double
     let currency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: icon).foregroundColor(color).font(.caption)
-                Text(title).font(.caption).foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("NET BALANCE")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+                Text(netBalance.formatted(currency: currency))
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                    .foregroundColor(netBalance >= 0 ? .income : .expense)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
             }
-            Text(amount.formatted(currency: currency))
-                .font(.system(.subheadline, design: .rounded))
-                .fontWeight(.semibold)
-                .foregroundColor(color)
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
+            .padding()
+
+            Divider()
+
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("INCOME")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .tracking(1)
+                    Text("+\(income.formatted(currency: currency))")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.income)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("EXPENSE")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .tracking(1)
+                    Text(expense.formatted(currency: currency))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.expense)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .cardBackground()
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }

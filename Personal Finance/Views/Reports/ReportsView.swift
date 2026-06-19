@@ -48,7 +48,7 @@ struct ReportsView: View {
                         }}}
                         .frame(height: 200)
                         .padding()
-                        .background(Color(.systemBackground))
+                        .background(Color(.secondarySystemGroupedBackground))
                         .cornerRadius(12)
                         .padding(.horizontal)
                     }
@@ -74,7 +74,7 @@ struct ReportsView: View {
                                     if item.id != items.last?.id { Divider().padding(.leading, 56) }
                                 }
                             }
-                            .background(Color(.systemBackground))
+                            .background(Color(.secondarySystemGroupedBackground))
                             .cornerRadius(12)
                             .padding(.horizontal)
                         }

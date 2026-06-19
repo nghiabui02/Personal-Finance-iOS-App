@@ -23,7 +23,7 @@ extension Color {
 extension View {
     func cardBackground(cornerRadius: CGFloat = 12) -> some View {
         self
-            .background(Color(.systemBackground))
+            .background(Color(.secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)

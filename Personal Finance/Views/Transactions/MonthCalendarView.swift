@@ -102,7 +102,7 @@ struct MonthCalendarView: View {
             }
             .padding(.bottom, 10)
         }
-        .background(Color(.systemBackground))
+        .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(14)
     }
 
@@ -134,14 +134,14 @@ private struct CalendarDayCell: View {
         Button(action: onTap) {
             VStack(spacing: 1) {
                 ZStack {
-                    if isSelected {
-                        Circle().fill(Color.primary).frame(width: 30, height: 30)
-                    } else if isToday {
+                    if isToday {
                         Circle().fill(Color.blue).frame(width: 30, height: 30)
+                    } else if isSelected {
+                        Circle().fill(Color(.label)).frame(width: 30, height: 30)
                     }
                     Text("\(day)")
                         .font(.subheadline)
-                        .foregroundColor(isSelected || isToday ? .white : .primary)
+                        .foregroundColor(isToday ? .white : isSelected ? Color(.systemBackground) : .primary)
                 }
                 .frame(height: 30)
 

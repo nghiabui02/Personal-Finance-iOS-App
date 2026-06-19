@@ -43,7 +43,7 @@ struct TransactionListSection: View {
                                     bottomTrailingRadius: idx == txs.count - 1 ? 12 : 0,
                                     topTrailingRadius:    idx == 0              ? 12 : 0
                                 )
-                                .fill(Color(.systemBackground))
+                                .fill(Color(.secondarySystemGroupedBackground))
                                 .padding(.horizontal, 16)
                             )
                     }

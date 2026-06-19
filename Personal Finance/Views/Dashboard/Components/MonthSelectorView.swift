@@ -13,25 +13,24 @@ struct MonthSelectorView: View {
         HStack(spacing: 16) {
             Button { changeMonth(by: -1) } label: {
                 Image(systemName: "chevron.left")
-                    .fontWeight(.semibold)
+                    .font(.title3.weight(.semibold))
                     .foregroundColor(.primary)
             }
 
             Button { showPicker = true } label: {
                 Text(selectedMonth.formatted(.dateTime.month(.wide).year()))
-                    .font(.headline)
-                    .frame(minWidth: 160)
+                    .font(.title.weight(.bold))
                     .foregroundColor(.primary)
             }
 
             Button { changeMonth(by: 1) } label: {
                 Image(systemName: "chevron.right")
-                    .fontWeight(.semibold)
+                    .font(.title3.weight(.semibold))
                     .foregroundColor(isCurrentMonth ? .secondary : .primary)
             }
             .disabled(isCurrentMonth)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
         .sheet(isPresented: $showPicker) {
             MonthYearPickerSheet(selectedMonth: $selectedMonth, isPresented: $showPicker)
         }

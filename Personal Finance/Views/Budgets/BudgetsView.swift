@@ -21,7 +21,7 @@ struct BudgetsView: View {
         VStack(spacing: 0) {
                 MonthSelectorView(selectedMonth: $selectedMonth)
                     .padding(.horizontal).padding(.vertical, 8)
-                    .background(Color(.systemBackground))
+                    .background(Color(.secondarySystemGroupedBackground))
 
                 List {
                     ForEach(cachedBudgets, id: \.serverId) { budget in
