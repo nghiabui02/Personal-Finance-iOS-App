@@ -98,6 +98,12 @@ final class AuthViewModel: ObservableObject {
         currentUser = try await auth.update(user: UserAttributes(phone: phone))
     }
 
+    func updatePassword(currentPassword: String, newPassword: String) async throws {
+        isUpdating = true; defer { isUpdating = false }
+        try await auth.signIn(email: userEmail, password: currentPassword)
+        try await auth.update(user: UserAttributes(password: newPassword))
+    }
+
     // MARK: - Avatar
 
     func uploadAvatar(_ imageData: Data) async throws {

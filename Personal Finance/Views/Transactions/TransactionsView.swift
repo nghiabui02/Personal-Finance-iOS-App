@@ -166,9 +166,9 @@ struct TransactionsView: View {
         dailyData = [:]; selectedDate = nil
         serverPage = 0; hasMore = true
         Task {
-            async let totals = fetchPeriodTotals()
-            async let more = loadMore()
-            _ = try? await (totals, more)
+            async let totals: Void = fetchPeriodTotals()
+            async let more: Void = loadMore()
+            _ = await (totals, more)
         }
     }
 

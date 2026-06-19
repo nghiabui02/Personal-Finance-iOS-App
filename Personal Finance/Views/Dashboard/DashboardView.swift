@@ -120,14 +120,14 @@ struct DashboardView: View {
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear {
                 recompute()
-                Task { await sync.syncAll(modelContext: modelContext) }
+                Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
             }
             .onChange(of: allTransactions) { _, _ in recompute() }
             .onChange(of: allBudgets)      { _, _ in recompute() }
             .onChange(of: selectedMonth)   { _, _ in recompute() }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
-                    Task { await sync.syncAll(modelContext: modelContext) }
+                    Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
                 }
             }
             .onAppear {
@@ -136,7 +136,7 @@ struct DashboardView: View {
                     object: nil,
                     queue: .main
                 ) { _ in
-                    Task { await sync.syncAll(modelContext: modelContext) }
+                    Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
                 }
             }
             .onDisappear {

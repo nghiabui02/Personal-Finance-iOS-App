@@ -27,7 +27,7 @@ struct AddEditSavingGoalView: View {
                     }
                     HStack {
                         Text("Name")
-                        TextField("e.g. New Car", text: $name).multilineTextAlignment(.trailing)
+                        TextField("e.g. New Car", text: $name)
                     }
                     HStack {
                         Text("Target Amount")

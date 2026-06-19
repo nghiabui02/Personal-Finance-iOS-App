@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var showEditName = false
     @State private var showEditEmail = false
     @State private var showEditPhone = false
+    @State private var showChangePassword = false
     @State private var showSignOutConfirm = false
     @State private var photoItem: PhotosPickerItem?
     @State private var errorMsg: String?
@@ -59,6 +60,10 @@ struct SettingsView: View {
                     settingRow(icon: "phone.fill", color: .green, title: "Phone",
                                value: authVM.userPhone.isEmpty ? "Not set" : authVM.userPhone) {
                         showEditPhone = true
+                    }
+                    settingRow(icon: "lock.fill", color: .purple, title: "Password",
+                               value: "••••••••") {
+                        showChangePassword = true
                     }
                 }
 
@@ -133,6 +138,10 @@ struct SettingsView: View {
             ) { newValue in
                 try await authVM.updateEmail(newValue)
             }
+        }
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordSheet()
+                .environmentObject(authVM)
         }
         .sheet(isPresented: $showEditPhone) {
             EditFieldSheet(
@@ -251,6 +260,72 @@ enum TextFieldKeyboardType {
         }
     }
 }
+
+// MARK: - Change Password Sheet
+
+struct ChangePasswordSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
+
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isSaving = false
+    @State private var errorMsg: String?
+
+    private var passwordsMatch: Bool { newPassword == confirmPassword }
+    private var isValid: Bool {
+        !currentPassword.isEmpty && newPassword.count >= 6 && passwordsMatch
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Current Password") {
+                    SecureField("Enter current password", text: $currentPassword)
+                }
+                Section("New Password") {
+                    SecureField("New password (min. 6 characters)", text: $newPassword)
+                    SecureField("Confirm new password", text: $confirmPassword)
+                }
+                if !confirmPassword.isEmpty && !passwordsMatch {
+                    Section {
+                        Text("Passwords do not match")
+                            .font(.caption).foregroundColor(.red)
+                    }
+                }
+            }
+            .formKeyboardHandling()
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving { ProgressView().scaleEffect(0.8) }
+                    else {
+                        Button("Save") { Task { await save() } }
+                            .disabled(!isValid)
+                    }
+                }
+            }
+            .alert("Error", isPresented: Binding(get: { errorMsg != nil }, set: { if !$0 { errorMsg = nil } })) {
+                Button("OK") { errorMsg = nil }
+            } message: { Text(errorMsg ?? "") }
+        }
+    }
+
+    private func save() async {
+        isSaving = true; defer { isSaving = false }
+        do {
+            try await authVM.updatePassword(currentPassword: currentPassword, newPassword: newPassword)
+            dismiss()
+        } catch {
+            errorMsg = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Edit Field Sheet
 
 struct EditFieldSheet: View {
     @Environment(\.dismiss) private var dismiss

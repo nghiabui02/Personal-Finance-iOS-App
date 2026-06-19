@@ -98,36 +98,56 @@ struct DebtsView: View {
 private struct DebtRow: View {
     let debt: LocalDebt
 
+    private var paidAmount: Double { debt.amount - debt.remainingAmount }
+    private var progress: Double { debt.amount > 0 ? max(0, min(1, paidAmount / debt.amount)) : 0 }
+    private var accentColor: Color { debt.type == "lend" ? .lend : .borrow }
+
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(debt.type == "lend" ? Color.lend.opacity(0.12) : Color.borrow.opacity(0.12))
-                    .frame(width: 44, height: 44)
-                Image(systemName: debt.type == "lend" ? "arrow.up.right" : "arrow.down.left")
-                    .foregroundColor(debt.type == "lend" ? .lend : .borrow)
-                    .font(.system(size: 18, weight: .semibold))
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(debt.personName).fontWeight(.medium)
-                HStack(spacing: 4) {
-                    Text(debt.type == "lend" ? "Lent" : "Borrowed")
-                    if let due = debt.dueDate {
-                        Text("·")
-                        Text("Due \(due.formatted(.dateTime.month(.abbreviated).day()))")
-                    }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.12))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: debt.type == "lend" ? "arrow.up.right" : "arrow.down.left")
+                        .foregroundColor(accentColor)
+                        .font(.system(size: 18, weight: .semibold))
                 }
-                .font(.caption).foregroundColor(.secondary)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(debt.remainingAmount.formatted(currency: "VND"))
-                    .fontWeight(.semibold)
-                    .foregroundColor(debt.status == "completed" ? .secondary : .primary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(debt.personName).fontWeight(.medium)
+                    HStack(spacing: 4) {
+                        Text(debt.type == "lend" ? "Lent" : "Borrowed")
+                        if let due = debt.dueDate {
+                            Text("·")
+                            Text("Due \(due.formatted(.dateTime.month(.abbreviated).day()))")
+                                .foregroundColor(debt.status == "overdue" ? .red : .secondary)
+                        }
+                    }
+                    .font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
                 statusBadge
             }
+
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Paid \(paidAmount.formatted(currency: "VND"))")
+                        .font(.caption).foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(debt.remainingAmount.formatted(currency: "VND")) left")
+                        .font(.caption).fontWeight(.medium)
+                        .foregroundColor(debt.status == "completed" ? .secondary : .primary)
+                }
+                ProgressView(value: progress)
+                    .tint(accentColor)
+                HStack {
+                    Spacer()
+                    Text("of \(debt.amount.formatted(currency: "VND"))")
+                        .font(.caption2).foregroundColor(.secondary)
+                }
+            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -203,10 +223,7 @@ struct DebtPaymentSheet: View {
                 Button("OK") { errorMsg = nil }
             } message: { Text(errorMsg ?? "") }
         }
-        .onAppear {
-            amount = debt.remainingAmount
-            amountText = debt.remainingAmount.formattedDecimal()
-        }
+        .onAppear { }
     }
 
     private func pay() async {

@@ -34,7 +34,6 @@ struct AddEditCategoryView: View {
                     HStack {
                         Text("Name")
                         TextField("e.g. Food", text: $name)
-                            .multilineTextAlignment(.trailing)
                     }
                     HStack {
                         Text("Color")

@@ -60,11 +60,11 @@ struct AddEditDebtView: View {
                 Section("Person") {
                     HStack {
                         Text("Name")
-                        TextField("Person name", text: $personName).multilineTextAlignment(.trailing)
+                        TextField("Person name", text: $personName)
                     }
                     HStack {
                         Text("Contact")
-                        TextField("Phone / email (optional)", text: $personContact).multilineTextAlignment(.trailing)
+                        TextField("Phone / email (optional)", text: $personContact)
                     }
                 }
 
