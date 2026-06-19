@@ -108,7 +108,7 @@ final class AuthViewModel: ObservableObject {
 
     func uploadAvatar(_ imageData: Data) async throws {
         isUpdating = true; defer { isUpdating = false }
-        let userId = try await auth.session.user.id.uuidString
+        let userId = try await auth.session.user.id.uuidString.lowercased()
         let bucket = AppConfig.supabaseAvatarBucket
         let path = "\(userId)/avatar.jpg"
         try await storage.from(bucket).upload(
@@ -126,7 +126,7 @@ final class AuthViewModel: ObservableObject {
 
     func deleteAvatar() async throws {
         isUpdating = true; defer { isUpdating = false }
-        let userId = try await auth.session.user.id.uuidString
+        let userId = try await auth.session.user.id.uuidString.lowercased()
         let bucket = AppConfig.supabaseAvatarBucket
         do {
             _ = try await storage.from(bucket).remove(paths: ["\(userId)/avatar.jpg"])
