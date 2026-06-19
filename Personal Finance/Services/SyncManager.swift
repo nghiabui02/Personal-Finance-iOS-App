@@ -53,13 +53,13 @@ final class SyncManager: ObservableObject {
             upsertWallets(wallets, in: modelContext)
             upsertCategories(categories, in: modelContext)
 
-            let txSince  = Calendar.current.date(byAdding: .month, value: -3, to: Date())!
+            let txSince  = Calendar.current.date(byAdding: .month, value: -12, to: Date())!
             let budSince = Calendar.current.date(
                 from: Calendar.current.dateComponents([.year, .month],
-                    from: Calendar.current.date(byAdding: .month, value: -2, to: Date())!))!
+                    from: Calendar.current.date(byAdding: .month, value: -12, to: Date())!))!
 
-            async let txTask = fetchTransactions(months: 3)
-            async let budgetsTask = fetchBudgets(months: 2)
+            async let txTask = fetchTransactions(userId: userId, months: 12)
+            async let budgetsTask = fetchBudgets(months: 12)
             async let debtsTask: [RemoteDebt] = client.from("debts").select().execute().value
             async let goalsTask: [RemoteSavingGoal] = client.from("saving_goals").select().execute().value
             async let recurringTask: [RemoteRecurringTransaction] = client
@@ -92,11 +92,12 @@ final class SyncManager: ObservableObject {
 
     // MARK: - Remote fetch
 
-    private func fetchTransactions(months: Int) async throws -> [RemoteTransaction] {
+    private func fetchTransactions(userId: UUID, months: Int) async throws -> [RemoteTransaction] {
         let since = Calendar.current.date(byAdding: .month, value: -months, to: Date())!
         return try await client
             .from("transactions")
             .select("*, categories(id, name, icon, color), wallets(id, name)")
+            .eq("user_id", value: userId)
             .gte("transaction_date", value: dateFormatter.string(from: since))
             .order("transaction_date", ascending: false)
             .execute()
@@ -147,11 +148,15 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertTransactions(_ remotes: [RemoteTransaction], since: Date, in ctx: ModelContext) {
+        let remoteIds = Set(remotes.map { $0.id })
         let desc = FetchDescriptor<LocalTransaction>(
             predicate: #Predicate<LocalTransaction> { $0.transactionDate >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for local in existing where !remoteIds.contains(local.serverId) {
+            ctx.delete(local)
+        }
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
             else { ctx.insert(LocalTransaction(from: r)) }
@@ -159,11 +164,15 @@ final class SyncManager: ObservableObject {
     }
 
     private func upsertBudgets(_ remotes: [RemoteBudget], since: Date, in ctx: ModelContext) {
+        let remoteIds = Set(remotes.map { $0.id })
         let desc = FetchDescriptor<LocalBudget>(
             predicate: #Predicate<LocalBudget> { $0.month >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        for local in existing where !remoteIds.contains(local.serverId) {
+            ctx.delete(local)
+        }
         for r in remotes {
             if let local = map[r.id] { local.update(from: r) }
             else { ctx.insert(LocalBudget(from: r)) }

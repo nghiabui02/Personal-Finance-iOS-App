@@ -94,7 +94,7 @@ final class LocalTransaction {
         categoryName = r.categories?.name
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
-        type = r.type; amount = r.amount; note = r.note
+        type = r.type.lowercased(); amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
     }
@@ -106,7 +106,7 @@ final class LocalTransaction {
         categoryName = r.categories?.name
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
-        type = r.type; amount = r.amount; note = r.note
+        type = r.type.lowercased(); amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
     }

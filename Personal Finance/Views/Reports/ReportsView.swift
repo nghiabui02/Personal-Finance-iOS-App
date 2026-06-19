@@ -21,6 +21,8 @@ struct ReportsView: View {
     @State private var cachedChartData: [ChartBar] = []
     @State private var cachedBreakdown: [CategoryBreakdown] = []
 
+    @Namespace private var periodAnimation
+
     private var net: Double { cachedIncome - cachedExpense }
 
     private var periodRange: (start: Date, end: Date) {
@@ -111,7 +113,9 @@ struct ReportsView: View {
         HStack(spacing: 4) {
             ForEach(ReportPeriod.allCases, id: \.self) { period in
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { selectedPeriod = period }
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        selectedPeriod = period
+                    }
                 } label: {
                     Text(period.rawValue)
                         .font(.subheadline.weight(selectedPeriod == period ? .semibold : .regular))
@@ -123,6 +127,7 @@ struct ReportsView: View {
                                 if selectedPeriod == period {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(Color(.tertiarySystemGroupedBackground))
+                                        .matchedGeometryEffect(id: "periodTab", in: periodAnimation)
                                 }
                             }
                         )
