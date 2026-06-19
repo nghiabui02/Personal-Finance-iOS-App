@@ -40,6 +40,7 @@ struct RemoteTransaction: Codable, Identifiable {
     let note: String?
     let transactionDate: String       // "YYYY-MM-DD"
     let updatedAt: Date
+    let transferPairId: UUID?
     // Joined via .select("*, categories(...), wallets(...)")
     let categories: CategoryInfo?
     let wallets: WalletInfo?
@@ -62,6 +63,7 @@ struct RemoteTransaction: Codable, Identifiable {
         case categoryId = "category_id"
         case transactionDate = "transaction_date"
         case updatedAt = "updated_at"
+        case transferPairId = "transfer_pair_id"
     }
 }
 

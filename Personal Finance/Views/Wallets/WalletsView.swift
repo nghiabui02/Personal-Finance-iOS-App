@@ -7,6 +7,7 @@ struct WalletsView: View {
     @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
+    @State private var showTransfer = false
     @State private var editing: LocalWallet?
     @State private var errorMsg: String?
 
@@ -61,6 +62,17 @@ struct WalletsView: View {
             .navigationTitle("Wallets")
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if wallets.count >= 2 {
+                        Button {
+                            showTransfer = true
+                        } label: {
+                            Label("Transfer", systemImage: "arrow.left.arrow.right")
+                                .labelStyle(.titleAndIcon)
+                                .font(.subheadline)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
                 }
@@ -71,6 +83,9 @@ struct WalletsView: View {
             }
             .sheet(item: $editing) { w in
                 AddEditWalletView(wallet: w)
+            }
+            .sheet(isPresented: $showTransfer) {
+                TransferSheet(wallets: wallets)
             }
             .errorAlert($errorMsg)
         }

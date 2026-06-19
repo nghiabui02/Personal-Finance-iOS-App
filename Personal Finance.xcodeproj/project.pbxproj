@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1D2E3F4A5B6001122334455 /* TransferService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6001166778899 /* TransferService.swift */; };
+		D2E3F4A5B6C7001122334455 /* TransferSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C7001166778899 /* TransferSheet.swift */; };
 		F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36263D7531F4F4D9D014689 /* View+Helpers.swift */; };
 		0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2150573043CA45CB8F2F1630 /* StatusBadge.swift */; };
 		09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66976D0D1557A6ADFDEF5959 /* SettingsView.swift */; };
@@ -86,6 +88,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C1D2E3F4A5B6001166778899 /* TransferService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferService.swift; sourceTree = "<group>"; };
+		D2E3F4A5B6C7001166778899 /* TransferSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSheet.swift; sourceTree = "<group>"; };
 		E36263D7531F4F4D9D014689 /* View+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Helpers.swift"; sourceTree = "<group>"; };
 		2150573043CA45CB8F2F1630 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		0003CC3E2DD2C23136CD5DF6 /* TransactionPaginationSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionPaginationSection.swift; sourceTree = "<group>"; };
@@ -386,6 +390,7 @@
 				78C0240555C6E44D0B6915A8 /* SyncManager.swift */,
 				7B647D38742EC2C9E4A02C53 /* TransactionService.swift */,
 				E046D095E689988603518CC6 /* WalletService.swift */,
+				C1D2E3F4A5B6001166778899 /* TransferService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -403,6 +408,7 @@
 			children = (
 				AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */,
 				2FE88AAE276CC435181621D2 /* WalletsView.swift */,
+				D2E3F4A5B6C7001166778899 /* TransferSheet.swift */,
 			);
 			path = Wallets;
 			sourceTree = "<group>";
@@ -611,6 +617,8 @@
 				CA2DFA5FC50279A2E37C68C8 /* WeekSelectorView.swift in Sources */,
 				F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */,
 				0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */,
+				C1D2E3F4A5B6001122334455 /* TransferService.swift in Sources */,
+				D2E3F4A5B6C7001122334455 /* TransferSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
