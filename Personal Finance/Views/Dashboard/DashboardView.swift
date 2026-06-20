@@ -122,21 +122,20 @@ struct DashboardView: View {
             .onAppear {
                 recompute()
                 Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
+                guard notificationSubscription == nil else { return }
+                notificationSubscription = NotificationCenter.default.addObserver(
+                    forName: .networkRestored,
+                    object: nil,
+                    queue: .main
+                ) { _ in
+                    Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
+                }
             }
             .onChange(of: allTransactions) { _, _ in recompute() }
             .onChange(of: allBudgets)      { _, _ in recompute() }
             .onChange(of: selectedMonth)   { _, _ in recompute() }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
-                    Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
-                }
-            }
-            .onAppear {
-                notificationSubscription = NotificationCenter.default.addObserver(
-                    forName: .networkRestored,
-                    object: nil,
-                    queue: .main
-                ) { _ in
                     Task { @MainActor in await sync.syncAll(modelContext: modelContext) }
                 }
             }

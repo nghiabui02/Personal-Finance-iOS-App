@@ -16,15 +16,22 @@ private let _decimalFormatter: NumberFormatter = {
     return f
 }()
 
+private var _otherFormatters: [String: NumberFormatter] = [:]
+private func otherFormatter(currency: String) -> NumberFormatter {
+    if let cached = _otherFormatters[currency] { return cached }
+    let f = NumberFormatter()
+    f.numberStyle = .currency
+    f.currencyCode = currency
+    _otherFormatters[currency] = f
+    return f
+}
+
 extension Double {
     func formatted(currency: String) -> String {
         if currency == "VND" {
             return _vndFormatter.string(from: NSNumber(value: self)) ?? "\(self)"
         }
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.currencyCode = currency
-        return f.string(from: NSNumber(value: self)) ?? "\(self)"
+        return otherFormatter(currency: currency).string(from: NSNumber(value: self)) ?? "\(self)"
     }
 
     func formattedDecimal() -> String {

@@ -7,12 +7,13 @@ final class TransferService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
+    private static let df: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
+    private static let encoder = JSONEncoder()
 
     func transfer(
         from fromWallet: LocalWallet,
@@ -41,12 +42,12 @@ final class TransferService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(RequestBody(
+        request.httpBody = try TransferService.encoder.encode(RequestBody(
             from_wallet_id: fromWallet.serverId.uuidString.lowercased(),
             to_wallet_id: toWallet.serverId.uuidString.lowercased(),
             amount: amount,
             note: note?.isEmpty == true ? nil : note,
-            transfer_date: df.string(from: date)
+            transfer_date: TransferService.df.string(from: date)
         ))
 
         let (data, response) = try await URLSession.shared.data(for: request)

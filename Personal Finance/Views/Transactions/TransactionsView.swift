@@ -33,7 +33,7 @@ struct TransactionsView: View {
 
     private let pageSize = 10
     private let client = SupabaseService.shared.client
-    private let df: DateFormatter = {
+    private static let df: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX"); return f
     }()
