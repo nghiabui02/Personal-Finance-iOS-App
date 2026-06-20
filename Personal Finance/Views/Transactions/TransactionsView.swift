@@ -2,6 +2,11 @@ import SwiftUI
 import SwiftData
 import Supabase
 
+private let _txDateFormatter: DateFormatter = {
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+    f.locale = Locale(identifier: "en_US_POSIX"); return f
+}()
+
 struct TransactionsView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var sync = SyncManager.shared
@@ -33,10 +38,6 @@ struct TransactionsView: View {
 
     private let pageSize = 10
     private let client = SupabaseService.shared.client
-    private static let df: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX"); return f
-    }()
 
     private var currentMonthStart: Date {
         Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
@@ -191,7 +192,7 @@ struct TransactionsView: View {
             let cal = Calendar.current
             for r in records {
                 if r.type == "income" { inc += r.amount } else { exp += r.amount }
-                if let date = df.date(from: r.transaction_date) {
+                if let date = _txDateFormatter.date(from: r.transaction_date) {
                     let day = cal.startOfDay(for: date)
                     var d = daily[day] ?? (income: 0, expense: 0)
                     if r.type == "income" { d.income += r.amount } else { d.expense += r.amount }
@@ -200,7 +201,7 @@ struct TransactionsView: View {
             }
             periodIncome = inc; periodExpense = exp; dailyData = daily
         } catch {
-            guard let start = df.date(from: startStr), let end = df.date(from: endStr) else { return }
+            guard let start = _txDateFormatter.date(from: startStr), let end = _txDateFormatter.date(from: endStr) else { return }
             let desc = FetchDescriptor<LocalTransaction>(
                 predicate: #Predicate<LocalTransaction> { $0.transactionDate >= start && $0.transactionDate < end }
             )
@@ -289,8 +290,8 @@ struct TransactionsView: View {
         isLoadingDateTxs = true
         defer { isLoadingDateTxs = false }
 
-        let startStr = df.string(from: start)
-        let endStr   = df.string(from: end)
+        let startStr = _txDateFormatter.string(from: start)
+        let endStr   = _txDateFormatter.string(from: end)
 
         do {
             let userId = try await client.auth.session.user.id
@@ -319,7 +320,7 @@ struct TransactionsView: View {
     private func upsert(_ remotes: [RemoteTransaction]) {
         guard !remotes.isEmpty else { return }
         let (startStr, endStr) = periodRange()
-        guard let start = df.date(from: startStr), let end = df.date(from: endStr) else { return }
+        guard let start = _txDateFormatter.date(from: startStr), let end = _txDateFormatter.date(from: endStr) else { return }
         let desc = FetchDescriptor<LocalTransaction>(
             predicate: #Predicate<LocalTransaction> { $0.transactionDate >= start && $0.transactionDate < end }
         )
@@ -340,7 +341,7 @@ struct TransactionsView: View {
 
     private func fallbackFromCache() {
         let (startStr, endStr) = periodRange()
-        guard let start = df.date(from: startStr), let end = df.date(from: endStr) else { return }
+        guard let start = _txDateFormatter.date(from: startStr), let end = _txDateFormatter.date(from: endStr) else { return }
         let all = (try? modelContext.fetch(
             FetchDescriptor<LocalTransaction>(sortBy: [SortDescriptor(\.transactionDate, order: .reverse)])
         )) ?? []
@@ -361,7 +362,7 @@ struct TransactionsView: View {
         let comps = cal.dateComponents([.year, .month], from: selectedMonth)
         let start = cal.date(from: comps)!
         let end   = cal.date(byAdding: .month, value: 1, to: start)!
-        return (df.string(from: start), df.string(from: end))
+        return (_txDateFormatter.string(from: start), _txDateFormatter.string(from: end))
     }
 
     private func deleteTx(_ tx: LocalTransaction) async {
