@@ -166,7 +166,8 @@ struct TransactionsView: View {
         Task {
             async let totals: Void = fetchPeriodTotals()
             async let more: Void = loadMore()
-            _ = await (totals, more)
+            async let income: Void = fetchIncomeForCurrentPeriod()
+            _ = await (totals, more, income)
         }
     }
 
@@ -241,6 +242,7 @@ struct TransactionsView: View {
                 .gte("transaction_date", value: startStr)
                 .lt("transaction_date",  value: endStr)
                 .order("transaction_date", ascending: false)
+                .order("updated_at", ascending: false)
                 .range(from: from, to: to)
                 .execute().value
             upsert(remote)
@@ -251,6 +253,26 @@ struct TransactionsView: View {
             hasMore = false
             if sync.isOnline { errorMsg = error.localizedDescription }
         }
+    }
+
+    private func fetchIncomeForCurrentPeriod() async {
+        guard sync.isOnline else { return }
+        let (startStr, endStr) = periodRange()
+        do {
+            let userId = try await client.auth.session.user.id
+            let remote: [RemoteTransaction] = try await client
+                .from("transactions")
+                .select("*, categories(id, name, icon, color), wallets(id, name)")
+                .eq("user_id", value: userId)
+                .eq("type", value: "income")
+                .gte("transaction_date", value: startStr)
+                .lt("transaction_date",  value: endStr)
+                .order("transaction_date", ascending: false)
+                .order("updated_at", ascending: false)
+                .range(from: 0, to: 29)
+                .execute().value
+            upsert(remote)
+        } catch { /* silently ignored — loadMore already handles the error state */ }
     }
 
     private func ensureDateLoaded(_ date: Date) async {
@@ -279,6 +301,7 @@ struct TransactionsView: View {
                 .gte("transaction_date", value: startStr)
                 .lt("transaction_date",  value: endStr)
                 .order("transaction_date", ascending: false)
+                .order("updated_at", ascending: false)
                 .execute().value
             upsert(remote)
         } catch {

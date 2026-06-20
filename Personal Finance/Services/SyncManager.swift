@@ -100,6 +100,7 @@ final class SyncManager: ObservableObject {
             .eq("user_id", value: userId)
             .gte("transaction_date", value: dateFormatter.string(from: since))
             .order("transaction_date", ascending: false)
+            .order("updated_at", ascending: false)
             .execute()
             .value
     }
