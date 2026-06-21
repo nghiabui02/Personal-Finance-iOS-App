@@ -144,12 +144,8 @@ struct TransferSheet: View {
 
     // MARK: - Helpers
 
-    @ViewBuilder
-    private func walletLabel(_ w: LocalWallet) -> some View {
-        HStack(spacing: 6) {
-            Text(w.displayIcon)
-            Text(w.name)
-        }
+    private func walletLabel(_ w: LocalWallet) -> Text {
+        Text("\(w.displayIcon) \(w.name)")
     }
 
     @ViewBuilder

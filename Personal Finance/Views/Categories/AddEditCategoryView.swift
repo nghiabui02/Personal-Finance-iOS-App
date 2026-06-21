@@ -9,7 +9,7 @@ struct AddEditCategoryView: View {
     @State private var name = ""
     @State private var type = "expense"
     @State private var icon = "📦"
-    @State private var colorHex = "3B82F6"
+    @State private var colorHex = "EAB308"
     @State private var isSaving = false
     @State private var errorMsg: String?
 
@@ -35,11 +35,7 @@ struct AddEditCategoryView: View {
                         Text("Name")
                         TextField("e.g. Food", text: $name)
                     }
-                    HStack {
-                        Text("Color")
-                        Spacer()
-                        ColorSwatchPicker(selected: $colorHex)
-                    }
+                    ColorSwatchPicker(selected: $colorHex)
                 }
             }
             .formKeyboardHandling()

@@ -11,7 +11,7 @@ struct AddEditWalletView: View {
     @State private var initialBalance: Double = 0
     @State private var initialBalanceText = ""
     @State private var icon = ""
-    @State private var colorHex = "3B82F6"
+    @State private var colorHex = "EAB308"
     @State private var isDefault = false
     @State private var isSaving = false
     @State private var errorMsg: String?
@@ -52,12 +52,7 @@ struct AddEditWalletView: View {
                         Spacer()
                         EmojiPickerButton(emoji: $icon)
                     }
-
-                    HStack {
-                        Text("Color")
-                        Spacer()
-                        ColorSwatchPicker(selected: $colorHex)
-                    }
+                    ColorSwatchPicker(selected: $colorHex)
                 }
 
                 Section {
@@ -90,7 +85,9 @@ struct AddEditWalletView: View {
         name = w.name
         type = w.type
         icon = w.icon ?? ""
-        colorHex = w.color ?? "3B82F6"
+        colorHex = (w.color ?? "EAB308")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+            .uppercased()
         isDefault = w.isDefault
     }
 
@@ -126,25 +123,31 @@ struct AddEditWalletView: View {
 struct ColorSwatchPicker: View {
     @Binding var selected: String
 
-    private let swatches: [(String, Color)] = [
-        ("3B82F6", .blue),   ("10B981", .green),  ("8B5CF6", .purple),
-        ("F59E0B", .orange), ("EF4444", .red),     ("14B8A6", .teal),
-        ("6366F1", .indigo), ("EC4899", .pink),
+    static let swatches: [String] = [
+        "EF4444", "F97316", "EAB308", "22C55E", "06B6D4",
+        "3B82F6", "8B5CF6", "EC4899", "64748B", "14B8A6",
     ]
 
+    private let columns = Array(repeating: GridItem(.flexible()), count: 5)
+
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(swatches, id: \.0) { hex, color in
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(Self.swatches, id: \.self) { hex in
+                let isSelected = selected.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                    .uppercased() == hex
                 ZStack {
-                    Circle().fill(color).frame(width: 26, height: 26)
-                    if selected == hex {
+                    Circle()
+                        .fill(Color(hex: hex))
+                        .frame(width: 30, height: 30)
+                    if isSelected {
                         Circle()
-                            .stroke(Color.primary, lineWidth: 2)
-                            .frame(width: 32, height: 32)
+                            .stroke(Color.primary, lineWidth: 2.5)
+                            .frame(width: 37, height: 37)
                     }
                 }
                 .onTapGesture { selected = hex }
             }
         }
+        .padding(.vertical, 4)
     }
 }
