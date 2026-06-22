@@ -4,7 +4,10 @@ struct TransactionRow: View {
     let transaction: LocalTransaction
     var showDivider: Bool = false
 
+    private var isTransfer: Bool { transaction.transferPairId != nil }
+
     private var icon: String {
+        if isTransfer { return "🔄" }
         if let i = transaction.categoryIcon, !i.isEmpty { return i }
         return transaction.type == "income" ? "💰" : "💸"
     }
@@ -17,10 +20,13 @@ struct TransactionRow: View {
                     Text(icon).font(.system(size: 22))
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(transaction.note ?? (transaction.type == "income" ? "Income" : "Expense"))
+                    Text(isTransfer ? "Transfer" : (transaction.note ?? (transaction.type == "income" ? "Income" : "Expense")))
                         .font(.subheadline).fontWeight(.medium).lineLimit(1)
                     HStack(spacing: 4) {
-                        if let note = transaction.categoryName, !note.isEmpty { Text(note).lineLimit(1); Text("·") }
+                        if !isTransfer, let catName = transaction.categoryName, !catName.isEmpty {
+                            Text(catName).lineLimit(1)
+                            Text("·")
+                        }
                         Text(transaction.walletName)
                     }
                     .font(.caption).foregroundColor(.secondary)
@@ -28,7 +34,7 @@ struct TransactionRow: View {
                 Spacer()
                 Text("\(transaction.type == "income" ? "+" : "-")\(transaction.amount.formatted(currency: "VND"))")
                     .font(.subheadline).fontWeight(.semibold)
-                    .foregroundColor(transaction.type == "income" ? .income : .expense)
+                    .foregroundColor(isTransfer ? .secondary : (transaction.type == "income" ? .income : .expense))
             }
             .padding(.vertical, 8)
 

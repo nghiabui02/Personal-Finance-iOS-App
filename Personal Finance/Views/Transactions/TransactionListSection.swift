@@ -28,11 +28,13 @@ struct TransactionListSection: View {
                     ForEach(Array(txs.enumerated()), id: \.element.serverId) { idx, tx in
                         TransactionRow(transaction: tx, showDivider: idx < txs.count - 1)
                             .contentShape(Rectangle())
-                            .onTapGesture { onTap(tx) }
+                            .onTapGesture { if !tx.isTransfer { onTap(tx) } }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    Task { await onDelete(tx) }
-                                } label: { Label("Delete", systemImage: "trash") }
+                                if !tx.isTransfer {
+                                    Button(role: .destructive) {
+                                        Task { await onDelete(tx) }
+                                    } label: { Label("Delete", systemImage: "trash") }
+                                }
                             }
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 0, trailing: 32))

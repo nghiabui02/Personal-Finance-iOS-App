@@ -39,7 +39,6 @@ final class DebtService {
             .select().single().execute().value
         ctx.insert(LocalDebt(from: remote))
 
-        // Create linked transaction if wallet provided
         if let wallet {
             let txType = type == "lend" ? "expense" : "income"
             try await TransactionService.shared.create(
@@ -54,10 +53,11 @@ final class DebtService {
 
     func update(
         _ debt: LocalDebt, personName: String, personContact: String?,
-        dueDate: Date?, note: String?, in ctx: ModelContext
+        dueDate: Date?, note: String?, status: String? = nil, in ctx: ModelContext
     ) async throws {
         struct Body: Encodable {
             let person_name: String, person_contact: String?, due_date: String?, note: String?
+            let status: String
         }
         let remote: RemoteDebt = try await client
             .from("debts")
@@ -65,7 +65,8 @@ final class DebtService {
                 person_name: personName,
                 person_contact: personContact?.isEmpty == true ? nil : personContact,
                 due_date: dueDate.map { df.string(from: $0) },
-                note: note?.isEmpty == true ? nil : note
+                note: note?.isEmpty == true ? nil : note,
+                status: status ?? debt.status
             ))
             .eq("id", value: debt.serverId)
             .select().single().execute().value
@@ -81,14 +82,15 @@ final class DebtService {
 
     func recordPayment(
         _ debt: LocalDebt, amount: Double, note: String?,
-        wallet: LocalWallet?, in ctx: ModelContext
+        date: Date = Date(), wallet: LocalWallet?, in ctx: ModelContext
     ) async throws {
         struct PayBody: Encodable {
-            let debt_id: String, amount: Double, note: String?
+            let debt_id: String, amount: Double, note: String?, type: String
         }
         try await client
             .from("debt_payments")
-            .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount, note: note?.isEmpty == true ? nil : note))
+            .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
+                            note: note?.isEmpty == true ? nil : note, type: "payment"))
             .execute()
 
         let newRemaining = max(0, debt.remainingAmount - amount)
@@ -101,13 +103,48 @@ final class DebtService {
             .select().single().execute().value
         debt.update(from: remote)
 
-        // Create linked transaction if wallet provided
         if let wallet {
             let txType = debt.type == "lend" ? "income" : "expense"
             try await TransactionService.shared.create(
-                type: txType, amount: amount, date: Date(),
+                type: txType, amount: amount, date: date,
                 walletId: wallet.serverId, categoryId: nil,
                 note: "Payment: \(debt.personName)",
+                wallet: wallet, in: ctx
+            )
+        }
+        try ctx.save()
+    }
+
+    func addAmount(
+        to debt: LocalDebt, amount: Double, note: String?,
+        date: Date = Date(), wallet: LocalWallet?,
+        in ctx: ModelContext
+    ) async throws {
+        struct PayBody: Encodable {
+            let debt_id: String, amount: Double, note: String?, type: String
+        }
+        try await client
+            .from("debt_payments")
+            .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
+                            note: note?.isEmpty == true ? nil : note, type: "addition"))
+            .execute()
+
+        let newAmount = debt.amount + amount
+        let newRemaining = debt.remainingAmount + amount
+        struct DebtBody: Encodable { let amount: Double, remaining_amount: Double, status: String }
+        let remote: RemoteDebt = try await client
+            .from("debts")
+            .update(DebtBody(amount: newAmount, remaining_amount: newRemaining, status: "active"))
+            .eq("id", value: debt.serverId)
+            .select().single().execute().value
+        debt.update(from: remote)
+
+        if let wallet {
+            let txType = debt.type == "lend" ? "expense" : "income"
+            try await TransactionService.shared.create(
+                type: txType, amount: amount, date: date,
+                walletId: wallet.serverId, categoryId: nil,
+                note: "Addition: \(debt.personName)",
                 wallet: wallet, in: ctx
             )
         }

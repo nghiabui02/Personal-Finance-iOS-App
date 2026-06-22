@@ -9,11 +9,17 @@ struct RemoteWallet: Codable, Identifiable {
     let color: String?
     let icon: String?
     let updatedAt: Date
+    let creditLimit: Double?
+    let statementDay: Int?
+    let paymentDueDay: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, name, type, balance, color, icon
         case isDefault = "is_default"
         case updatedAt = "updated_at"
+        case creditLimit = "credit_limit"
+        case statementDay = "statement_day"
+        case paymentDueDay = "payment_due_day"
     }
 }
 
@@ -57,6 +63,8 @@ struct RemoteTransaction: Codable, Identifiable {
         let name: String
     }
 
+    let debtPaymentId: UUID?
+
     enum CodingKeys: String, CodingKey {
         case id, note, amount, type, categories, wallets
         case walletId = "wallet_id"
@@ -64,6 +72,7 @@ struct RemoteTransaction: Codable, Identifiable {
         case transactionDate = "transaction_date"
         case updatedAt = "updated_at"
         case transferPairId = "transfer_pair_id"
+        case debtPaymentId = "debt_payment_id"
     }
 }
 
@@ -118,9 +127,10 @@ struct RemoteDebtPayment: Codable, Identifiable {
     let amount: Double
     let note: String?
     let paidAt: Date
+    let type: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, amount, note
+        case id, amount, note, type
         case debtId = "debt_id"
         case paidAt = "paid_at"
     }

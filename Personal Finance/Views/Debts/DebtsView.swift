@@ -10,6 +10,7 @@ struct DebtsView: View {
     @State private var showAdd = false
     @State private var editing: LocalDebt?
     @State private var payingDebt: LocalDebt?
+    @State private var addingDebt: LocalDebt?
     @State private var filterType: FilterType = .all
     @State private var errorMsg: String?
 
@@ -47,6 +48,10 @@ struct DebtsView: View {
                                             payingDebt = debt
                                         } label: { Label("Pay", systemImage: "checkmark.circle") }
                                         .tint(.green)
+                                        Button {
+                                            addingDebt = debt
+                                        } label: { Label("Add", systemImage: "plus.circle") }
+                                        .tint(.orange)
                                     }
                                     .swipeActions(edge: .trailing) {
                                         Button(role: .destructive) {
@@ -60,6 +65,7 @@ struct DebtsView: View {
                         Section("Completed") {
                             ForEach(completed, id: \.serverId) { debt in
                                 DebtRow(debt: debt)
+                                    .onTapGesture { editing = debt }
                             }
                         }
                     }
@@ -85,6 +91,9 @@ struct DebtsView: View {
             .sheet(item: $editing) { d in AddEditDebtView(debt: d) }
             .sheet(item: $payingDebt) { d in
                 DebtPaymentSheet(debt: d, wallets: wallets)
+            }
+            .sheet(item: $addingDebt) { d in
+                DebtAdditionSheet(debt: d, wallets: wallets)
             }
             .errorAlert($errorMsg)
     }
@@ -172,6 +181,7 @@ struct DebtPaymentSheet: View {
     @State private var amount: Double = 0
     @State private var amountText = ""
     @State private var note = ""
+    @State private var date = Date()
     @State private var selectedWalletId: UUID?
     @State private var isSaving = false
     @State private var errorMsg: String?
@@ -190,6 +200,7 @@ struct DebtPaymentSheet: View {
                             }
                         Text("₫").foregroundColor(.secondary)
                     }
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
                     TextField("Note (optional)", text: $note)
                 }
                 Section("Wallet") {
@@ -216,14 +227,90 @@ struct DebtPaymentSheet: View {
             }
             .errorAlert($errorMsg)
         }
-        .onAppear { }
     }
 
     private func pay() async {
         isSaving = true; defer { isSaving = false }
         let wallet = wallets.first { $0.serverId == selectedWalletId }
         do {
-            try await DebtService.shared.recordPayment(debt, amount: amount, note: note.isEmpty ? nil : note, wallet: wallet, in: modelContext)
+            try await DebtService.shared.recordPayment(
+                debt, amount: amount,
+                note: note.isEmpty ? nil : note,
+                date: date, wallet: wallet, in: modelContext
+            )
+            dismiss()
+        } catch { errorMsg = error.localizedDescription }
+    }
+}
+
+// MARK: - Debt Addition Sheet
+
+struct DebtAdditionSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    let debt: LocalDebt
+    let wallets: [LocalWallet]
+
+    @State private var amount: Double = 0
+    @State private var amountText = ""
+    @State private var note = ""
+    @State private var date = Date()
+    @State private var selectedWalletId: UUID?
+    @State private var isSaving = false
+    @State private var errorMsg: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack {
+                        Text("Amount")
+                        Spacer()
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
+                        Text("₫").foregroundColor(.secondary)
+                    }
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    TextField("Note (optional)", text: $note)
+                }
+                Section("Wallet (optional)") {
+                    Picker("Wallet", selection: $selectedWalletId) {
+                        Text("None").tag(UUID?.none)
+                        ForEach(wallets, id: \.serverId) { w in
+                            Text(w.name).tag(Optional(w.serverId))
+                        }
+                    }
+                }
+            }
+            .formKeyboardHandling()
+            .navigationTitle("Add to \(debt.type == "lend" ? "Lending" : "Borrowing")")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving { ProgressView().scaleEffect(0.8) }
+                    else {
+                        Button("Save") { Task { await add() } }
+                            .disabled(amount <= 0)
+                    }
+                }
+            }
+            .errorAlert($errorMsg)
+        }
+    }
+
+    private func add() async {
+        isSaving = true; defer { isSaving = false }
+        let wallet = wallets.first { $0.serverId == selectedWalletId }
+        do {
+            try await DebtService.shared.addAmount(
+                to: debt, amount: amount,
+                note: note.isEmpty ? nil : note,
+                date: date, wallet: wallet, in: modelContext
+            )
             dismiss()
         } catch { errorMsg = error.localizedDescription }
     }

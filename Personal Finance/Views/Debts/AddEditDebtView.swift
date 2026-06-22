@@ -17,6 +17,7 @@ struct AddEditDebtView: View {
     @State private var hasDueDate = false
     @State private var dueDate = Date()
     @State private var note = ""
+    @State private var markCompleted = false
     @State private var isSaving = false
     @State private var errorMsg: String?
 
@@ -87,6 +88,13 @@ struct AddEditDebtView: View {
                 Section {
                     TextField("Note (optional)", text: $note, axis: .vertical).lineLimit(2...4)
                 }
+
+                if isEditing {
+                    Section {
+                        Toggle("Mark as Completed", isOn: $markCompleted)
+                            .tint(.green)
+                    }
+                }
             }
             .formKeyboardHandling()
             .navigationTitle(isEditing ? "Edit Debt" : "New Debt")
@@ -109,6 +117,7 @@ struct AddEditDebtView: View {
                 personContact = d.personContact ?? ""
                 note = d.note ?? ""
                 if let dd = d.dueDate { hasDueDate = true; dueDate = dd }
+                markCompleted = d.status == "completed"
             }
         }
     }
@@ -123,7 +132,9 @@ struct AddEditDebtView: View {
                     d, personName: name,
                     personContact: personContact.isEmpty ? nil : personContact,
                     dueDate: hasDueDate ? dueDate : nil,
-                    note: note.isEmpty ? nil : note, in: modelContext
+                    note: note.isEmpty ? nil : note,
+                    status: markCompleted ? "completed" : "active",
+                    in: modelContext
                 )
             } else {
                 guard amount > 0 else { return }

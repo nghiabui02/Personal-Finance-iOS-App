@@ -16,6 +16,12 @@ struct AddEditWalletView: View {
     @State private var isSaving = false
     @State private var errorMsg: String?
 
+    // Credit wallet fields
+    @State private var creditLimit: Double = 0
+    @State private var creditLimitText = ""
+    @State private var statementDay: Int = 15
+    @State private var paymentDueDay: Int = 5
+
     private var isEditing: Bool { wallet != nil }
 
     var body: some View {
@@ -29,10 +35,11 @@ struct AddEditWalletView: View {
                         Label("Bank", systemImage: "building.columns").tag("bank")
                         Label("E-Wallet", systemImage: "iphone").tag("e_wallet")
                         Label("Investment", systemImage: "chart.line.uptrend.xyaxis").tag("investment")
+                        Label("Credit", systemImage: "creditcard").tag("credit")
                         Label("Other", systemImage: "ellipsis.circle").tag("other")
                     }
 
-                    if !isEditing {
+                    if !isEditing && type != "credit" {
                         HStack {
                             Text("Initial Balance")
                             Spacer()
@@ -43,6 +50,24 @@ struct AddEditWalletView: View {
                                     applyAmountFormat(new: new, amountText: &initialBalanceText, amount: &initialBalance)
                                 }
                         }
+                    }
+                }
+
+                if type == "credit" {
+                    Section("Credit") {
+                        HStack {
+                            Text("Credit Limit")
+                            Spacer()
+                            TextField("0", text: $creditLimitText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .onChange(of: creditLimitText) { _, new in
+                                    applyAmountFormat(new: new, amountText: &creditLimitText, amount: &creditLimit)
+                                }
+                            Text("₫").foregroundColor(.secondary)
+                        }
+                        Stepper("Statement Day: \(statementDay)", value: $statementDay, in: 1...28)
+                        Stepper("Payment Due Day: \(paymentDueDay)", value: $paymentDueDay, in: 1...28)
                     }
                 }
 
@@ -71,13 +96,19 @@ struct AddEditWalletView: View {
                         ProgressView().scaleEffect(0.8)
                     } else {
                         Button("Save") { Task { await save() } }
-                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .disabled(isSaveDisabled)
                     }
                 }
             }
             .errorAlert($errorMsg)
         }
         .onAppear { prefill() }
+    }
+
+    private var isSaveDisabled: Bool {
+        if name.trimmingCharacters(in: .whitespaces).isEmpty { return true }
+        if type == "credit" && !isEditing && creditLimit <= 0 { return true }
+        return false
     }
 
     private func prefill() {
@@ -89,6 +120,12 @@ struct AddEditWalletView: View {
             .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
             .uppercased()
         isDefault = w.isDefault
+        if w.type == "credit" {
+            creditLimit = w.creditLimit ?? 0
+            if creditLimit > 0 { creditLimitText = creditLimit.formattedDecimal() }
+            statementDay = w.statementDay ?? 15
+            paymentDueDay = w.paymentDueDay ?? 5
+        }
     }
 
     private func save() async {
@@ -102,12 +139,18 @@ struct AddEditWalletView: View {
                 try await WalletService.shared.update(
                     w, name: trimName, type: type,
                     icon: iconVal, color: colorHex, isDefault: isDefault,
+                    creditLimit: type == "credit" ? creditLimit : nil,
+                    statementDay: type == "credit" ? statementDay : nil,
+                    paymentDueDay: type == "credit" ? paymentDueDay : nil,
                     in: modelContext
                 )
             } else {
                 try await WalletService.shared.create(
                     name: trimName, type: type, initialBalance: initialBalance,
                     icon: iconVal, color: colorHex, isDefault: isDefault,
+                    creditLimit: type == "credit" ? creditLimit : nil,
+                    statementDay: type == "credit" ? statementDay : nil,
+                    paymentDueDay: type == "credit" ? paymentDueDay : nil,
                     in: modelContext
                 )
             }

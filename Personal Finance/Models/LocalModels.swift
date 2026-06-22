@@ -18,16 +18,28 @@ final class LocalWallet {
     var color: String?
     var icon: String?
     var updatedAt: Date
+    var creditLimit: Double?
+    var statementDay: Int?
+    var paymentDueDay: Int?
 
     init(from r: RemoteWallet) {
         serverId = r.id; name = r.name; type = r.type
         balance = r.balance; isDefault = r.isDefault
         color = r.color; icon = r.icon; updatedAt = r.updatedAt
+        creditLimit = r.creditLimit; statementDay = r.statementDay
+        paymentDueDay = r.paymentDueDay
     }
     func update(from r: RemoteWallet) {
         name = r.name; type = r.type; balance = r.balance
         isDefault = r.isDefault; color = r.color; icon = r.icon
         updatedAt = r.updatedAt
+        creditLimit = r.creditLimit; statementDay = r.statementDay
+        paymentDueDay = r.paymentDueDay
+    }
+
+    var amountOwed: Double {
+        guard type == "credit" else { return 0 }
+        return max(0, (creditLimit ?? 0) - balance)
     }
 
     var displayIcon: String {
@@ -37,6 +49,7 @@ final class LocalWallet {
         case "bank": return "🏦"
         case "e_wallet": return "📱"
         case "investment": return "📈"
+        case "credit": return "💳"
         default: return "💼"
         }
     }
@@ -47,6 +60,7 @@ final class LocalWallet {
         case "bank": return "Bank"
         case "e_wallet": return "E-Wallet"
         case "investment": return "Investment"
+        case "credit": return "Credit"
         default: return "Other"
         }
     }
@@ -85,6 +99,10 @@ final class LocalTransaction {
     var transactionDate: Date
     var updatedAt: Date
     var syncStatus: String
+    var transferPairId: UUID?
+    var debtPaymentId: UUID?
+
+    var isTransfer: Bool { transferPairId != nil }
 
     init(from r: RemoteTransaction) {
         serverId = r.id
@@ -97,6 +115,8 @@ final class LocalTransaction {
         type = r.type.lowercased(); amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
+        transferPairId = r.transferPairId
+        debtPaymentId = r.debtPaymentId
     }
 
     func update(from r: RemoteTransaction) {
@@ -109,6 +129,8 @@ final class LocalTransaction {
         type = r.type.lowercased(); amount = r.amount; note = r.note
         transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
+        transferPairId = r.transferPairId
+        debtPaymentId = r.debtPaymentId
     }
 }
 

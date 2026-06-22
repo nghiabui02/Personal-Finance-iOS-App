@@ -9,9 +9,14 @@ struct WalletsView: View {
     @State private var showAdd = false
     @State private var showTransfer = false
     @State private var editing: LocalWallet?
+    @State private var payingCreditWallet: LocalWallet?
     @State private var errorMsg: String?
 
-    private var totalBalance: Double { wallets.reduce(0) { $0 + $1.balance } }
+    private var totalBalance: Double {
+        let nonCredit = wallets.filter { $0.type != "credit" }.reduce(0.0) { $0 + $1.balance }
+        let creditDebt = wallets.filter { $0.type == "credit" }.reduce(0.0) { $0 + $1.amountOwed }
+        return nonCredit - creditDebt
+    }
 
     var body: some View {
         NavigationStack {
@@ -19,7 +24,7 @@ struct WalletsView: View {
                 Section {
                     HStack(spacing: 16) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Total Balance")
+                            Text("Net Worth")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Text(totalBalance.formatted(currency: "VND"))
@@ -48,6 +53,16 @@ struct WalletsView: View {
                             WalletRow(wallet: wallet)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editing = wallet }
+                                .swipeActions(edge: .leading) {
+                                    if wallet.type == "credit" {
+                                        Button {
+                                            payingCreditWallet = wallet
+                                        } label: {
+                                            Label("Pay Bill", systemImage: "creditcard.fill")
+                                        }
+                                        .tint(.green)
+                                    }
+                                }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
                                         Task { await deleteWallet(wallet) }
@@ -86,6 +101,9 @@ struct WalletsView: View {
             }
             .sheet(isPresented: $showTransfer) {
                 TransferSheet(wallets: wallets)
+            }
+            .sheet(item: $payingCreditWallet) { w in
+                CreditPaymentSheet(creditWallet: w, wallets: wallets)
             }
             .errorAlert($errorMsg)
         }
@@ -126,16 +144,129 @@ struct WalletRow: View {
                         StatusBadge(label: "Default", color: .blue)
                     }
                 }
-                Text(wallet.typeLabel)
-                    .font(.caption).foregroundColor(.secondary)
+                if wallet.type == "credit" {
+                    Text("Used: \(wallet.amountOwed.formatted(currency: "VND")) / \((wallet.creditLimit ?? 0).formatted(currency: "VND"))")
+                        .font(.caption).foregroundColor(.secondary)
+                } else {
+                    Text(wallet.typeLabel)
+                        .font(.caption).foregroundColor(.secondary)
+                }
             }
 
             Spacer()
 
-            Text(wallet.balance.formatted(currency: "VND"))
-                .font(.subheadline).fontWeight(.semibold)
-                .foregroundColor(wallet.balance < 0 ? .red : .primary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(wallet.balance.formatted(currency: "VND"))
+                    .font(.subheadline).fontWeight(.semibold)
+                    .foregroundColor(wallet.type == "credit" ? .income : (wallet.balance < 0 ? .red : .primary))
+                if wallet.type == "credit" {
+                    Text("available")
+                        .font(.caption2).foregroundColor(.secondary)
+                }
+            }
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Credit Payment Sheet
+
+struct CreditPaymentSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    let creditWallet: LocalWallet
+    let wallets: [LocalWallet]
+
+    @State private var amount: Double = 0
+    @State private var amountText = ""
+    @State private var note = ""
+    @State private var date = Date()
+    @State private var selectedWalletId: UUID?
+    @State private var isSaving = false
+    @State private var errorMsg: String?
+
+    private var sourceWallets: [LocalWallet] {
+        wallets.filter { $0.serverId != creditWallet.serverId && $0.type != "credit" }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack {
+                        Text("Outstanding")
+                        Spacer()
+                        Text(creditWallet.amountOwed.formatted(currency: "VND"))
+                            .foregroundColor(.expense)
+                            .fontWeight(.semibold)
+                    }
+                    HStack {
+                        Text("Credit Limit")
+                        Spacer()
+                        Text((creditWallet.creditLimit ?? 0).formatted(currency: "VND"))
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Section {
+                    HStack {
+                        Text("Amount")
+                        Spacer()
+                        TextField("0", text: $amountText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .fontWeight(.semibold)
+                            .onChange(of: amountText) { _, new in
+                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            }
+                        Text("₫").foregroundColor(.secondary)
+                    }
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    TextField("Note (optional)", text: $note)
+                }
+
+                Section("Pay From") {
+                    Picker("Wallet", selection: $selectedWalletId) {
+                        Text("Select wallet").tag(UUID?.none)
+                        ForEach(sourceWallets, id: \.serverId) { w in
+                            Text("\(w.displayIcon) \(w.name)").tag(Optional(w.serverId))
+                        }
+                    }
+                }
+            }
+            .formKeyboardHandling()
+            .navigationTitle("Pay Credit Bill")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving { ProgressView().scaleEffect(0.8) }
+                    else {
+                        Button("Pay") { Task { await pay() } }
+                            .disabled(amount <= 0 || selectedWalletId == nil)
+                    }
+                }
+            }
+            .errorAlert($errorMsg)
+        }
+        .onAppear {
+            selectedWalletId = sourceWallets.first(where: { $0.isDefault })?.serverId
+                ?? sourceWallets.first?.serverId
+        }
+    }
+
+    private func pay() async {
+        guard let walletId = selectedWalletId,
+              let sourceWallet = wallets.first(where: { $0.serverId == walletId }) else { return }
+        isSaving = true; defer { isSaving = false }
+        do {
+            try await WalletService.shared.payCredit(
+                creditWallet, from: sourceWallet,
+                amount: amount, date: date,
+                note: note.isEmpty ? nil : note,
+                in: modelContext
+            )
+            dismiss()
+        } catch { errorMsg = error.localizedDescription }
     }
 }
