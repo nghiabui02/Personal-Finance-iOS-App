@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B730F9A298B04726F1FC40C9"
-               BuildableName = "Personal Finance.app"
-               BlueprintName = "Personal Finance"
-               ReferencedContainer = "container:Personal Finance.xcodeproj">
+               BuildableName = "My Finance.app"
+               BlueprintName = "My Finance"
+               ReferencedContainer = "container:My Finance.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B730F9A298B04726F1FC40C9"
-            BuildableName = "Personal Finance.app"
-            BlueprintName = "Personal Finance"
-            ReferencedContainer = "container:Personal Finance.xcodeproj">
+            BuildableName = "My Finance.app"
+            BlueprintName = "My Finance"
+            ReferencedContainer = "container:My Finance.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B730F9A298B04726F1FC40C9"
-            BuildableName = "Personal Finance.app"
-            BlueprintName = "Personal Finance"
-            ReferencedContainer = "container:Personal Finance.xcodeproj">
+            BuildableName = "My Finance.app"
+            BlueprintName = "My Finance"
+            ReferencedContainer = "container:My Finance.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

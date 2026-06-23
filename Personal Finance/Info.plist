@@ -24,8 +24,6 @@
 	<string>$(SUPABASE_AVATAR_BUCKET)</string>
 	<key>SupabaseHost</key>
 	<string>$(SUPABASE_HOST)</string>
-	<key>WebAppURL</key>
-	<string>$(WEB_APP_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -39,5 +37,7 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>WebAppURL</key>
+	<string>$(WEB_APP_URL)</string>
 </dict>
 </plist>
