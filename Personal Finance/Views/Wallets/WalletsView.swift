@@ -8,7 +8,6 @@ struct WalletsView: View {
 
     @State private var showAdd = false
     @State private var showTransfer = false
-    @State private var editing: LocalWallet?
     @State private var payingCreditWallet: LocalWallet?
     @State private var errorMsg: String?
 
@@ -50,9 +49,12 @@ struct WalletsView: View {
                         .padding(.vertical)
                     } else {
                         ForEach(wallets, id: \.serverId) { wallet in
-                            WalletRow(wallet: wallet)
-                                .contentShape(Rectangle())
-                                .onTapGesture { editing = wallet }
+                            NavigationLink {
+                                WalletDetailView(wallet: wallet)
+                            } label: {
+                                WalletRow(wallet: wallet)
+                            }
+                                .buttonStyle(.plain)
                                 .swipeActions(edge: .leading) {
                                     if wallet.type == "credit" {
                                         Button {
@@ -95,9 +97,6 @@ struct WalletsView: View {
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .sheet(isPresented: $showAdd) {
                 AddEditWalletView(wallet: nil)
-            }
-            .sheet(item: $editing) { w in
-                AddEditWalletView(wallet: w)
             }
             .sheet(isPresented: $showTransfer) {
                 TransferSheet(wallets: wallets)

@@ -8,7 +8,6 @@ struct DebtsView: View {
     @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
-    @State private var editing: LocalDebt?
     @State private var payingDebt: LocalDebt?
     @State private var addingDebt: LocalDebt?
     @State private var filterType: FilterType = .all
@@ -41,8 +40,12 @@ struct DebtsView: View {
                     if !active.isEmpty {
                         Section("Active") {
                             ForEach(active, id: \.serverId) { debt in
-                                DebtRow(debt: debt)
-                                    .onTapGesture { editing = debt }
+                                NavigationLink {
+                                    DebtDetailView(debt: debt)
+                                } label: {
+                                    DebtRow(debt: debt)
+                                }
+                                    .buttonStyle(.plain)
                                     .swipeActions(edge: .leading) {
                                         Button {
                                             payingDebt = debt
@@ -64,8 +67,12 @@ struct DebtsView: View {
                     if !completed.isEmpty {
                         Section("Completed") {
                             ForEach(completed, id: \.serverId) { debt in
-                                DebtRow(debt: debt)
-                                    .onTapGesture { editing = debt }
+                                NavigationLink {
+                                    DebtDetailView(debt: debt)
+                                } label: {
+                                    DebtRow(debt: debt)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -88,7 +95,6 @@ struct DebtsView: View {
                 }
             }
             .sheet(isPresented: $showAdd) { AddEditDebtView(debt: nil) }
-            .sheet(item: $editing) { d in AddEditDebtView(debt: d) }
             .sheet(item: $payingDebt) { d in
                 DebtPaymentSheet(debt: d, wallets: wallets)
             }

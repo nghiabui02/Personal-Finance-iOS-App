@@ -93,11 +93,13 @@ final class DebtService {
 
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
+            let paid_at: String
         }
         try await client
             .from("debt_payments")
             .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
-                            note: note?.isEmpty == true ? nil : note, type: "payment"))
+                            note: note?.isEmpty == true ? nil : note, type: "payment",
+                            paid_at: df.string(from: date)))
             .execute()
 
         let newRemaining = max(0, debt.remainingAmount - amount)
@@ -131,11 +133,13 @@ final class DebtService {
 
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
+            let paid_at: String
         }
         try await client
             .from("debt_payments")
             .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
-                            note: note?.isEmpty == true ? nil : note, type: "addition"))
+                            note: note?.isEmpty == true ? nil : note, type: "addition",
+                            paid_at: df.string(from: date)))
             .execute()
 
         let newAmount = debt.amount + amount
