@@ -8,7 +8,10 @@ struct WalletsView: View {
 
     @State private var showAdd = false
     @State private var showTransfer = false
+    @State private var transferSourceWalletId: UUID?
     @State private var payingCreditWallet: LocalWallet?
+    @State private var pendingDeletion: LocalWallet?
+    @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
     private var totalBalance: Double {
@@ -55,7 +58,16 @@ struct WalletsView: View {
                                 WalletRow(wallet: wallet)
                             }
                                 .buttonStyle(.plain)
-                                .swipeActions(edge: .leading) {
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    if wallets.count >= 2 {
+                                        Button {
+                                            transferSourceWalletId = wallet.serverId
+                                            showTransfer = true
+                                        } label: {
+                                            Label("Transfer", systemImage: "arrow.left.arrow.right")
+                                        }
+                                        .tint(.blue)
+                                    }
                                     if wallet.type == "credit" {
                                         Button {
                                             payingCreditWallet = wallet
@@ -66,11 +78,13 @@ struct WalletsView: View {
                                     }
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        Task { await deleteWallet(wallet) }
+                                    Button {
+                                        pendingDeletion = wallet
+                                        showDeleteConfirmation = true
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
+                                    .tint(.red)
                                 }
                         }
                     }
@@ -82,6 +96,7 @@ struct WalletsView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     if wallets.count >= 2 {
                         Button {
+                            transferSourceWalletId = nil
                             showTransfer = true
                         } label: {
                             Label("Transfer", systemImage: "arrow.left.arrow.right")
@@ -98,11 +113,25 @@ struct WalletsView: View {
             .sheet(isPresented: $showAdd) {
                 AddEditWalletView(wallet: nil)
             }
-            .sheet(isPresented: $showTransfer) {
-                TransferSheet(wallets: wallets)
+            .sheet(
+                isPresented: $showTransfer,
+                onDismiss: { transferSourceWalletId = nil }
+            ) {
+                TransferSheet(
+                    wallets: wallets,
+                    initialFromWalletId: transferSourceWalletId
+                )
             }
             .sheet(item: $payingCreditWallet) { w in
                 CreditPaymentSheet(creditWallet: w, wallets: wallets)
+            }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Wallet?",
+                message: "The wallet will be permanently deleted. Any positive balance may be moved to your default wallet."
+            ) { wallet in
+                Task { await deleteWallet(wallet) }
             }
             .errorAlert($errorMsg)
         }

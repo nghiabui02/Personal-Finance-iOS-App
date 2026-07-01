@@ -9,6 +9,8 @@ struct RecurringView: View {
 
     @State private var showAdd = false
     @State private var editing: LocalRecurringTransaction?
+    @State private var pendingDeletion: LocalRecurringTransaction?
+    @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
     var body: some View {
@@ -16,10 +18,12 @@ struct RecurringView: View {
                 ForEach(recurring, id: \.serverId) { rec in
                     RecurringRow(rec: rec)
                         .onTapGesture { editing = rec }
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                Task { await delete(rec) }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                pendingDeletion = rec
+                                showDeleteConfirmation = true
                             } label: { Label("Delete", systemImage: "trash") }
+                            .tint(.red)
                         }
                 }
             }
@@ -40,6 +44,14 @@ struct RecurringView: View {
             }
             .sheet(isPresented: $showAdd) { AddEditRecurringView(recurring: nil) }
             .sheet(item: $editing) { r in AddEditRecurringView(recurring: r) }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Recurring Transaction?",
+                message: "The recurring rule will be permanently deleted."
+            ) { recurring in
+                Task { await delete(recurring) }
+            }
             .errorAlert($errorMsg)
     }
 

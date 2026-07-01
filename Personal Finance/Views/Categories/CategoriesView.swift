@@ -9,6 +9,8 @@ struct CategoriesView: View {
     @State private var selectedType = "expense"
     @State private var showAdd = false
     @State private var editing: LocalCategory?
+    @State private var pendingDeletion: LocalCategory?
+    @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
     private var filtered: [LocalCategory] { categories.filter { $0.type == selectedType } }
@@ -33,7 +35,8 @@ struct CategoriesView: View {
                             CategoryCard(category: cat, isDefault: false) {
                                 editing = cat
                             } onDelete: {
-                                Task { await delete(cat) }
+                                pendingDeletion = cat
+                                showDeleteConfirmation = true
                             }
                         }
                     }
@@ -74,6 +77,14 @@ struct CategoriesView: View {
         .onAppear { Task { @MainActor in await sync.syncAll(modelContext: modelContext) } }
         .sheet(isPresented: $showAdd) { AddEditCategoryView(category: nil) }
         .sheet(item: $editing) { cat in AddEditCategoryView(category: cat) }
+        .deleteConfirmation(
+            item: $pendingDeletion,
+            isPresented: $showDeleteConfirmation,
+            title: "Delete Category?",
+            message: "The category will be permanently deleted."
+        ) { category in
+            Task { await delete(category) }
+        }
         .errorAlert($errorMsg)
     }
 

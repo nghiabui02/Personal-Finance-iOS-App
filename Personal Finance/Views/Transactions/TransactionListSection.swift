@@ -4,7 +4,7 @@ struct TransactionListSection: View {
     let groups: [(Date, [LocalTransaction])]
     let isLoading: Bool
     let onTap: (LocalTransaction) -> Void
-    let onDelete: (LocalTransaction) async -> Void
+    let onDeleteRequest: (LocalTransaction) -> Void
 
     var body: some View {
         if isLoading {
@@ -31,9 +31,10 @@ struct TransactionListSection: View {
                             .onTapGesture { if !tx.isTransfer { onTap(tx) } }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 if !tx.isTransfer {
-                                    Button(role: .destructive) {
-                                        Task { await onDelete(tx) }
+                                    Button {
+                                        onDeleteRequest(tx)
                                     } label: { Label("Delete", systemImage: "trash") }
+                                    .tint(.red)
                                 }
                             }
                             .listRowSeparator(.hidden)

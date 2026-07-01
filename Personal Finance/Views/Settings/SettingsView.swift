@@ -11,6 +11,8 @@ struct SettingsView: View {
     @State private var showEditPhone = false
     @State private var showChangePassword = false
     @State private var showSignOutConfirm = false
+    @State private var pendingDeletion: SettingsDeletion?
+    @State private var showDeleteConfirmation = false
     @State private var photoItem: PhotosPickerItem?
     @State private var errorMsg: String?
 
@@ -76,10 +78,8 @@ struct SettingsView: View {
 
                     if authVM.avatarURL != nil {
                         Button(role: .destructive) {
-                            Task {
-                                do { try await authVM.deleteAvatar() }
-                                catch { errorMsg = error.localizedDescription }
-                            }
+                            pendingDeletion = .avatar
+                            showDeleteConfirmation = true
                         } label: {
                             Label("Remove Avatar", systemImage: "trash")
                         }
@@ -161,6 +161,18 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
+        .deleteConfirmation(
+            item: $pendingDeletion,
+            isPresented: $showDeleteConfirmation,
+            title: "Remove Avatar?",
+            message: "Your current avatar will be permanently removed."
+        ) { deletion in
+            guard deletion == .avatar else { return }
+            Task {
+                do { try await authVM.deleteAvatar() }
+                catch { errorMsg = error.localizedDescription }
+            }
+        }
         .errorAlert($errorMsg)
     }
 
@@ -207,6 +219,10 @@ struct SettingsView: View {
             errorMsg = error.localizedDescription
         }
     }
+}
+
+private enum SettingsDeletion {
+    case avatar
 }
 
 // MARK: - Avatar View (reusable)

@@ -10,6 +10,8 @@ struct DebtsView: View {
     @State private var showAdd = false
     @State private var payingDebt: LocalDebt?
     @State private var addingDebt: LocalDebt?
+    @State private var pendingDeletion: LocalDebt?
+    @State private var showDeleteConfirmation = false
     @State private var filterType: FilterType = .all
     @State private var errorMsg: String?
 
@@ -56,10 +58,12 @@ struct DebtsView: View {
                                         } label: { Label("Add", systemImage: "plus.circle") }
                                         .tint(.orange)
                                     }
-                                    .swipeActions(edge: .trailing) {
-                                        Button(role: .destructive) {
-                                            Task { await delete(debt) }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button {
+                                            pendingDeletion = debt
+                                            showDeleteConfirmation = true
                                         } label: { Label("Delete", systemImage: "trash") }
+                                        .tint(.red)
                                     }
                             }
                         }
@@ -100,6 +104,14 @@ struct DebtsView: View {
             }
             .sheet(item: $addingDebt) { d in
                 DebtAdditionSheet(debt: d, wallets: wallets)
+            }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Debt?",
+                message: "The debt and its payment history will be permanently deleted. Existing wallet transactions will not be reversed."
+            ) { debt in
+                Task { await delete(debt) }
             }
             .errorAlert($errorMsg)
     }

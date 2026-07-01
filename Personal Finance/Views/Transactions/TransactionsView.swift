@@ -11,6 +11,8 @@ struct TransactionsView: View {
     @State private var filterType: FilterType = .all
     @State private var showAdd = false
     @State private var editing: LocalTransaction?
+    @State private var pendingDeletion: LocalTransaction?
+    @State private var showDeleteConfirmation = false
 
     // MARK: - Derived display values (pure computation from vm state)
 
@@ -53,7 +55,10 @@ struct TransactionsView: View {
             groups: displayedGroups,
             isLoading: vm.loadedTxs.isEmpty && (vm.isLoadingMore || vm.isLoadingDateTxs),
             onTap: { editing = $0 },
-            onDelete: { await vm.deleteTx($0, in: modelContext) }
+            onDeleteRequest: {
+                pendingDeletion = $0
+                showDeleteConfirmation = true
+            }
         )
     }
 
@@ -116,6 +121,14 @@ struct TransactionsView: View {
                 AddEditTransactionView(transaction: nil, defaultDate: selectedDate)
             }
             .sheet(item: $editing) { tx in AddEditTransactionView(transaction: tx) }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Transaction?",
+                message: "The transaction will be permanently deleted and its wallet balance will be adjusted."
+            ) { transaction in
+                Task { await vm.deleteTx(transaction, in: modelContext) }
+            }
             .errorAlert($vm.errorMsg)
         }
     }

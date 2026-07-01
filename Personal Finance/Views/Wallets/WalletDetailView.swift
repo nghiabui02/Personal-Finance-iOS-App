@@ -34,8 +34,16 @@ struct WalletDetailView: View {
 
     @ToolbarContentBuilder
     private var detailToolbar: some ToolbarContent {
-        if wallet.type == "credit" {
-            ToolbarItem(placement: .topBarLeading) {
+        ToolbarItemGroup(placement: .topBarLeading) {
+            if wallets.count >= 2 {
+                Button {
+                    activeSheet = .transfer
+                } label: {
+                    Label("Transfer", systemImage: "arrow.left.arrow.right")
+                }
+            }
+
+            if wallet.type == "credit" {
                 Button("Pay Bill") {
                     activeSheet = .creditPayment
                 }
@@ -54,6 +62,11 @@ struct WalletDetailView: View {
         switch sheet {
         case .edit:
             AddEditWalletView(wallet: wallet)
+        case .transfer:
+            TransferSheet(
+                wallets: wallets,
+                initialFromWalletId: wallet.serverId
+            )
         case .creditPayment:
             CreditPaymentSheet(creditWallet: wallet, wallets: wallets)
         }
@@ -69,6 +82,7 @@ struct WalletDetailView: View {
 
 private enum WalletDetailSheet: String, Identifiable {
     case edit
+    case transfer
     case creditPayment
 
     var id: String { rawValue }

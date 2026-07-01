@@ -62,6 +62,7 @@
 		B50000000000000000000003 /* WalletCashFlowSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000003 /* WalletCashFlowSection.swift */; };
 		B50000000000000000000004 /* WalletInformationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000004 /* WalletInformationSection.swift */; };
 		B50000000000000000000005 /* WalletTransactionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000005 /* WalletTransactionsSection.swift */; };
+		B60000000000000000000001 /* DeleteConfirmationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000001 /* DeleteConfirmationModifier.swift */; };
 		8D3FA27F135130DF9FF24E65 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4B584112C1B9A009F249D6 /* AuthViewModel.swift */; };
 		8D641866A51127E57C6C4D54 /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7F797711FF67789CB01E16 /* MoreView.swift */; };
 		8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */; };
@@ -171,6 +172,7 @@
 		A50000000000000000000003 /* WalletCashFlowSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCashFlowSection.swift; sourceTree = "<group>"; };
 		A50000000000000000000004 /* WalletInformationSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletInformationSection.swift; sourceTree = "<group>"; };
 		A50000000000000000000005 /* WalletTransactionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTransactionsSection.swift; sourceTree = "<group>"; };
+		A60000000000000000000001 /* DeleteConfirmationModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteConfirmationModifier.swift; sourceTree = "<group>"; };
 		AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditWalletView.swift; sourceTree = "<group>"; };
 		AD9922F16B934293A75D0A00 /* TransactionViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionViewModel.swift; sourceTree = "<group>"; };
 		B47B838501FF58C95933C484 /* TxStatBox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TxStatBox.swift; sourceTree = "<group>"; };
@@ -279,6 +281,7 @@
 		34DF41BEB7DCAE944FFDCD1C /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				A60000000000000000000001 /* DeleteConfirmationModifier.swift */,
 				A40000000000000000000001 /* DetailInfoRow.swift */,
 				F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */,
 				884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */,
@@ -670,6 +673,7 @@
 				B40000000000000000000002 /* DebtPaymentHistoryViewModel.swift in Sources */,
 				150761A60A088A760C561724 /* DebtsView.swift in Sources */,
 				B40000000000000000000001 /* DetailInfoRow.swift in Sources */,
+				B60000000000000000000001 /* DeleteConfirmationModifier.swift in Sources */,
 				DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */,
 				C6783596677CAD441B221743 /* EmojiPickerButton.swift in Sources */,
 				B81443CC4FBA1C51D411EBBD /* LocalModels.swift in Sources */,

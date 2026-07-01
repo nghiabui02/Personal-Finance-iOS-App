@@ -6,6 +6,12 @@ struct TransferSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let wallets: [LocalWallet]
+    let initialFromWalletId: UUID?
+
+    init(wallets: [LocalWallet], initialFromWalletId: UUID? = nil) {
+        self.wallets = wallets
+        self.initialFromWalletId = initialFromWalletId
+    }
 
     @State private var fromWalletId: UUID?
     @State private var toWalletId: UUID?
@@ -21,6 +27,10 @@ struct TransferSheet: View {
 
     private var availableToWallets: [LocalWallet] {
         wallets.filter { $0.serverId != fromWalletId }
+    }
+
+    private var isSourceLocked: Bool {
+        wallets.contains { $0.serverId == initialFromWalletId }
     }
 
     private var insufficientFunds: Bool {
@@ -70,8 +80,13 @@ struct TransferSheet: View {
             .errorAlert($errorMsg)
         }
         .onAppear {
-            fromWalletId = wallets.first?.serverId
-            toWalletId = wallets.dropFirst().first?.serverId
+            let requestedSource = wallets.first {
+                $0.serverId == initialFromWalletId
+            }?.serverId
+            fromWalletId = requestedSource ?? wallets.first?.serverId
+            toWalletId = wallets.first {
+                $0.serverId != fromWalletId
+            }?.serverId
         }
     }
 
@@ -79,15 +94,24 @@ struct TransferSheet: View {
 
     private var fromSection: some View {
         Section("From") {
-            Picker("Wallet", selection: $fromWalletId) {
-                Text("Select wallet").tag(Optional<UUID>.none)
-                ForEach(wallets, id: \.serverId) { w in
-                    walletLabel(w).tag(Optional(w.serverId))
+            if isSourceLocked, let wallet = fromWallet {
+                HStack {
+                    Text("Wallet")
+                    Spacer()
+                    walletLabel(wallet)
+                        .foregroundColor(.secondary)
                 }
-            }
-            .onChange(of: fromWalletId) { _, newFrom in
-                if toWalletId == newFrom {
-                    toWalletId = wallets.first { $0.serverId != newFrom }?.serverId
+            } else {
+                Picker("Wallet", selection: $fromWalletId) {
+                    Text("Select wallet").tag(Optional<UUID>.none)
+                    ForEach(wallets, id: \.serverId) { w in
+                        walletLabel(w).tag(Optional(w.serverId))
+                    }
+                }
+                .onChange(of: fromWalletId) { _, newFrom in
+                    if toWalletId == newFrom {
+                        toWalletId = wallets.first { $0.serverId != newFrom }?.serverId
+                    }
                 }
             }
 

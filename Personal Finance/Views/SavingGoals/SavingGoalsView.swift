@@ -9,6 +9,8 @@ struct SavingGoalsView: View {
     @State private var showAdd = false
     @State private var editing: LocalSavingGoal?
     @State private var contributing: LocalSavingGoal?
+    @State private var pendingDeletion: LocalSavingGoal?
+    @State private var showDeleteConfirmation = false
     @State private var filterStatus: String = "active"
     @State private var errorMsg: String?
 
@@ -37,10 +39,12 @@ struct SavingGoalsView: View {
                                     }.tint(.green)
                                 }
                             }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    Task { await delete(goal) }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    pendingDeletion = goal
+                                    showDeleteConfirmation = true
                                 } label: { Label("Delete", systemImage: "trash") }
+                                .tint(.red)
                             }
                     }
                 }
@@ -64,6 +68,14 @@ struct SavingGoalsView: View {
             .sheet(isPresented: $showAdd) { AddEditSavingGoalView(goal: nil) }
             .sheet(item: $editing) { g in AddEditSavingGoalView(goal: g) }
             .sheet(item: $contributing) { g in ContributionSheet(goal: g) }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Saving Goal?",
+                message: "The saving goal will be permanently deleted."
+            ) { goal in
+                Task { await delete(goal) }
+            }
             .errorAlert($errorMsg)
     }
 

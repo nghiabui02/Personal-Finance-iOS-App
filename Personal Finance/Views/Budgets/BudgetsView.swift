@@ -11,6 +11,8 @@ struct BudgetsView: View {
         from: Calendar.current.dateComponents([.year, .month], from: Date()))!
     @State private var showAdd = false
     @State private var editing: LocalBudget?
+    @State private var pendingDeletion: LocalBudget?
+    @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
     // Cached — recomputed once via onChange, not every render
@@ -28,10 +30,12 @@ struct BudgetsView: View {
                         let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
                         BudgetRow(budget: budget, spent: spent)
                             .onTapGesture { editing = budget }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    Task { await delete(budget) }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    pendingDeletion = budget
+                                    showDeleteConfirmation = true
                                 } label: { Label("Delete", systemImage: "trash") }
+                                .tint(.red)
                             }
                     }
                 }
@@ -58,6 +62,14 @@ struct BudgetsView: View {
             .onChange(of: selectedMonth) { _, _ in recompute() }
             .sheet(isPresented: $showAdd) { AddEditBudgetView(budget: nil, defaultMonth: selectedMonth) }
             .sheet(item: $editing) { b in AddEditBudgetView(budget: b, defaultMonth: selectedMonth) }
+            .deleteConfirmation(
+                item: $pendingDeletion,
+                isPresented: $showDeleteConfirmation,
+                title: "Delete Budget?",
+                message: "The budget will be permanently deleted."
+            ) { budget in
+                Task { await delete(budget) }
+            }
             .errorAlert($errorMsg)
     }
 
