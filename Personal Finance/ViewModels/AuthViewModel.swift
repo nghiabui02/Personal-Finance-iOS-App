@@ -14,6 +14,7 @@ final class AuthViewModel: ObservableObject {
     @Published var isUpdating = false
     @Published var errorMessage: String?
     @Published var updateError: String?
+    @Published var authNotice: String?
 
     private let auth = SupabaseService.shared.client.auth
     private let storage = SupabaseService.shared.client.storage
@@ -67,12 +68,45 @@ final class AuthViewModel: ObservableObject {
     }
 
     func signIn(email: String, password: String) async {
-        isLoading = true; errorMessage = nil
+        isLoading = true; errorMessage = nil; authNotice = nil
         defer { isLoading = false }
         do {
             try await auth.signIn(email: email, password: password)
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func signUp(email: String, password: String) async {
+        guard password.count >= 6 else {
+            errorMessage = "Password must contain at least 6 characters."
+            return
+        }
+        isLoading = true; errorMessage = nil; authNotice = nil
+        defer { isLoading = false }
+        do {
+            let response = try await auth.signUp(email: email, password: password)
+            if response.session == nil {
+                authNotice = "Check your email to confirm your account."
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func sendPasswordReset(email: String) async {
+        guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Enter your email address first."
+            return
+        }
+        isLoading = true; errorMessage = nil; authNotice = nil
+        defer { isLoading = false }
+        do {
+            try await auth.resetPasswordForEmail(email)
+            authNotice = "If an account exists, password reset instructions have been sent."
+        } catch {
+            // Do not reveal whether the address is registered.
+            authNotice = "If an account exists, password reset instructions have been sent."
         }
     }
 

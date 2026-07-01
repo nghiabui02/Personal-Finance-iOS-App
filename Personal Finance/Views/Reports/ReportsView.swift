@@ -12,6 +12,8 @@ enum ReportPeriod: String, CaseIterable {
 struct ReportsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
+    @Query private var wallets: [LocalWallet]
+    @Query private var debts: [LocalDebt]
     @StateObject private var sync = SyncManager.shared
 
     @State private var selectedPeriod: ReportPeriod = .week
@@ -24,6 +26,18 @@ struct ReportsView: View {
     @Namespace private var periodAnimation
 
     private var net: Double { cachedIncome - cachedExpense }
+    private var savingsRate: Double {
+        cachedIncome > 0 ? net / cachedIncome * 100 : 0
+    }
+    private var currentNetWorth: Double {
+        let cash = wallets.filter { $0.type != "credit" }.reduce(0) { $0 + $1.balance }
+        let creditDebt = wallets.filter { $0.type == "credit" }.reduce(0) { $0 + $1.amountOwed }
+        let lent = debts.filter { $0.type == "lend" && $0.status != "completed" }
+            .reduce(0) { $0 + $1.remainingAmount }
+        let borrowed = debts.filter { $0.type == "borrow" && $0.status != "completed" }
+            .reduce(0) { $0 + $1.remainingAmount }
+        return cash + lent - creditDebt - borrowed
+    }
 
     private var periodRange: (start: Date, end: Date) {
         let cal = Calendar.current
@@ -89,6 +103,7 @@ struct ReportsView: View {
                     periodSelectorView.padding(.horizontal)
                     dateNavigatorView.padding(.horizontal)
                     netCashFlowCard.padding(.horizontal)
+                    currentNetWorthCard.padding(.horizontal)
                     chartCard.padding(.horizontal)
                     if !cachedBreakdown.isEmpty {
                         breakdownCard.padding(.horizontal)
@@ -221,6 +236,38 @@ struct ReportsView: View {
                 }
                 Spacer()
             }
+
+            Divider()
+            HStack {
+                Text("Savings rate")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(savingsRate, format: .number.precision(.fractionLength(1)))%")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(savingsRate >= 0 ? .income : .expense)
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var currentNetWorthCard: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("CURRENT NET WORTH")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+                Text(currentNetWorth.formatted(currency: "VND"))
+                    .font(.title2.weight(.bold))
+                    .foregroundColor(currentNetWorth >= 0 ? .primary : .expense)
+            }
+            Spacer()
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.title2)
+                .foregroundColor(.blue)
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground))
@@ -365,6 +412,7 @@ struct ReportsView: View {
         for tx in allTx {
             let d = tx.transactionDate
             guard d >= rangeStart && d < dayAfterEnd else { continue }
+            guard !tx.isTransfer else { continue }
 
             let key: Date
             switch selectedPeriod {

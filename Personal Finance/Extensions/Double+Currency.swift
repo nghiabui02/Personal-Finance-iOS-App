@@ -3,7 +3,9 @@ import Foundation
 private let _vndFormatter: NumberFormatter = {
     let f = NumberFormatter()
     f.numberStyle = .currency
+    f.locale = Locale(identifier: "vi_VN")
     f.currencyCode = "VND"
+    f.currencySymbol = "₫"
     f.maximumFractionDigits = 0
     f.minimumFractionDigits = 0
     return f
@@ -12,6 +14,7 @@ private let _vndFormatter: NumberFormatter = {
 private let _decimalFormatter: NumberFormatter = {
     let f = NumberFormatter()
     f.numberStyle = .decimal
+    f.locale = Locale(identifier: "vi_VN")
     f.maximumFractionDigits = 0
     return f
 }()

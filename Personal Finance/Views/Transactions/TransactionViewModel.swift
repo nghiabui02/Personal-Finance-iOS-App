@@ -3,7 +3,9 @@ import SwiftData
 
 private let _vmDF: DateFormatter = {
     let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-    f.locale = Locale(identifier: "en_US_POSIX"); return f
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
+    return f
 }()
 
 @MainActor
@@ -163,12 +165,13 @@ final class TransactionViewModel: ObservableObject {
         let (startStr, endStr) = periodRange()
         struct TotalRecord: Decodable {
             let type: String, amount: Double, transaction_date: String
+            let transfer_pair_id: UUID?
         }
         do {
             let userId = try await client.auth.session.user.id
             let records: [TotalRecord] = try await client
                 .from("transactions")
-                .select("type,amount,transaction_date")
+                .select("type,amount,transaction_date,transfer_pair_id")
                 .eq("user_id", value: userId)
                 .gte("transaction_date", value: startStr)
                 .lt("transaction_date",  value: endStr)
@@ -176,6 +179,7 @@ final class TransactionViewModel: ObservableObject {
             var inc = 0.0, exp = 0.0
             var daily: [Date: (income: Double, expense: Double)] = [:]
             for r in records {
+                guard r.transfer_pair_id == nil else { continue }
                 if r.type == "income" { inc += r.amount } else { exp += r.amount }
                 if let date = _vmDF.date(from: r.transaction_date) {
                     let day = Calendar.current.startOfDay(for: date)
@@ -191,10 +195,11 @@ final class TransactionViewModel: ObservableObject {
             let local = (try? ctx.fetch(FetchDescriptor<LocalTransaction>(
                 predicate: #Predicate { $0.transactionDate >= start && $0.transactionDate < end }
             ))) ?? []
-            periodIncome  = local.filter { $0.type == "income"  }.reduce(0) { $0 + $1.amount }
-            periodExpense = local.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount }
+            let reportable = local.filter { !$0.isTransfer }
+            periodIncome  = reportable.filter { $0.type == "income"  }.reduce(0) { $0 + $1.amount }
+            periodExpense = reportable.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount }
             var daily: [Date: (income: Double, expense: Double)] = [:]
-            for tx in local {
+            for tx in reportable {
                 let day = Calendar.current.startOfDay(for: tx.transactionDate)
                 var d = daily[day] ?? (0, 0)
                 if tx.type == "income" { d.income += tx.amount } else { d.expense += tx.amount }

@@ -11,6 +11,7 @@ final class DebtService {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
         return f
     }()
 
@@ -84,6 +85,12 @@ final class DebtService {
         _ debt: LocalDebt, amount: Double, note: String?,
         date: Date = Date(), wallet: LocalWallet?, in ctx: ModelContext
     ) async throws {
+        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+        guard amount <= debt.remainingAmount else { throw FinanceValidationError.exceedsRemainingDebt }
+        if debt.type == "borrow", let wallet, wallet.balance < amount {
+            throw FinanceValidationError.insufficientFunds
+        }
+
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
         }
@@ -120,6 +127,8 @@ final class DebtService {
         date: Date = Date(), wallet: LocalWallet?,
         in ctx: ModelContext
     ) async throws {
+        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
         }

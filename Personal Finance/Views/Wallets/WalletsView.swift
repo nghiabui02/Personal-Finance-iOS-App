@@ -243,7 +243,12 @@ struct CreditPaymentSheet: View {
                     if isSaving { ProgressView().scaleEffect(0.8) }
                     else {
                         Button("Pay") { Task { await pay() } }
-                            .disabled(amount <= 0 || selectedWalletId == nil)
+                            .disabled(
+                                amount <= 0
+                                || amount > creditWallet.amountOwed
+                                || selectedWalletId == nil
+                                || (sourceWallets.first(where: { $0.serverId == selectedWalletId })?.balance ?? 0) < amount
+                            )
                     }
                 }
             }

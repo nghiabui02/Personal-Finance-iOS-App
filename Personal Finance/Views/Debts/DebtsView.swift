@@ -221,7 +221,7 @@ struct DebtPaymentSheet: View {
                     if isSaving { ProgressView().scaleEffect(0.8) }
                     else {
                         Button("Save") { Task { await pay() } }
-                            .disabled(amount <= 0)
+                            .disabled(amount <= 0 || amount > debt.remainingAmount)
                     }
                 }
             }

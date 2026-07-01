@@ -11,6 +11,7 @@ final class TransferService {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
         return f
     }()
 
@@ -22,6 +23,10 @@ final class TransferService {
         note: String?,
         in ctx: ModelContext
     ) async throws {
+        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+        guard fromWallet.serverId != toWallet.serverId else { throw FinanceValidationError.sameWallet }
+        guard fromWallet.balance >= amount else { throw FinanceValidationError.insufficientFunds }
+
         let userId = try await client.auth.session.user.id
         let pairId = UUID()
         let dateStr = TransferService.df.string(from: date)

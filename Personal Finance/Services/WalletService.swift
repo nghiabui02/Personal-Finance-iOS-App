@@ -83,6 +83,22 @@ final class WalletService {
     }
 
     func delete(_ wallet: LocalWallet, in ctx: ModelContext) async throws {
+        if wallet.type != "credit", wallet.balance > 0 {
+            let wallets = (try? ctx.fetch(FetchDescriptor<LocalWallet>())) ?? []
+            guard let destination = wallets.first(where: {
+                $0.serverId != wallet.serverId && $0.isDefault
+            }) else {
+                throw FinanceValidationError.missingDefaultWallet
+            }
+            try await TransferService.shared.transfer(
+                from: wallet,
+                to: destination,
+                amount: wallet.balance,
+                date: Date(),
+                note: "Balance moved before deleting \(wallet.name)",
+                in: ctx
+            )
+        }
         try await client.from("wallets").delete().eq("id", value: wallet.serverId).execute()
         ctx.delete(wallet)
         try ctx.save()
@@ -93,6 +109,10 @@ final class WalletService {
         amount: Double, date: Date, note: String?,
         in ctx: ModelContext
     ) async throws {
+        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+        guard amount <= creditWallet.amountOwed else { throw FinanceValidationError.exceedsCreditDebt }
+        guard sourceWallet.balance >= amount else { throw FinanceValidationError.insufficientFunds }
+
         try await TransferService.shared.transfer(
             from: sourceWallet, to: creditWallet,
             amount: amount, date: date, note: note, in: ctx
