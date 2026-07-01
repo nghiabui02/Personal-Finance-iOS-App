@@ -21,56 +21,69 @@ struct BudgetsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-                MonthSelectorView(selectedMonth: $selectedMonth)
-                    .padding(.horizontal).padding(.vertical, 8)
-                    .background(Color(.secondarySystemGroupedBackground))
+            MonthSelectorView(selectedMonth: $selectedMonth)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(Color(.secondarySystemGroupedBackground))
 
-                List {
-                    ForEach(cachedBudgets, id: \.serverId) { budget in
-                        let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                        BudgetRow(budget: budget, spent: spent)
-                            .onTapGesture { editing = budget }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button {
-                                    pendingDeletion = budget
-                                    showDeleteConfirmation = true
-                                } label: { Label("Delete", systemImage: "trash") }
-                                .tint(.red)
+            List {
+                ForEach(cachedBudgets, id: \.serverId) { budget in
+                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                    BudgetRow(budget: budget, spent: spent)
+                        .onTapGesture { editing = budget }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                pendingDeletion = budget
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
-                    }
-                }
-                .listStyle(.insetGrouped)
-                .refreshable { await sync.syncAll(modelContext: modelContext) }
-                .overlay {
-                    if cachedBudgets.isEmpty {
-                        ContentUnavailableView("No Budgets", systemImage: "chart.bar",
-                            description: Text("Tap + to add a budget for this month"))
-                    }
+                            .tint(.red)
+                        }
                 }
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Budgets")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAdd = true } label: { Image(systemName: "plus") }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .listStyle(.insetGrouped)
+            .refreshable { await sync.syncAll(modelContext: modelContext) }
+            .overlay {
+                if cachedBudgets.isEmpty {
+                    ContentUnavailableView(
+                        "No Budgets",
+                        systemImage: "chart.bar",
+                        description: Text("Tap + to add a budget for this month")
+                    )
                 }
             }
-            .onAppear { recompute() }
-            .onChange(of: allBudgets)    { _, _ in recompute() }
-            .onChange(of: allTx)         { _, _ in recompute() }
-            .onChange(of: selectedMonth) { _, _ in recompute() }
-            .sheet(isPresented: $showAdd) { AddEditBudgetView(budget: nil, defaultMonth: selectedMonth) }
-            .sheet(item: $editing) { b in AddEditBudgetView(budget: b, defaultMonth: selectedMonth) }
-            .deleteConfirmation(
-                item: $pendingDeletion,
-                isPresented: $showDeleteConfirmation,
-                title: "Delete Budget?",
-                message: "The budget will be permanently deleted."
-            ) { budget in
-                Task { await delete(budget) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Budgets")
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showAdd = true } label: { Image(systemName: "plus") }
             }
-            .errorAlert($errorMsg)
+        }
+        .onAppear { recompute() }
+        .onChange(of: allBudgets)    { _, _ in recompute() }
+        .onChange(of: allTx)         { _, _ in recompute() }
+        .onChange(of: selectedMonth) { _, _ in recompute() }
+        .sheet(isPresented: $showAdd) {
+            AddEditBudgetView(budget: nil, defaultMonth: selectedMonth)
+        }
+        .sheet(item: $editing) { budget in
+            AddEditBudgetView(budget: budget, defaultMonth: selectedMonth)
+        }
+        .deleteConfirmation(
+            item: $pendingDeletion,
+            isPresented: $showDeleteConfirmation,
+            title: "Delete Budget?",
+            message: "The budget will be permanently deleted."
+        ) { budget in
+            Task { await delete(budget) }
+        }
+        .errorAlert($errorMsg)
     }
 
     // Single pass: filter budgets + compute spent — O(n_budgets + n_transactions)

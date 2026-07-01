@@ -31,6 +31,7 @@ struct MonthSelectorView: View {
             .disabled(isCurrentMonth)
         }
         .padding(.vertical, 4)
+        .frame(maxWidth: .infinity)
         .sheet(isPresented: $showPicker) {
             MonthYearPickerSheet(selectedMonth: $selectedMonth, isPresented: $showPicker)
         }
