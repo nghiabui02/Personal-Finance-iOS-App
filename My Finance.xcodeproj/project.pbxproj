@@ -119,6 +119,7 @@
 		ECC8D8F1E3801E9D308783EA /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C0240555C6E44D0B6915A8 /* SyncManager.swift */; };
 		EDC0D64757240DCC0B20DC40 /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE88AAE276CC435181621D2 /* WalletsView.swift */; };
 		EDDFD094055B03BCB632830D /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9C83680068144B3C599DAA /* BudgetService.swift */; };
+		F90100000000000000000001 /* LocalDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90000000000000000000001 /* LocalDataStore.swift */; };
 		F0E57EBC59406BFBC97F1F77 /* TxStatBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47B838501FF58C95933C484 /* TxStatBox.swift */; };
 		F56CD755F0BA18B2D542338B /* TransactionListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB934DBDF281BE433486469 /* TransactionListSection.swift */; };
 		F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36263D7531F4F4D9D014689 /* View+Helpers.swift */; };
@@ -260,6 +261,7 @@
 		E5BF435250E4FBEE93C8039E /* AddEditCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditCategoryView.swift; sourceTree = "<group>"; };
 		EE6249E108B6EAFEB4AD2C8D /* RecurringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringView.swift; sourceTree = "<group>"; };
 		F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiPickerButton.swift; sourceTree = "<group>"; };
+		F90000000000000000000001 /* LocalDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataStore.swift; sourceTree = "<group>"; };
 		F0B21F3082C1E8BF4888F6A9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		F82C1E1CD7A407D1FF7872DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		FBEF9CB7C3F8282F5494D68C /* RemoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteModels.swift; sourceTree = "<group>"; };
@@ -576,6 +578,7 @@
 				DA9C83680068144B3C599DAA /* BudgetService.swift */,
 				5990C03C2F82819D1CFBCFE6 /* CategoryService.swift */,
 				5DEC3E5D139DA0AE1D39EA12 /* DebtService.swift */,
+				F90000000000000000000001 /* LocalDataStore.swift */,
 				3E970C7990445F773EA68DB0 /* RecurringService.swift */,
 				79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */,
 				D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */,
@@ -805,6 +808,7 @@
 				DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */,
 				E70000000000000000000005 /* EditFieldSheet.swift in Sources */,
 				C6783596677CAD441B221743 /* EmojiPickerButton.swift in Sources */,
+				F90100000000000000000001 /* LocalDataStore.swift in Sources */,
 				B81443CC4FBA1C51D411EBBD /* LocalModels.swift in Sources */,
 				637AF6F47E07D98CD885F7A0 /* LoginView.swift in Sources */,
 				DC9A29DA4776343E78343F0E /* MainTabView.swift in Sources */,

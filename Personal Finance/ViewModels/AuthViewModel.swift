@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import Supabase
 
-enum AuthState {
+enum AuthState: Equatable {
     case loading, authenticated, unauthenticated
 }
 

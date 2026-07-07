@@ -46,8 +46,13 @@ final class SyncManager: ObservableObject {
 
         do {
             let userId = try await client.auth.session.user.id
+            LocalDataStore.prepareForAuthenticatedUser(userId, in: modelContext)
 
-            async let walletsTask: [RemoteWallet] = client.from("wallets").select().execute().value
+            async let walletsTask: [RemoteWallet] = client.from("wallets")
+                .select()
+                .eq("user_id", value: userId)
+                .execute()
+                .value
             async let categoriesTask: [RemoteCategory] = client.from("categories").select()
                 .or("user_id.is.null,user_id.eq.\(userId)").execute().value
             let (wallets, categories) = try await (walletsTask, categoriesTask)
@@ -60,12 +65,21 @@ final class SyncManager: ObservableObject {
                     from: Calendar.current.date(byAdding: .month, value: -12, to: Date())!))!
 
             async let txTask = fetchTransactions(userId: userId, months: 12)
-            async let budgetsTask = fetchBudgets(months: 12)
-            async let debtsTask: [RemoteDebt] = client.from("debts").select().execute().value
-            async let goalsTask: [RemoteSavingGoal] = client.from("saving_goals").select().execute().value
+            async let budgetsTask = fetchBudgets(userId: userId, months: 12)
+            async let debtsTask: [RemoteDebt] = client.from("debts")
+                .select()
+                .eq("user_id", value: userId)
+                .execute()
+                .value
+            async let goalsTask: [RemoteSavingGoal] = client.from("saving_goals")
+                .select()
+                .eq("user_id", value: userId)
+                .execute()
+                .value
             async let recurringTask: [RemoteRecurringTransaction] = client
                 .from("recurring_transactions")
                 .select("*, categories(id, name, icon, color), wallets(id, name)")
+                .eq("user_id", value: userId)
                 .execute().value
             let (transactions, budgets, debts, goals, recurring) = try await (txTask, budgetsTask, debtsTask, goalsTask, recurringTask)
 
@@ -106,7 +120,7 @@ final class SyncManager: ObservableObject {
             .value
     }
 
-    private func fetchBudgets(months: Int) async throws -> [RemoteBudget] {
+    private func fetchBudgets(userId: UUID, months: Int) async throws -> [RemoteBudget] {
         let since = Calendar.current.date(byAdding: .month, value: -months, to: Date())!
         let start = Calendar.current.date(
             from: Calendar.current.dateComponents([.year, .month], from: since)
@@ -114,6 +128,7 @@ final class SyncManager: ObservableObject {
         return try await client
             .from("budgets")
             .select("*, categories(id, name, icon, color)")
+            .eq("user_id", value: userId)
             .gte("month", value: dateFormatter.string(from: start))
             .execute()
             .value
