@@ -44,18 +44,11 @@ struct AddEditBudgetView: View {
                             Text(budget?.categoryName ?? "").foregroundColor(.secondary)
                         }
                     }
-                    HStack {
-                        Text("Budget Amount")
-                        Spacer()
-                        TextField("0", text: $amountText)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .fontWeight(.semibold)
-                            .onChange(of: amountText) { _, new in
-                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
-                            }
-                        Text("₫").foregroundColor(.secondary)
-                    }
+                    CurrencyAmountField(
+                        title: "Budget Amount",
+                        amount: $amount,
+                        amountText: $amountText
+                    )
                 }
             }
             .formKeyboardHandling()

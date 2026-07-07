@@ -29,16 +29,11 @@ struct AddEditSavingGoalView: View {
                         Text("Name")
                         TextField("e.g. New Car", text: $name)
                     }
-                    HStack {
-                        Text("Target Amount")
-                        Spacer()
-                        TextField("0", text: $targetAmountText)
-                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
-                            .onChange(of: targetAmountText) { _, new in
-                                applyAmountFormat(new: new, amountText: &targetAmountText, amount: &targetAmount)
-                            }
-                        Text("₫").foregroundColor(.secondary)
-                    }
+                    CurrencyAmountField(
+                        title: "Target Amount",
+                        amount: $targetAmount,
+                        amountText: $targetAmountText
+                    )
                 }
                 Section {
                     Toggle("Deadline", isOn: $hasDeadline)

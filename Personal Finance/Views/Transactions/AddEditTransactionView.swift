@@ -40,71 +40,20 @@ struct AddEditTransactionView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // Type toggle + Amount
-                Section {
-                    Picker("Type", selection: $type) {
-                        Text("Expense").tag("expense")
-                        Text("Income").tag("income")
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(type == "income" ? .income : .expense)
-                    .onChange(of: type) { _, newType in
-                        if let cat = selectedCategory, cat.type != newType {
-                            selectedCategoryId = nil
-                        }
-                    }
+                TransactionTypeAmountSection(
+                    type: $type,
+                    amount: $amount,
+                    amountText: $amountText,
+                    onTypeChanged: resetCategoryIfNeeded
+                )
 
-                    HStack {
-                        Text("Amount")
-                        Spacer()
-                        TextField("0", text: $amountText)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .fontWeight(.semibold)
-                            .onChange(of: amountText) { _, new in
-                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
-                            }
-                        Text("₫").foregroundColor(.secondary)
-                    }
-                }
-
-                // Details
-                Section {
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-
-                    // Category row
-                    Button { showCategoryPicker = true } label: {
-                        HStack {
-                            Text("Category").foregroundColor(.primary)
-                            Spacer()
-                            if let cat = selectedCategory {
-                                HStack(spacing: 4) {
-                                    Text(cat.icon ?? "📦")
-                                    Text(cat.name).foregroundColor(.secondary)
-                                }
-                            } else {
-                                Text("Select").foregroundColor(.secondary)
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.caption).foregroundColor(.secondary)
-                        }
-                    }
-
-                    // Wallet row
-                    Button { showWalletPicker = true } label: {
-                        HStack {
-                            Text("Wallet").foregroundColor(.primary)
-                            Spacer()
-                            if let w = selectedWallet {
-                                Text(w.name).foregroundColor(.secondary)
-                            } else {
-                                Text("Select").foregroundColor(.secondary)
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.caption).foregroundColor(.secondary)
-                        }
-                    }
-                }
+                TransactionDetailsSection(
+                    date: $date,
+                    selectedCategory: selectedCategory,
+                    selectedWallet: selectedWallet,
+                    onSelectCategory: { showCategoryPicker = true },
+                    onSelectWallet: { showWalletPicker = true }
+                )
 
                 Section {
                     TextField("Note (optional)", text: $note, axis: .vertical)
@@ -128,14 +77,14 @@ struct AddEditTransactionView: View {
                 }
             }
             .sheet(isPresented: $showCategoryPicker) {
-                CategoryPickerSheet(
+                TransactionCategoryPickerSheet(
                     categories: filteredCategories,
                     selected: $selectedCategoryId,
                     isPresented: $showCategoryPicker
                 )
             }
             .sheet(isPresented: $showWalletPicker) {
-                WalletPickerSheet(
+                TransactionWalletPickerSheet(
                     wallets: wallets,
                     selected: $selectedWalletId,
                     isPresented: $showWalletPicker
@@ -159,6 +108,12 @@ struct AddEditTransactionView: View {
             date = defaultDate ?? Date()
             selectedWalletId = wallets.first(where: { $0.isDefault })?.serverId
                 ?? wallets.first?.serverId
+        }
+    }
+
+    private func resetCategoryIfNeeded(newType: String) {
+        if let selectedCategory, selectedCategory.type != newType {
+            selectedCategoryId = nil
         }
     }
 
@@ -191,102 +146,6 @@ struct AddEditTransactionView: View {
             dismiss()
         } catch {
             errorMsg = error.localizedDescription
-        }
-    }
-}
-
-// MARK: - Category Picker Sheet
-
-private struct CategoryPickerSheet: View {
-    let categories: [LocalCategory]
-    @Binding var selected: UUID?
-    @Binding var isPresented: Bool
-    @State private var search = ""
-
-    private var displayed: [LocalCategory] {
-        search.isEmpty ? categories
-            : categories.filter { $0.name.localizedCaseInsensitiveContains(search) }
-    }
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if displayed.isEmpty {
-                    ContentUnavailableView("No Categories", systemImage: "tag")
-                } else {
-                    List(displayed, id: \.serverId) { cat in
-                        Button {
-                            selected = cat.serverId
-                            isPresented = false
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(cat.icon ?? "📦").font(.title3)
-                                Text(cat.name).foregroundColor(.primary)
-                                Spacer()
-                                if selected == cat.serverId {
-                                    Image(systemName: "checkmark").foregroundColor(.blue)
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(.insetGrouped)
-                }
-            }
-            .searchable(text: $search, prompt: "Search")
-            .navigationTitle("Category")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { isPresented = false }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Wallet Picker Sheet
-
-private struct WalletPickerSheet: View {
-    let wallets: [LocalWallet]
-    @Binding var selected: UUID?
-    @Binding var isPresented: Bool
-
-    var body: some View {
-        NavigationStack {
-            List(wallets, id: \.serverId) { wallet in
-                Button {
-                    selected = wallet.serverId
-                    isPresented = false
-                } label: {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill((wallet.color.map { Color(hex: $0) } ?? .blue).opacity(0.15))
-                                .frame(width: 36, height: 36)
-                            Text(wallet.displayIcon).font(.system(size: 18))
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(wallet.name)
-                                .foregroundColor(.primary).fontWeight(.medium)
-                            Text(wallet.balance.formatted(currency: "VND"))
-                                .font(.caption).foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if selected == wallet.serverId {
-                            Image(systemName: "checkmark").foregroundColor(.blue)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Wallet")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { isPresented = false }
-                }
-            }
         }
     }
 }

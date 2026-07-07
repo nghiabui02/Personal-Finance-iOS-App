@@ -40,32 +40,22 @@ struct AddEditWalletView: View {
                     }
 
                     if !isEditing && type != "credit" {
-                        HStack {
-                            Text("Initial Balance")
-                            Spacer()
-                            TextField("0", text: $initialBalanceText)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .onChange(of: initialBalanceText) { _, new in
-                                    applyAmountFormat(new: new, amountText: &initialBalanceText, amount: &initialBalance)
-                                }
-                        }
+                        CurrencyAmountField(
+                            title: "Initial Balance",
+                            currencySymbol: "",
+                            amount: $initialBalance,
+                            amountText: $initialBalanceText
+                        )
                     }
                 }
 
                 if type == "credit" {
                     Section("Credit") {
-                        HStack {
-                            Text("Credit Limit")
-                            Spacer()
-                            TextField("0", text: $creditLimitText)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .onChange(of: creditLimitText) { _, new in
-                                    applyAmountFormat(new: new, amountText: &creditLimitText, amount: &creditLimit)
-                                }
-                            Text("₫").foregroundColor(.secondary)
-                        }
+                        CurrencyAmountField(
+                            title: "Credit Limit",
+                            amount: $creditLimit,
+                            amountText: $creditLimitText
+                        )
                         Stepper("Statement Day: \(statementDay)", value: $statementDay, in: 1...28)
                         Stepper("Payment Due Day: \(paymentDueDay)", value: $paymentDueDay, in: 1...28)
                     }

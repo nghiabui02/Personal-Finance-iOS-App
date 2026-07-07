@@ -1,13 +1,6 @@
 import SwiftUI
 import SwiftData
 
-private let _vmDF: DateFormatter = {
-    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-    return f
-}()
-
 @MainActor
 final class TransactionViewModel: ObservableObject {
 
@@ -36,15 +29,13 @@ final class TransactionViewModel: ObservableObject {
     // MARK: - Init
 
     init() {
-        let cal = Calendar.current
-        selectedMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date()))!
+        selectedMonth = TransactionDateRange.monthStart(for: Date())
     }
 
     // MARK: - Computed helpers
 
     var currentMonthStart: Date {
-        let cal = Calendar.current
-        return cal.date(from: cal.dateComponents([.year, .month], from: Date()))!
+        TransactionDateRange.monthStart(for: Date())
     }
 
     var isOnCurrentMonth: Bool {
@@ -82,7 +73,7 @@ final class TransactionViewModel: ObservableObject {
         isLoadingMore = true
         defer { isLoadingMore = false }
 
-        let (startStr, endStr) = periodRange()
+        let (startStr, endStr) = periodRangeStrings()
         let from = serverPage * pageSize
         let to   = from + pageSize - 1
 
@@ -120,8 +111,8 @@ final class TransactionViewModel: ObservableObject {
         isLoadingDateTxs = true
         defer { isLoadingDateTxs = false }
 
-        let startStr = _vmDF.string(from: start)
-        let endStr   = _vmDF.string(from: end)
+        let startStr = TransactionDateRange.apiDateString(from: start)
+        let endStr   = TransactionDateRange.apiDateString(from: end)
 
         do {
             let userId = try await client.auth.session.user.id
@@ -162,56 +153,31 @@ final class TransactionViewModel: ObservableObject {
     // MARK: - Private fetch helpers
 
     private func fetchPeriodTotals(in ctx: ModelContext) async {
-        let (startStr, endStr) = periodRange()
-        struct TotalRecord: Decodable {
-            let type: String, amount: Double, transaction_date: String
-            let transfer_pair_id: UUID?
-        }
+        let (startStr, endStr) = periodRangeStrings()
         do {
             let userId = try await client.auth.session.user.id
-            let records: [TotalRecord] = try await client
+            let records: [TransactionTotalRecord] = try await client
                 .from("transactions")
                 .select("type,amount,transaction_date,transfer_pair_id")
                 .eq("user_id", value: userId)
                 .gte("transaction_date", value: startStr)
                 .lt("transaction_date",  value: endStr)
                 .execute().value
-            var inc = 0.0, exp = 0.0
-            var daily: [Date: (income: Double, expense: Double)] = [:]
-            for r in records {
-                guard r.transfer_pair_id == nil else { continue }
-                if r.type == "income" { inc += r.amount } else { exp += r.amount }
-                if let date = _vmDF.date(from: r.transaction_date) {
-                    let day = Calendar.current.startOfDay(for: date)
-                    var d = daily[day] ?? (0, 0)
-                    if r.type == "income" { d.income += r.amount } else { d.expense += r.amount }
-                    daily[day] = d
-                }
-            }
-            periodIncome = inc; periodExpense = exp; dailyData = daily
+            applyPeriodTotals(TransactionPeriodTotalsCalculator.calculate(from: records))
         } catch {
-            guard let start = _vmDF.date(from: startStr),
-                  let end   = _vmDF.date(from: endStr) else { return }
+            guard let range = periodDateRange() else { return }
+            let start = range.start
+            let end = range.end
             let local = (try? ctx.fetch(FetchDescriptor<LocalTransaction>(
                 predicate: #Predicate { $0.transactionDate >= start && $0.transactionDate < end }
             ))) ?? []
-            let reportable = local.filter { !$0.isTransfer }
-            periodIncome  = reportable.filter { $0.type == "income"  }.reduce(0) { $0 + $1.amount }
-            periodExpense = reportable.filter { $0.type == "expense" }.reduce(0) { $0 + $1.amount }
-            var daily: [Date: (income: Double, expense: Double)] = [:]
-            for tx in reportable {
-                let day = Calendar.current.startOfDay(for: tx.transactionDate)
-                var d = daily[day] ?? (0, 0)
-                if tx.type == "income" { d.income += tx.amount } else { d.expense += tx.amount }
-                daily[day] = d
-            }
-            dailyData = daily
+            applyPeriodTotals(TransactionPeriodTotalsCalculator.calculate(from: local))
         }
     }
 
     private func fetchIncome(in ctx: ModelContext) async {
         guard SyncManager.shared.isOnline else { return }
-        let (startStr, endStr) = periodRange()
+        let (startStr, endStr) = periodRangeStrings()
         do {
             let userId = try await client.auth.session.user.id
             let remote: [RemoteTransaction] = try await client
@@ -232,26 +198,17 @@ final class TransactionViewModel: ObservableObject {
     // MARK: - Private data helpers
 
     private func recomputeGrouped() {
-        let cal = Calendar.current
-        var all: [Date: [LocalTransaction]] = [:]
-        var inc: [Date: [LocalTransaction]] = [:]
-        var exp: [Date: [LocalTransaction]] = [:]
-        for tx in loadedTxs {
-            let day = cal.startOfDay(for: tx.transactionDate)
-            all[day, default: []].append(tx)
-            if tx.type == "income" { inc[day, default: []].append(tx) }
-            else                   { exp[day, default: []].append(tx) }
-        }
-        groupedAll     = all.sorted { $0.key > $1.key }
-        groupedIncome  = inc.sorted { $0.key > $1.key }
-        groupedExpense = exp.sorted { $0.key > $1.key }
+        let grouped = TransactionGroupingCalculator.group(loadedTxs)
+        groupedAll = grouped.all
+        groupedIncome = grouped.income
+        groupedExpense = grouped.expense
     }
 
     private func upsert(_ remotes: [RemoteTransaction], in ctx: ModelContext) {
         guard !remotes.isEmpty else { return }
-        let (startStr, endStr) = periodRange()
-        guard let start = _vmDF.date(from: startStr),
-              let end   = _vmDF.date(from: endStr) else { return }
+        guard let range = periodDateRange() else { return }
+        let start = range.start
+        let end = range.end
         let existing = (try? ctx.fetch(FetchDescriptor<LocalTransaction>(
             predicate: #Predicate { $0.transactionDate >= start && $0.transactionDate < end }
         ))) ?? []
@@ -271,20 +228,25 @@ final class TransactionViewModel: ObservableObject {
     }
 
     private func fallbackFromCache(in ctx: ModelContext) {
-        let (startStr, endStr) = periodRange()
-        guard let start = _vmDF.date(from: startStr),
-              let end   = _vmDF.date(from: endStr) else { return }
+        guard let range = periodDateRange() else { return }
         let all = (try? ctx.fetch(
             FetchDescriptor<LocalTransaction>(sortBy: [SortDescriptor(\.transactionDate, order: .reverse)])
         )) ?? []
-        loadedTxs = all.filter { $0.transactionDate >= start && $0.transactionDate < end }
+        loadedTxs = all.filter { $0.transactionDate >= range.start && $0.transactionDate < range.end }
         recomputeGrouped()
     }
 
-    private func periodRange() -> (String, String) {
-        let cal   = Calendar.current
-        let start = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth))!
-        let end   = cal.date(byAdding: .month, value: 1, to: start)!
-        return (_vmDF.string(from: start), _vmDF.string(from: end))
+    private func applyPeriodTotals(_ totals: TransactionPeriodTotals) {
+        periodIncome = totals.income
+        periodExpense = totals.expense
+        dailyData = totals.dailyData
+    }
+
+    private func periodRangeStrings() -> (String, String) {
+        TransactionDateRange.monthRangeStrings(for: selectedMonth)
+    }
+
+    private func periodDateRange() -> (start: Date, end: Date)? {
+        TransactionDateRange.monthRange(for: selectedMonth)
     }
 }

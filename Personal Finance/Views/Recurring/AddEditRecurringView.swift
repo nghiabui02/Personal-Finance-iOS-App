@@ -40,18 +40,7 @@ struct AddEditRecurringView: View {
                         .tint(type == "income" ? .income : .expense)
                         .onChange(of: type) { _, _ in selectedCategoryId = nil }
                     }
-                    HStack {
-                        Text("Amount")
-                        Spacer()
-                        TextField("0", text: $amountText)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .fontWeight(.semibold)
-                            .onChange(of: amountText) { _, new in
-                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
-                            }
-                        Text("₫").foregroundColor(.secondary)
-                    }
+                    CurrencyAmountField(amount: $amount, amountText: $amountText)
                     Picker("Frequency", selection: $frequency) {
                         ForEach(frequencies, id: \.self) { f in
                             Text(f.capitalized).tag(f)

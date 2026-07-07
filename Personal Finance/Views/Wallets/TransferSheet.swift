@@ -151,18 +151,7 @@ struct TransferSheet: View {
 
     private var amountSection: some View {
         Section {
-            HStack {
-                Text("Amount")
-                Spacer()
-                TextField("0", text: $amountText)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
-                    .fontWeight(.semibold)
-                    .onChange(of: amountText) { _, new in
-                        applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
-                    }
-                Text("₫").foregroundColor(.secondary)
-            }
+            CurrencyAmountField(amount: $amount, amountText: $amountText)
         }
     }
 

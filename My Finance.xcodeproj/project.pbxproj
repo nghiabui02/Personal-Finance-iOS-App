@@ -43,6 +43,12 @@
 		85B6F719BBABA3667E0AC6D5 /* Personal_FinanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FAE4E8373F658692BB0ECC /* Personal_FinanceTests.swift */; };
 		87E9B4F5CFF2F5D26AE73A97 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */; };
 		8AE3276F52C816B84A088259 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0B21F3082C1E8BF4888F6A9 /* DashboardView.swift */; };
+		8D3FA27F135130DF9FF24E65 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4B584112C1B9A009F249D6 /* AuthViewModel.swift */; };
+		8D641866A51127E57C6C4D54 /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7F797711FF67789CB01E16 /* MoreView.swift */; };
+		8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */; };
+		A0930DDD42F16BEF22B53F2E /* AddEditWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */; };
+		A60BFED72DD138A98096A848 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A87D61DA3670C98CAAFA441 /* TransactionsView.swift */; };
+		A95E97C8AC2ADC29B3FE48B0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DB04871FCADE838D2A8E52FF /* Supabase */; };
 		B10000000000000000000001 /* DashboardMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* DashboardMetrics.swift */; };
 		B10000000000000000000002 /* DashboardOverviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* DashboardOverviewCard.swift */; };
 		B10000000000000000000003 /* DashboardNetWorthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* DashboardNetWorthCard.swift */; };
@@ -57,29 +63,57 @@
 		B40000000000000000000004 /* DebtDetailActionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000004 /* DebtDetailActionsSection.swift */; };
 		B40000000000000000000005 /* DebtInformationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000005 /* DebtInformationSection.swift */; };
 		B40000000000000000000006 /* DebtPaymentHistorySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000006 /* DebtPaymentHistorySection.swift */; };
+		B40000000000000000000007 /* DebtFilterType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000007 /* DebtFilterType.swift */; };
+		B40000000000000000000008 /* DebtPaymentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000008 /* DebtPaymentSheet.swift */; };
+		B40000000000000000000009 /* DebtAdditionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000009 /* DebtAdditionSheet.swift */; };
+		B4000000000000000000000A /* DebtsContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4000000000000000000000A /* DebtsContentView.swift */; };
+		B4000000000000000000000B /* DebtRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4000000000000000000000B /* DebtRow.swift */; };
+		B4000000000000000000000C /* DebtAmountEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4000000000000000000000C /* DebtAmountEntrySection.swift */; };
 		B50000000000000000000001 /* WalletDetailMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000001 /* WalletDetailMetrics.swift */; };
 		B50000000000000000000002 /* WalletDetailHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000002 /* WalletDetailHeader.swift */; };
 		B50000000000000000000003 /* WalletCashFlowSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000003 /* WalletCashFlowSection.swift */; };
 		B50000000000000000000004 /* WalletInformationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000004 /* WalletInformationSection.swift */; };
 		B50000000000000000000005 /* WalletTransactionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000005 /* WalletTransactionsSection.swift */; };
+		B50000000000000000000006 /* WalletListMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000006 /* WalletListMetrics.swift */; };
+		B50000000000000000000007 /* CreditPaymentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000007 /* CreditPaymentSheet.swift */; };
+		B50000000000000000000008 /* WalletsContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000008 /* WalletsContentView.swift */; };
+		B50000000000000000000009 /* WalletSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000009 /* WalletSummaryCard.swift */; };
+		B5000000000000000000000A /* WalletRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5000000000000000000000A /* WalletRow.swift */; };
 		B60000000000000000000001 /* DeleteConfirmationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000001 /* DeleteConfirmationModifier.swift */; };
-		8D3FA27F135130DF9FF24E65 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4B584112C1B9A009F249D6 /* AuthViewModel.swift */; };
-		8D641866A51127E57C6C4D54 /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7F797711FF67789CB01E16 /* MoreView.swift */; };
-		8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */; };
-		A0930DDD42F16BEF22B53F2E /* AddEditWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */; };
-		A60BFED72DD138A98096A848 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A87D61DA3670C98CAAFA441 /* TransactionsView.swift */; };
-		A95E97C8AC2ADC29B3FE48B0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DB04871FCADE838D2A8E52FF /* Supabase */; };
+		B60000000000000000000002 /* CurrencyAmountField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000002 /* CurrencyAmountField.swift */; };
+		B70000000000000000000001 /* ReportPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000001 /* ReportPeriod.swift */; };
+		B70000000000000000000002 /* ReportMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000002 /* ReportMetrics.swift */; };
+		B70000000000000000000011 /* ReportsContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000011 /* ReportsContentView.swift */; };
+		B70000000000000000000012 /* ReportPeriodSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000012 /* ReportPeriodSelectorView.swift */; };
+		B70000000000000000000013 /* ReportDateNavigatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000013 /* ReportDateNavigatorView.swift */; };
+		B70000000000000000000014 /* ReportCashFlowCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000014 /* ReportCashFlowCard.swift */; };
+		B70000000000000000000015 /* ReportNetWorthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000015 /* ReportNetWorthCard.swift */; };
+		B70000000000000000000016 /* ReportIncomeExpenseChartCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000016 /* ReportIncomeExpenseChartCard.swift */; };
+		B70000000000000000000017 /* ReportSpendingBreakdownCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */; };
 		B756B91DD5B5C919A73C7FC3 /* Personal_FinanceUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 666D2A4AB32A151A3F676DFF /* Personal_FinanceUITestsLaunchTests.swift */; };
 		B81443CC4FBA1C51D411EBBD /* LocalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B39FCE8E8A6D1B42D20A353 /* LocalModels.swift */; };
 		BB036A2778F844F392B439CB /* BalanceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897E4AE88520EB6ACA8A2039 /* BalanceCardView.swift */; };
 		C12AF5518215280AD3D9E112 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2EBE416517D05AA67D5ED9 /* ReportsView.swift */; };
 		C1D2E3F4A5B6001122334455 /* TransferService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6001166778899 /* TransferService.swift */; };
+		C70000000000000000000001 /* SettingsProfileHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000001 /* SettingsProfileHeader.swift */; };
+		C70000000000000000000002 /* SettingsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000002 /* SettingsRow.swift */; };
+		C70000000000000000000003 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000003 /* AvatarView.swift */; };
+		C70000000000000000000004 /* TextFieldKeyboardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000004 /* TextFieldKeyboardType.swift */; };
+		C70000000000000000000005 /* EditFieldSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000005 /* EditFieldSheet.swift */; };
+		C70000000000000000000006 /* ChangePasswordSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000006 /* ChangePasswordSheet.swift */; };
 		C3AF285594382F775B2A9C6F /* AddEditSavingGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB14E51ECFDED383E416C6B /* AddEditSavingGoalView.swift */; };
 		C527370E4FD6FACE8D5E72FC /* TransactionHeaderSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65762D13C560E5F27E7C7A6E /* TransactionHeaderSection.swift */; };
 		C6783596677CAD441B221743 /* EmojiPickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */; };
 		C8B128142F8645C0615782C2 /* SpendingChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912990C2BEDF8C13F54D92D8 /* SpendingChartView.swift */; };
 		CA2DFA5FC50279A2E37C68C8 /* WeekSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54842597863F6CF3E47F7916 /* WeekSelectorView.swift */; };
 		D2E3F4A5B6C7001122334455 /* TransferSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C7001166778899 /* TransferSheet.swift */; };
+		D80000000000000000000001 /* TransactionTypeAmountSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000001 /* TransactionTypeAmountSection.swift */; };
+		D80000000000000000000002 /* TransactionDetailsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000002 /* TransactionDetailsSection.swift */; };
+		D80000000000000000000003 /* TransactionCategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */; };
+		D80000000000000000000004 /* TransactionWalletPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000004 /* TransactionWalletPickerSheet.swift */; };
+		D80000000000000000000005 /* TransactionDateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000005 /* TransactionDateRange.swift */; };
+		D80000000000000000000006 /* TransactionGroupingCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000006 /* TransactionGroupingCalculator.swift */; };
+		D80000000000000000000007 /* TransactionPeriodTotals.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000007 /* TransactionPeriodTotals.swift */; };
 		DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372B7BE7C7BC974EF1F4D121 /* Double+Currency.swift */; };
 		DC9A29DA4776343E78343F0E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C1E1CD7A407D1FF7872DC /* MainTabView.swift */; };
 		ECC8D8F1E3801E9D308783EA /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C0240555C6E44D0B6915A8 /* SyncManager.swift */; };
@@ -150,15 +184,13 @@
 		9238C7CBB53065A2814836A2 /* DebtsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtsView.swift; sourceTree = "<group>"; };
 		9A4A62405B4621BE6FDD10B5 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		9B39FCE8E8A6D1B42D20A353 /* LocalModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalModels.swift; sourceTree = "<group>"; };
-		A1C7C65870795A95A26C83C0 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
-		AB43EDEAB7559804CA8B7BEA /* Personal_FinanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Personal_FinanceApp.swift; sourceTree = "<group>"; };
-		ABB934DBDF281BE433486469 /* TransactionListSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionListSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* DashboardMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMetrics.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* DashboardOverviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardOverviewCard.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* DashboardNetWorthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardNetWorthCard.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* DashboardAlertsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAlertsCard.swift; sourceTree = "<group>"; };
 		A10000000000000000000005 /* DashboardRecentTransactionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardRecentTransactionsSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000006 /* DashboardContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardContentView.swift; sourceTree = "<group>"; };
+		A1C7C65870795A95A26C83C0 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		A20000000000000000000001 /* WalletDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletDetailView.swift; sourceTree = "<group>"; };
 		A30000000000000000000001 /* DebtDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtDetailView.swift; sourceTree = "<group>"; };
 		A40000000000000000000001 /* DetailInfoRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailInfoRow.swift; sourceTree = "<group>"; };
@@ -167,12 +199,35 @@
 		A40000000000000000000004 /* DebtDetailActionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtDetailActionsSection.swift; sourceTree = "<group>"; };
 		A40000000000000000000005 /* DebtInformationSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtInformationSection.swift; sourceTree = "<group>"; };
 		A40000000000000000000006 /* DebtPaymentHistorySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtPaymentHistorySection.swift; sourceTree = "<group>"; };
+		A40000000000000000000007 /* DebtFilterType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtFilterType.swift; sourceTree = "<group>"; };
+		A40000000000000000000008 /* DebtPaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtPaymentSheet.swift; sourceTree = "<group>"; };
+		A40000000000000000000009 /* DebtAdditionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtAdditionSheet.swift; sourceTree = "<group>"; };
+		A4000000000000000000000A /* DebtsContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtsContentView.swift; sourceTree = "<group>"; };
+		A4000000000000000000000B /* DebtRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtRow.swift; sourceTree = "<group>"; };
+		A4000000000000000000000C /* DebtAmountEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtAmountEntrySection.swift; sourceTree = "<group>"; };
 		A50000000000000000000001 /* WalletDetailMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletDetailMetrics.swift; sourceTree = "<group>"; };
 		A50000000000000000000002 /* WalletDetailHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletDetailHeader.swift; sourceTree = "<group>"; };
 		A50000000000000000000003 /* WalletCashFlowSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCashFlowSection.swift; sourceTree = "<group>"; };
 		A50000000000000000000004 /* WalletInformationSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletInformationSection.swift; sourceTree = "<group>"; };
 		A50000000000000000000005 /* WalletTransactionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTransactionsSection.swift; sourceTree = "<group>"; };
+		A50000000000000000000006 /* WalletListMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletListMetrics.swift; sourceTree = "<group>"; };
+		A50000000000000000000007 /* CreditPaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditPaymentSheet.swift; sourceTree = "<group>"; };
+		A50000000000000000000008 /* WalletsContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsContentView.swift; sourceTree = "<group>"; };
+		A50000000000000000000009 /* WalletSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletSummaryCard.swift; sourceTree = "<group>"; };
+		A5000000000000000000000A /* WalletRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRow.swift; sourceTree = "<group>"; };
 		A60000000000000000000001 /* DeleteConfirmationModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteConfirmationModifier.swift; sourceTree = "<group>"; };
+		A60000000000000000000002 /* CurrencyAmountField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyAmountField.swift; sourceTree = "<group>"; };
+		A70000000000000000000001 /* ReportPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPeriod.swift; sourceTree = "<group>"; };
+		A70000000000000000000002 /* ReportMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportMetrics.swift; sourceTree = "<group>"; };
+		A70000000000000000000011 /* ReportsContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsContentView.swift; sourceTree = "<group>"; };
+		A70000000000000000000012 /* ReportPeriodSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPeriodSelectorView.swift; sourceTree = "<group>"; };
+		A70000000000000000000013 /* ReportDateNavigatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportDateNavigatorView.swift; sourceTree = "<group>"; };
+		A70000000000000000000014 /* ReportCashFlowCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportCashFlowCard.swift; sourceTree = "<group>"; };
+		A70000000000000000000015 /* ReportNetWorthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportNetWorthCard.swift; sourceTree = "<group>"; };
+		A70000000000000000000016 /* ReportIncomeExpenseChartCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportIncomeExpenseChartCard.swift; sourceTree = "<group>"; };
+		A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportSpendingBreakdownCard.swift; sourceTree = "<group>"; };
+		AB43EDEAB7559804CA8B7BEA /* Personal_FinanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Personal_FinanceApp.swift; sourceTree = "<group>"; };
+		ABB934DBDF281BE433486469 /* TransactionListSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionListSection.swift; sourceTree = "<group>"; };
 		AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditWalletView.swift; sourceTree = "<group>"; };
 		AD9922F16B934293A75D0A00 /* TransactionViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionViewModel.swift; sourceTree = "<group>"; };
 		B47B838501FF58C95933C484 /* TxStatBox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TxStatBox.swift; sourceTree = "<group>"; };
@@ -181,8 +236,21 @@
 		BAB44E9E5CA4D415B1A8D0A1 /* Personal_FinanceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Personal_FinanceUITests.swift; sourceTree = "<group>"; };
 		BD880D4AEBFEEA72177182C0 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
 		C1D2E3F4A5B6001166778899 /* TransferService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferService.swift; sourceTree = "<group>"; };
+		C70000000000000000000001 /* SettingsProfileHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsProfileHeader.swift; sourceTree = "<group>"; };
+		C70000000000000000000002 /* SettingsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRow.swift; sourceTree = "<group>"; };
+		C70000000000000000000003 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		C70000000000000000000004 /* TextFieldKeyboardType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldKeyboardType.swift; sourceTree = "<group>"; };
+		C70000000000000000000005 /* EditFieldSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFieldSheet.swift; sourceTree = "<group>"; };
+		C70000000000000000000006 /* ChangePasswordSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordSheet.swift; sourceTree = "<group>"; };
 		CFF8F30A5B38C1F278683ED9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D2E3F4A5B6C7001166778899 /* TransferSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSheet.swift; sourceTree = "<group>"; };
+		D80000000000000000000001 /* TransactionTypeAmountSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTypeAmountSection.swift; sourceTree = "<group>"; };
+		D80000000000000000000002 /* TransactionDetailsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailsSection.swift; sourceTree = "<group>"; };
+		D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCategoryPickerSheet.swift; sourceTree = "<group>"; };
+		D80000000000000000000004 /* TransactionWalletPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionWalletPickerSheet.swift; sourceTree = "<group>"; };
+		D80000000000000000000005 /* TransactionDateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDateRange.swift; sourceTree = "<group>"; };
+		D80000000000000000000006 /* TransactionGroupingCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionGroupingCalculator.swift; sourceTree = "<group>"; };
+		D80000000000000000000007 /* TransactionPeriodTotals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionPeriodTotals.swift; sourceTree = "<group>"; };
 		D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		DA9C83680068144B3C599DAA /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
 		DB1D06BFC5D226A7083DB0E7 /* CategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesView.swift; sourceTree = "<group>"; };
@@ -233,8 +301,11 @@
 			children = (
 				BA4A10BA445886ED82719B71 /* AddEditDebtView.swift */,
 				C40000000000000000000001 /* Components */,
+				A40000000000000000000009 /* DebtAdditionSheet.swift */,
 				A30000000000000000000001 /* DebtDetailView.swift */,
+				A40000000000000000000007 /* DebtFilterType.swift */,
 				A40000000000000000000002 /* DebtPaymentHistoryViewModel.swift */,
+				A40000000000000000000008 /* DebtPaymentSheet.swift */,
 				9238C7CBB53065A2814836A2 /* DebtsView.swift */,
 			);
 			path = Debts;
@@ -281,33 +352,12 @@
 		34DF41BEB7DCAE944FFDCD1C /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				A60000000000000000000002 /* CurrencyAmountField.swift */,
 				A60000000000000000000001 /* DeleteConfirmationModifier.swift */,
 				A40000000000000000000001 /* DetailInfoRow.swift */,
 				F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */,
 				884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */,
 				2150573043CA45CB8F2F1630 /* StatusBadge.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		C40000000000000000000001 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A40000000000000000000004 /* DebtDetailActionsSection.swift */,
-				A40000000000000000000003 /* DebtDetailHeader.swift */,
-				A40000000000000000000005 /* DebtInformationSection.swift */,
-				A40000000000000000000006 /* DebtPaymentHistorySection.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		C50000000000000000000001 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A50000000000000000000003 /* WalletCashFlowSection.swift */,
-				A50000000000000000000002 /* WalletDetailHeader.swift */,
-				A50000000000000000000004 /* WalletInformationSection.swift */,
-				A50000000000000000000005 /* WalletTransactionsSection.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -334,9 +384,26 @@
 		538A32B1FD2AF8BA20ADB33D /* Reports */ = {
 			isa = PBXGroup;
 			children = (
+				A70000000000000000000020 /* Components */,
+				A70000000000000000000002 /* ReportMetrics.swift */,
+				A70000000000000000000001 /* ReportPeriod.swift */,
 				3E2EBE416517D05AA67D5ED9 /* ReportsView.swift */,
 			);
 			path = Reports;
+			sourceTree = "<group>";
+		};
+		A70000000000000000000020 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A70000000000000000000014 /* ReportCashFlowCard.swift */,
+				A70000000000000000000013 /* ReportDateNavigatorView.swift */,
+				A70000000000000000000016 /* ReportIncomeExpenseChartCard.swift */,
+				A70000000000000000000015 /* ReportNetWorthCard.swift */,
+				A70000000000000000000012 /* ReportPeriodSelectorView.swift */,
+				A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */,
+				A70000000000000000000011 /* ReportsContentView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		53A8FD61B3BB9621288FB86D /* Categories */ = {
@@ -363,11 +430,18 @@
 				4C18ED1919F0D6A302F10ED5 /* AddEditTransactionView.swift */,
 				7A87D61DA3670C98CAAFA441 /* TransactionsView.swift */,
 				06AD3FC8ECF4136D90326F37 /* MonthCalendarView.swift */,
+				D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */,
+				D80000000000000000000005 /* TransactionDateRange.swift */,
+				D80000000000000000000002 /* TransactionDetailsSection.swift */,
+				D80000000000000000000006 /* TransactionGroupingCalculator.swift */,
 				65762D13C560E5F27E7C7A6E /* TransactionHeaderSection.swift */,
 				ABB934DBDF281BE433486469 /* TransactionListSection.swift */,
 				0003CC3E2DD2C23136CD5DF6 /* TransactionPaginationSection.swift */,
+				D80000000000000000000007 /* TransactionPeriodTotals.swift */,
 				25AF386E7E70A9823F6CE397 /* TransactionRow.swift */,
+				D80000000000000000000001 /* TransactionTypeAmountSection.swift */,
 				B47B838501FF58C95933C484 /* TxStatBox.swift */,
+				D80000000000000000000004 /* TransactionWalletPickerSheet.swift */,
 				54842597863F6CF3E47F7916 /* WeekSelectorView.swift */,
 				AD9922F16B934293A75D0A00 /* TransactionViewModel.swift */,
 			);
@@ -377,9 +451,23 @@
 		89C722CDFDC823C22DB49442 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				C70000000000000000000010 /* Components */,
 				66976D0D1557A6ADFDEF5959 /* SettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		C70000000000000000000010 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C70000000000000000000003 /* AvatarView.swift */,
+				C70000000000000000000006 /* ChangePasswordSheet.swift */,
+				C70000000000000000000005 /* EditFieldSheet.swift */,
+				C70000000000000000000001 /* SettingsProfileHeader.swift */,
+				C70000000000000000000002 /* SettingsRow.swift */,
+				C70000000000000000000004 /* TextFieldKeyboardType.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		91479600EFFC961ADAD6D0F8 /* Config */ = {
@@ -410,6 +498,34 @@
 				E87D0FB57B9DCA2CEC95ADB9 /* Wallets */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C40000000000000000000001 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A4000000000000000000000C /* DebtAmountEntrySection.swift */,
+				A40000000000000000000004 /* DebtDetailActionsSection.swift */,
+				A40000000000000000000003 /* DebtDetailHeader.swift */,
+				A40000000000000000000005 /* DebtInformationSection.swift */,
+				A40000000000000000000006 /* DebtPaymentHistorySection.swift */,
+				A4000000000000000000000B /* DebtRow.swift */,
+				A4000000000000000000000A /* DebtsContentView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		C50000000000000000000001 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A50000000000000000000003 /* WalletCashFlowSection.swift */,
+				A50000000000000000000002 /* WalletDetailHeader.swift */,
+				A50000000000000000000004 /* WalletInformationSection.swift */,
+				A5000000000000000000000A /* WalletRow.swift */,
+				A50000000000000000000009 /* WalletSummaryCard.swift */,
+				A50000000000000000000005 /* WalletTransactionsSection.swift */,
+				A50000000000000000000008 /* WalletsContentView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		C519CE826264B6B4D64050B7 /* Auth */ = {
@@ -483,9 +599,11 @@
 			isa = PBXGroup;
 			children = (
 				AC60791EF2D1D550AE111223 /* AddEditWalletView.swift */,
+				A50000000000000000000007 /* CreditPaymentSheet.swift */,
 				C50000000000000000000001 /* Components */,
 				A50000000000000000000001 /* WalletDetailMetrics.swift */,
 				A20000000000000000000001 /* WalletDetailView.swift */,
+				A50000000000000000000006 /* WalletListMetrics.swift */,
 				2FE88AAE276CC435181621D2 /* WalletsView.swift */,
 				D2E3F4A5B6C7001166778899 /* TransferSheet.swift */,
 			);
@@ -650,13 +768,17 @@
 				A0930DDD42F16BEF22B53F2E /* AddEditWalletView.swift in Sources */,
 				402701E7763CD1241602A7F5 /* AppConfig.swift in Sources */,
 				8D3FA27F135130DF9FF24E65 /* AuthViewModel.swift in Sources */,
+				C70000000000000000000003 /* AvatarView.swift in Sources */,
 				BB036A2778F844F392B439CB /* BalanceCardView.swift in Sources */,
 				856B01A3584354A4DE54D6F2 /* BudgetProgressView.swift in Sources */,
 				EDDFD094055B03BCB632830D /* BudgetService.swift in Sources */,
 				4F6F542CF9D41E878A64DA9A /* BudgetsView.swift in Sources */,
 				41A37F21F6B2CA268F53BA83 /* CategoriesView.swift in Sources */,
 				4DEB23D65ED71EFEA3E3A46C /* CategoryService.swift in Sources */,
+				C70000000000000000000006 /* ChangePasswordSheet.swift in Sources */,
 				75AF65FC88DE13A2B23AACA1 /* Color+Hex.swift in Sources */,
+				B50000000000000000000007 /* CreditPaymentSheet.swift in Sources */,
+				B60000000000000000000002 /* CurrencyAmountField.swift in Sources */,
 				B10000000000000000000004 /* DashboardAlertsCard.swift in Sources */,
 				B10000000000000000000006 /* DashboardContentView.swift in Sources */,
 				B10000000000000000000001 /* DashboardMetrics.swift in Sources */,
@@ -664,17 +786,24 @@
 				B10000000000000000000002 /* DashboardOverviewCard.swift in Sources */,
 				B10000000000000000000005 /* DashboardRecentTransactionsSection.swift in Sources */,
 				8AE3276F52C816B84A088259 /* DashboardView.swift in Sources */,
+				B40000000000000000000009 /* DebtAdditionSheet.swift in Sources */,
+				B4000000000000000000000C /* DebtAmountEntrySection.swift in Sources */,
 				30E31E9522DBAE2AB901D93C /* DebtService.swift in Sources */,
 				B40000000000000000000004 /* DebtDetailActionsSection.swift in Sources */,
 				B40000000000000000000003 /* DebtDetailHeader.swift in Sources */,
 				B30000000000000000000001 /* DebtDetailView.swift in Sources */,
+				B40000000000000000000007 /* DebtFilterType.swift in Sources */,
 				B40000000000000000000005 /* DebtInformationSection.swift in Sources */,
 				B40000000000000000000006 /* DebtPaymentHistorySection.swift in Sources */,
 				B40000000000000000000002 /* DebtPaymentHistoryViewModel.swift in Sources */,
+				B40000000000000000000008 /* DebtPaymentSheet.swift in Sources */,
+				B4000000000000000000000B /* DebtRow.swift in Sources */,
+				B4000000000000000000000A /* DebtsContentView.swift in Sources */,
 				150761A60A088A760C561724 /* DebtsView.swift in Sources */,
 				B40000000000000000000001 /* DetailInfoRow.swift in Sources */,
 				B60000000000000000000001 /* DeleteConfirmationModifier.swift in Sources */,
 				DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */,
+				C70000000000000000000005 /* EditFieldSheet.swift in Sources */,
 				C6783596677CAD441B221743 /* EmojiPickerButton.swift in Sources */,
 				B81443CC4FBA1C51D411EBBD /* LocalModels.swift in Sources */,
 				637AF6F47E07D98CD885F7A0 /* LoginView.swift in Sources */,
@@ -687,16 +816,35 @@
 				2C9D4127BC2452D154C4E11D /* RecurringService.swift in Sources */,
 				3C4C2EA20AD02C9F5194698B /* RecurringView.swift in Sources */,
 				61BD36C9C93481E76D382788 /* RemoteModels.swift in Sources */,
+				B70000000000000000000014 /* ReportCashFlowCard.swift in Sources */,
+				B70000000000000000000013 /* ReportDateNavigatorView.swift in Sources */,
+				B70000000000000000000016 /* ReportIncomeExpenseChartCard.swift in Sources */,
+				B70000000000000000000002 /* ReportMetrics.swift in Sources */,
+				B70000000000000000000015 /* ReportNetWorthCard.swift in Sources */,
+				B70000000000000000000001 /* ReportPeriod.swift in Sources */,
+				B70000000000000000000012 /* ReportPeriodSelectorView.swift in Sources */,
+				B70000000000000000000017 /* ReportSpendingBreakdownCard.swift in Sources */,
+				B70000000000000000000011 /* ReportsContentView.swift in Sources */,
 				C12AF5518215280AD3D9E112 /* ReportsView.swift in Sources */,
 				3664FFE71FD9E6885F3705F2 /* RootView.swift in Sources */,
 				8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */,
 				37C3DB63B08F87D41E0BACCD /* SavingGoalsView.swift in Sources */,
+				C70000000000000000000001 /* SettingsProfileHeader.swift in Sources */,
+				C70000000000000000000002 /* SettingsRow.swift in Sources */,
 				09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */,
 				4CD605F9FA9CAA07A33E7F35 /* SkeletonView.swift in Sources */,
 				C8B128142F8645C0615782C2 /* SpendingChartView.swift in Sources */,
 				87E9B4F5CFF2F5D26AE73A97 /* SupabaseService.swift in Sources */,
 				ECC8D8F1E3801E9D308783EA /* SyncManager.swift in Sources */,
+				C70000000000000000000004 /* TextFieldKeyboardType.swift in Sources */,
+				D80000000000000000000003 /* TransactionCategoryPickerSheet.swift in Sources */,
+				D80000000000000000000005 /* TransactionDateRange.swift in Sources */,
+				D80000000000000000000002 /* TransactionDetailsSection.swift in Sources */,
+				D80000000000000000000006 /* TransactionGroupingCalculator.swift in Sources */,
+				D80000000000000000000007 /* TransactionPeriodTotals.swift in Sources */,
 				77E61E94AFC70DE5D2AA5E45 /* TransactionService.swift in Sources */,
+				D80000000000000000000001 /* TransactionTypeAmountSection.swift in Sources */,
+				D80000000000000000000004 /* TransactionWalletPickerSheet.swift in Sources */,
 				A60BFED72DD138A98096A848 /* TransactionsView.swift in Sources */,
 				2415A6615DDDE80604624073 /* WalletService.swift in Sources */,
 				B50000000000000000000003 /* WalletCashFlowSection.swift in Sources */,
@@ -704,7 +852,11 @@
 				B50000000000000000000001 /* WalletDetailMetrics.swift in Sources */,
 				B20000000000000000000001 /* WalletDetailView.swift in Sources */,
 				B50000000000000000000004 /* WalletInformationSection.swift in Sources */,
+				B50000000000000000000006 /* WalletListMetrics.swift in Sources */,
+				B5000000000000000000000A /* WalletRow.swift in Sources */,
+				B50000000000000000000009 /* WalletSummaryCard.swift in Sources */,
 				B50000000000000000000005 /* WalletTransactionsSection.swift in Sources */,
+				B50000000000000000000008 /* WalletsContentView.swift in Sources */,
 				EDC0D64757240DCC0B20DC40 /* WalletsView.swift in Sources */,
 				0F19CA358E96463CCDAEFFE7 /* MonthCalendarView.swift in Sources */,
 				C527370E4FD6FACE8D5E72FC /* TransactionHeaderSection.swift in Sources */,
