@@ -102,8 +102,12 @@ struct MonthCalendarView: View {
             }
             .padding(.bottom, 10)
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(14)
+        .padding(.horizontal, 8)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator).opacity(0.4), lineWidth: 0.75)
+        }
     }
 
     private func changeMonth(by delta: Int) {

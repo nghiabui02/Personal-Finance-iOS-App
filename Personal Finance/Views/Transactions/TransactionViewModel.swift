@@ -22,7 +22,10 @@ final class TransactionViewModel: ObservableObject {
     // MARK: - Private internals
 
     private var loadedIds: Set<UUID> = []
+    private var fullyLoadedDays: Set<Date> = []
     private var serverPage = 0
+    private var fullyLoadedMonth: Date?
+    private var isLoadingFilterData = false
     private let pageSize = 10
     private let client = SupabaseService.shared.client
 
@@ -51,10 +54,11 @@ final class TransactionViewModel: ObservableObject {
     }
 
     func resetAndLoad(in ctx: ModelContext) {
-        loadedTxs = []; loadedIds = []
+        loadedTxs = []; loadedIds = []; fullyLoadedDays = []
         groupedAll = []; groupedIncome = []; groupedExpense = []
         periodIncome = 0; periodExpense = 0
         dailyData = [:]; serverPage = 0; hasMore = true
+        fullyLoadedMonth = nil
         Task {
             async let t: Void = fetchPeriodTotals(in: ctx)
             async let m: Void = loadMore(in: ctx)
@@ -104,10 +108,9 @@ final class TransactionViewModel: ObservableObject {
         let start = cal.startOfDay(for: date)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
 
-        let alreadyHave = loadedTxs.contains { $0.transactionDate >= start && $0.transactionDate < end }
-        let dayHasData  = (dailyData[start]?.income ?? 0) + (dailyData[start]?.expense ?? 0) > 0
-        guard !alreadyHave && dayHasData else { return }
+        guard !fullyLoadedDays.contains(start) else { return }
 
+        guard !isLoadingDateTxs else { return }
         isLoadingDateTxs = true
         defer { isLoadingDateTxs = false }
 
@@ -126,6 +129,7 @@ final class TransactionViewModel: ObservableObject {
                 .order("updated_at", ascending: false)
                 .execute().value
             upsert(remote, in: ctx)
+            fullyLoadedDays.insert(start)
         } catch {
             let desc = FetchDescriptor<LocalTransaction>(
                 predicate: #Predicate<LocalTransaction> { $0.transactionDate >= start && $0.transactionDate < end },
@@ -136,6 +140,79 @@ final class TransactionViewModel: ObservableObject {
                 loadedTxs.append(tx); loadedIds.insert(tx.serverId)
             }
             recomputeGrouped()
+            fullyLoadedDays.insert(start)
+        }
+    }
+
+    func ensurePeriodLoaded(
+        _ period: TransactionPeriodFilter,
+        selectedMonth: Date,
+        selectedDate: Date?,
+        in ctx: ModelContext
+    ) async {
+        guard period != .month else { return }
+        guard let interval = TransactionFilterEngine.dateInterval(
+            for: period,
+            selectedMonth: selectedMonth,
+            selectedDate: selectedDate
+        ) else { return }
+
+        if period == .day {
+            await ensureDateLoaded(interval.start, in: ctx)
+            return
+        }
+
+        guard !isLoadingDateTxs else { return }
+        isLoadingDateTxs = true
+        defer { isLoadingDateTxs = false }
+
+        do {
+            let userId = try await client.auth.session.user.id
+            let remote: [RemoteTransaction] = try await client
+                .from("transactions")
+                .select("*, categories(id, name, icon, color), wallets(id, name)")
+                .eq("user_id", value: userId)
+                .gte("transaction_date", value: TransactionDateRange.apiDateString(from: interval.start))
+                .lt("transaction_date", value: TransactionDateRange.apiDateString(from: interval.end))
+                .order("transaction_date", ascending: false)
+                .order("updated_at", ascending: false)
+                .execute().value
+            upsert(remote, in: ctx)
+        } catch {
+            if SyncManager.shared.isOnline {
+                errorMsg = error.localizedDescription
+            }
+        }
+    }
+
+    func ensureAllTransactionsLoadedForFiltering(in ctx: ModelContext) async {
+        guard SyncManager.shared.isOnline else { return }
+        guard fullyLoadedMonth != selectedMonth, !isLoadingFilterData else { return }
+
+        isLoadingFilterData = true
+        defer { isLoadingFilterData = false }
+
+        let monthBeingLoaded = selectedMonth
+        let (start, end) = TransactionDateRange.monthRangeStrings(for: monthBeingLoaded)
+
+        do {
+            let userId = try await client.auth.session.user.id
+            let remote: [RemoteTransaction] = try await client
+                .from("transactions")
+                .select("*, categories(id, name, icon, color), wallets(id, name)")
+                .eq("user_id", value: userId)
+                .gte("transaction_date", value: start)
+                .lt("transaction_date", value: end)
+                .order("transaction_date", ascending: false)
+                .order("updated_at", ascending: false)
+                .execute().value
+
+            guard selectedMonth == monthBeingLoaded else { return }
+            upsert(remote, in: ctx)
+            fullyLoadedMonth = monthBeingLoaded
+            hasMore = false
+        } catch {
+            errorMsg = error.localizedDescription
         }
     }
 

@@ -24,30 +24,12 @@ struct WalletsView: View {
                 wallets: wallets,
                 metrics: metrics,
                 onTransfer: startTransfer,
+                onAdd: { showAdd = true },
                 onPayCredit: { payingCreditWallet = $0 },
                 onDelete: requestDelete,
                 onRefresh: { await sync.syncAll(modelContext: modelContext) }
             )
-            .navigationTitle("Wallets")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if metrics.canTransfer {
-                        Button {
-                            startTransfer(from: nil)
-                        } label: {
-                            Label("Transfer", systemImage: "arrow.left.arrow.right")
-                                .labelStyle(.titleAndIcon)
-                                .font(.subheadline)
-                        }
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAdd = true } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
+            .appScreenHeader("Wallets")
             .sheet(isPresented: $showAdd) {
                 AddEditWalletView(wallet: nil)
             }

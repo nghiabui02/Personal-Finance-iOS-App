@@ -3,12 +3,13 @@ import SwiftData
 
 struct TransactionsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
     @StateObject private var vm   = TransactionViewModel()
     @Environment(\.scenePhase) private var scenePhase
 
     // UI-only state — does not drive data fetching
-    @State private var selectedDate: Date? = nil
-    @State private var filterType: FilterType = .all
+    @State private var selectedDate: Date? = Date()
+    @State private var filter = TransactionFilterState()
     @State private var showAdd = false
     @State private var editing: LocalTransaction?
     @State private var pendingDeletion: LocalTransaction?
@@ -17,24 +18,38 @@ struct TransactionsView: View {
     // MARK: - Derived display values (pure computation from vm state)
 
     private var displayedIncome: Double {
-        guard let date = selectedDate else { return vm.periodIncome }
-        return vm.dailyData[Calendar.current.startOfDay(for: date)]?.income ?? 0
+        displayedTotals.income
     }
 
     private var displayedExpense: Double {
-        guard let date = selectedDate else { return vm.periodExpense }
-        return vm.dailyData[Calendar.current.startOfDay(for: date)]?.expense ?? 0
+        displayedTotals.expense
     }
 
     private var displayedGroups: [(Date, [LocalTransaction])] {
-        let base: [(Date, [LocalTransaction])]
-        switch filterType {
-        case .all:     base = vm.groupedAll
-        case .income:  base = vm.groupedIncome
-        case .expense: base = vm.groupedExpense
+        let transactions = TransactionFilterEngine.apply(
+            filter,
+            to: vm.loadedTxs,
+            selectedMonth: vm.selectedMonth,
+            selectedDate: selectedDate
+        )
+        return TransactionGroupingCalculator.group(transactions).all
+    }
+
+    private var displayedTotals: (income: Double, expense: Double) {
+        guard filter.period != .month,
+              let interval = TransactionFilterEngine.dateInterval(
+                for: filter.period,
+                selectedMonth: vm.selectedMonth,
+                selectedDate: selectedDate
+              ) else {
+            return (vm.periodIncome, vm.periodExpense)
         }
-        guard let date = selectedDate else { return base }
-        return base.filter { Calendar.current.isDate($0.0, inSameDayAs: date) }
+
+        return vm.dailyData.reduce(into: (income: 0.0, expense: 0.0)) { totals, entry in
+            guard entry.key >= interval.start, entry.key < interval.end else { return }
+            totals.income += entry.value.income
+            totals.expense += entry.value.expense
+        }
     }
 
     // MARK: - Sub-views
@@ -42,18 +57,35 @@ struct TransactionsView: View {
     @ViewBuilder private var headerSection: some View {
         TransactionHeaderSection(
             selectedMonth: $vm.selectedMonth,
-            selectedDate: $selectedDate,
-            filterType: $filterType,
+            selectedDate: calendarDateBinding,
+            period: $filter.period,
+            keyword: $filter.keyword,
             dailyData: vm.dailyData,
             income: displayedIncome,
-            expense: displayedExpense
+            expense: displayedExpense,
+            onAdd: { showAdd = true }
         )
+    }
+
+    private var calendarDateBinding: Binding<Date?> {
+        Binding(
+            get: { selectedDate },
+            set: { date in
+                guard date != nil || filter.period == .month else { return }
+                selectedDate = date
+            }
+        )
+    }
+
+    @ViewBuilder private var filterSection: some View {
+        TransactionFilterSection(filter: $filter, categories: categories)
     }
 
     @ViewBuilder private var listSection: some View {
         TransactionListSection(
             groups: displayedGroups,
             isLoading: vm.loadedTxs.isEmpty && (vm.isLoadingMore || vm.isLoadingDateTxs),
+            isFiltered: filter.hasContentFilter || filter.period != .month,
             onTap: { editing = $0 },
             onDeleteRequest: {
                 pendingDeletion = $0
@@ -64,7 +96,7 @@ struct TransactionsView: View {
 
     @ViewBuilder private var paginationSection: some View {
         TransactionPaginationSection(
-            selectedDate: selectedDate,
+            selectedDate: filter.period == .month ? nil : selectedDate,
             hasMore: vm.hasMore,
             isLoadingMore: vm.isLoadingMore,
             count: vm.loadedTxs.count,
@@ -78,6 +110,7 @@ struct TransactionsView: View {
         NavigationStack {
             List {
                 headerSection
+                filterSection
                 listSection
                 paginationSection
             }
@@ -85,30 +118,34 @@ struct TransactionsView: View {
             .listSectionSpacing(8)
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Transactions")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if !vm.isOnCurrentMonth {
-                        Button("Today") {
-                            selectedDate = nil
-                            vm.jumpToToday()
-                        }
-                        .font(.subheadline)
-                        .transition(.opacity)
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAdd = true } label: { Image(systemName: "plus") }
-                }
-            }
+            .appScreenHeader("Transactions")
             .animation(.easeInOut(duration: 0.2), value: vm.isOnCurrentMonth)
             .refreshable { vm.resetAndLoad(in: modelContext) }
             .onChange(of: scenePhase)       { _, p in if p == .active { vm.resetAndLoad(in: modelContext) } }
-            .onChange(of: vm.selectedMonth) { _, _ in selectedDate = nil; vm.resetAndLoad(in: modelContext) }
+            .onChange(of: vm.selectedMonth) { _, month in
+                selectedDate = filter.period == .month
+                    ? nil
+                    : TransactionFilterEngine.defaultAnchor(for: month)
+                vm.resetAndLoad(in: modelContext)
+            }
+            .onChange(of: filter.period) { _, period in
+                if period == .month {
+                    selectedDate = nil
+                } else if selectedDate == nil {
+                    selectedDate = TransactionFilterEngine.defaultAnchor(for: vm.selectedMonth)
+                }
+                loadSelectedPeriodIfNeeded(period: period, date: selectedDate)
+            }
+            .onChange(of: filter) { _, updatedFilter in
+                guard updatedFilter.hasContentFilter else { return }
+                Task { await vm.ensureAllTransactionsLoadedForFiltering(in: modelContext) }
+            }
             .onChange(of: selectedDate) { _, date in
                 guard let date else { return }
-                Task { await vm.ensureDateLoaded(date, in: modelContext) }
+                if filter.period == .month {
+                    filter.period = .day
+                }
+                loadSelectedPeriodIfNeeded(period: filter.period, date: date)
             }
             .onAppear {
                 if vm.selectedMonth != vm.currentMonthStart {
@@ -116,6 +153,7 @@ struct TransactionsView: View {
                 } else if vm.loadedTxs.isEmpty {
                     vm.resetAndLoad(in: modelContext)
                 }
+                loadSelectedPeriodIfNeeded(period: filter.period, date: selectedDate)
             }
             .sheet(isPresented: $showAdd) {
                 AddEditTransactionView(transaction: nil, defaultDate: selectedDate)
@@ -130,6 +168,18 @@ struct TransactionsView: View {
                 Task { await vm.deleteTx(transaction, in: modelContext) }
             }
             .errorAlert($vm.errorMsg)
+        }
+    }
+
+    private func loadSelectedPeriodIfNeeded(period: TransactionPeriodFilter, date: Date?) {
+        guard period != .month else { return }
+        Task {
+            await vm.ensurePeriodLoaded(
+                period,
+                selectedMonth: vm.selectedMonth,
+                selectedDate: date,
+                in: modelContext
+            )
         }
     }
 }

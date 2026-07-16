@@ -32,14 +32,14 @@ struct DashboardView: View {
             selectedMonth: $selectedMonth,
             metrics: metrics,
             syncError: sync.syncError,
-            isSyncing: sync.isSyncing,
-            currency: currency
+                isSyncing: sync.isSyncing,
+                currency: currency,
+                onAddTransaction: { quickAction = .transaction },
+                onAddDebt: { quickAction = .debt }
         )
             .background(Color(.systemGroupedBackground))
             .gesture(monthSwipeGesture)
-            .navigationTitle("Overview")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbar { dashboardToolbar }
+            .appScreenHeader("Overview")
             .sheet(item: $quickAction, content: quickActionSheet)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear(perform: handleAppear)
@@ -52,37 +52,6 @@ struct DashboardView: View {
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 handleScenePhaseChange(oldPhase, newPhase)
             }
-    }
-
-    @ToolbarContentBuilder
-    private var dashboardToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            if !sync.isOnline {
-                Label("No Internet", systemImage: "wifi.slash")
-                    .labelStyle(.iconOnly)
-                    .foregroundColor(.orange)
-            }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            quickAddMenu
-        }
-    }
-
-    private var quickAddMenu: some View {
-        Menu {
-            Button {
-                quickAction = .transaction
-            } label: {
-                Label("Add Transaction", systemImage: "plus.circle")
-            }
-            Button {
-                quickAction = .debt
-            } label: {
-                Label("Add Debt", systemImage: "person.crop.circle.badge.plus")
-            }
-        } label: {
-            Image(systemName: "plus")
-        }
     }
 
     @ViewBuilder

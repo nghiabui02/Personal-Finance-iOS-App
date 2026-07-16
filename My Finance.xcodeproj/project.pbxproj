@@ -95,18 +95,20 @@
 		BB036A2778F844F392B439CB /* BalanceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897E4AE88520EB6ACA8A2039 /* BalanceCardView.swift */; };
 		C12AF5518215280AD3D9E112 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2EBE416517D05AA67D5ED9 /* ReportsView.swift */; };
 		C1D2E3F4A5B6001122334455 /* TransferService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6001166778899 /* TransferService.swift */; };
-		E70000000000000000000001 /* SettingsProfileHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000001 /* SettingsProfileHeader.swift */; };
-		E70000000000000000000002 /* SettingsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000002 /* SettingsRow.swift */; };
-		E70000000000000000000003 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000003 /* AvatarView.swift */; };
-		E70000000000000000000004 /* TextFieldKeyboardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000004 /* TextFieldKeyboardType.swift */; };
-		E70000000000000000000005 /* EditFieldSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000005 /* EditFieldSheet.swift */; };
-		E70000000000000000000006 /* ChangePasswordSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000006 /* ChangePasswordSheet.swift */; };
 		C3AF285594382F775B2A9C6F /* AddEditSavingGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB14E51ECFDED383E416C6B /* AddEditSavingGoalView.swift */; };
 		C527370E4FD6FACE8D5E72FC /* TransactionHeaderSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65762D13C560E5F27E7C7A6E /* TransactionHeaderSection.swift */; };
 		C6783596677CAD441B221743 /* EmojiPickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */; };
 		C8B128142F8645C0615782C2 /* SpendingChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912990C2BEDF8C13F54D92D8 /* SpendingChartView.swift */; };
 		CA2DFA5FC50279A2E37C68C8 /* WeekSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54842597863F6CF3E47F7916 /* WeekSelectorView.swift */; };
 		D2E3F4A5B6C7001122334455 /* TransferSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C7001166778899 /* TransferSheet.swift */; };
+		DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372B7BE7C7BC974EF1F4D121 /* Double+Currency.swift */; };
+		DC9A29DA4776343E78343F0E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C1E1CD7A407D1FF7872DC /* MainTabView.swift */; };
+		E70000000000000000000001 /* SettingsProfileHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000001 /* SettingsProfileHeader.swift */; };
+		E70000000000000000000002 /* SettingsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000002 /* SettingsRow.swift */; };
+		E70000000000000000000003 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000003 /* AvatarView.swift */; };
+		E70000000000000000000004 /* TextFieldKeyboardType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000004 /* TextFieldKeyboardType.swift */; };
+		E70000000000000000000005 /* EditFieldSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000005 /* EditFieldSheet.swift */; };
+		E70000000000000000000006 /* ChangePasswordSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000006 /* ChangePasswordSheet.swift */; };
 		E80000000000000000000001 /* TransactionTypeAmountSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000001 /* TransactionTypeAmountSection.swift */; };
 		E80000000000000000000002 /* TransactionDetailsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000002 /* TransactionDetailsSection.swift */; };
 		E80000000000000000000003 /* TransactionCategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */; };
@@ -114,15 +116,16 @@
 		E80000000000000000000005 /* TransactionDateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000005 /* TransactionDateRange.swift */; };
 		E80000000000000000000006 /* TransactionGroupingCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000006 /* TransactionGroupingCalculator.swift */; };
 		E80000000000000000000007 /* TransactionPeriodTotals.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80000000000000000000007 /* TransactionPeriodTotals.swift */; };
-		DA89449191F3C74D05B89FC0 /* Double+Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372B7BE7C7BC974EF1F4D121 /* Double+Currency.swift */; };
-		DC9A29DA4776343E78343F0E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C1E1CD7A407D1FF7872DC /* MainTabView.swift */; };
 		ECC8D8F1E3801E9D308783EA /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C0240555C6E44D0B6915A8 /* SyncManager.swift */; };
 		EDC0D64757240DCC0B20DC40 /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE88AAE276CC435181621D2 /* WalletsView.swift */; };
 		EDDFD094055B03BCB632830D /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9C83680068144B3C599DAA /* BudgetService.swift */; };
-		F90100000000000000000001 /* LocalDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90000000000000000000001 /* LocalDataStore.swift */; };
 		F0E57EBC59406BFBC97F1F77 /* TxStatBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47B838501FF58C95933C484 /* TxStatBox.swift */; };
 		F56CD755F0BA18B2D542338B /* TransactionListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB934DBDF281BE433486469 /* TransactionListSection.swift */; };
 		F6097AD3B5064DF083E8265A /* View+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36263D7531F4F4D9D014689 /* View+Helpers.swift */; };
+		F90100000000000000000001 /* LocalDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90000000000000000000001 /* LocalDataStore.swift */; };
+		FB0000000000000000000001 /* TransactionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000001 /* TransactionFilter.swift */; };
+		FB0000000000000000000002 /* TransactionFilterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000002 /* TransactionFilterSection.swift */; };
+		FD0000000000000000000001 /* AppScreenHeaderModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000001 /* AppScreenHeaderModifier.swift */; };
 		FE14BEC58064B835B663B138 /* Personal_FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB43EDEAB7559804CA8B7BEA /* Personal_FinanceApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -245,6 +248,7 @@
 		C70000000000000000000006 /* ChangePasswordSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordSheet.swift; sourceTree = "<group>"; };
 		CFF8F30A5B38C1F278683ED9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D2E3F4A5B6C7001166778899 /* TransferSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSheet.swift; sourceTree = "<group>"; };
+		D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		D80000000000000000000001 /* TransactionTypeAmountSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTypeAmountSection.swift; sourceTree = "<group>"; };
 		D80000000000000000000002 /* TransactionDetailsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailsSection.swift; sourceTree = "<group>"; };
 		D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCategoryPickerSheet.swift; sourceTree = "<group>"; };
@@ -252,7 +256,6 @@
 		D80000000000000000000005 /* TransactionDateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDateRange.swift; sourceTree = "<group>"; };
 		D80000000000000000000006 /* TransactionGroupingCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionGroupingCalculator.swift; sourceTree = "<group>"; };
 		D80000000000000000000007 /* TransactionPeriodTotals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionPeriodTotals.swift; sourceTree = "<group>"; };
-		D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		DA9C83680068144B3C599DAA /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
 		DB1D06BFC5D226A7083DB0E7 /* CategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesView.swift; sourceTree = "<group>"; };
 		E046D095E689988603518CC6 /* WalletService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletService.swift; sourceTree = "<group>"; };
@@ -261,9 +264,12 @@
 		E5BF435250E4FBEE93C8039E /* AddEditCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditCategoryView.swift; sourceTree = "<group>"; };
 		EE6249E108B6EAFEB4AD2C8D /* RecurringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringView.swift; sourceTree = "<group>"; };
 		F08552D689DD42D4F365A815 /* EmojiPickerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiPickerButton.swift; sourceTree = "<group>"; };
-		F90000000000000000000001 /* LocalDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataStore.swift; sourceTree = "<group>"; };
 		F0B21F3082C1E8BF4888F6A9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		F82C1E1CD7A407D1FF7872DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		F90000000000000000000001 /* LocalDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataStore.swift; sourceTree = "<group>"; };
+		FA0000000000000000000001 /* TransactionFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilter.swift; sourceTree = "<group>"; };
+		FA0000000000000000000002 /* TransactionFilterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilterSection.swift; sourceTree = "<group>"; };
+		FC0000000000000000000001 /* AppScreenHeaderModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScreenHeaderModifier.swift; sourceTree = "<group>"; };
 		FBEF9CB7C3F8282F5494D68C /* RemoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -354,6 +360,7 @@
 		34DF41BEB7DCAE944FFDCD1C /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				FC0000000000000000000001 /* AppScreenHeaderModifier.swift */,
 				A60000000000000000000002 /* CurrencyAmountField.swift */,
 				A60000000000000000000001 /* DeleteConfirmationModifier.swift */,
 				A40000000000000000000001 /* DetailInfoRow.swift */,
@@ -394,20 +401,6 @@
 			path = Reports;
 			sourceTree = "<group>";
 		};
-		A70000000000000000000020 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A70000000000000000000014 /* ReportCashFlowCard.swift */,
-				A70000000000000000000013 /* ReportDateNavigatorView.swift */,
-				A70000000000000000000016 /* ReportIncomeExpenseChartCard.swift */,
-				A70000000000000000000015 /* ReportNetWorthCard.swift */,
-				A70000000000000000000012 /* ReportPeriodSelectorView.swift */,
-				A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */,
-				A70000000000000000000011 /* ReportsContentView.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
 		53A8FD61B3BB9621288FB86D /* Categories */ = {
 			isa = PBXGroup;
 			children = (
@@ -435,6 +428,8 @@
 				D80000000000000000000003 /* TransactionCategoryPickerSheet.swift */,
 				D80000000000000000000005 /* TransactionDateRange.swift */,
 				D80000000000000000000002 /* TransactionDetailsSection.swift */,
+				FA0000000000000000000001 /* TransactionFilter.swift */,
+				FA0000000000000000000002 /* TransactionFilterSection.swift */,
 				D80000000000000000000006 /* TransactionGroupingCalculator.swift */,
 				65762D13C560E5F27E7C7A6E /* TransactionHeaderSection.swift */,
 				ABB934DBDF281BE433486469 /* TransactionListSection.swift */,
@@ -459,25 +454,26 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
-		C70000000000000000000010 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				C70000000000000000000003 /* AvatarView.swift */,
-				C70000000000000000000006 /* ChangePasswordSheet.swift */,
-				C70000000000000000000005 /* EditFieldSheet.swift */,
-				C70000000000000000000001 /* SettingsProfileHeader.swift */,
-				C70000000000000000000002 /* SettingsRow.swift */,
-				C70000000000000000000004 /* TextFieldKeyboardType.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
 		91479600EFFC961ADAD6D0F8 /* Config */ = {
 			isa = PBXGroup;
 			children = (
 				62514F436416338A82625D20 /* AppConfig.swift */,
 			);
 			path = Config;
+			sourceTree = "<group>";
+		};
+		A70000000000000000000020 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A70000000000000000000014 /* ReportCashFlowCard.swift */,
+				A70000000000000000000013 /* ReportDateNavigatorView.swift */,
+				A70000000000000000000016 /* ReportIncomeExpenseChartCard.swift */,
+				A70000000000000000000015 /* ReportNetWorthCard.swift */,
+				A70000000000000000000012 /* ReportPeriodSelectorView.swift */,
+				A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */,
+				A70000000000000000000011 /* ReportsContentView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		AD793D18DF9BDC2732EF93D5 /* Views */ = {
@@ -544,6 +540,19 @@
 				5C7F797711FF67789CB01E16 /* MoreView.swift */,
 			);
 			path = More;
+			sourceTree = "<group>";
+		};
+		C70000000000000000000010 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C70000000000000000000003 /* AvatarView.swift */,
+				C70000000000000000000006 /* ChangePasswordSheet.swift */,
+				C70000000000000000000005 /* EditFieldSheet.swift */,
+				C70000000000000000000001 /* SettingsProfileHeader.swift */,
+				C70000000000000000000002 /* SettingsRow.swift */,
+				C70000000000000000000004 /* TextFieldKeyboardType.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		C8A4F01C2025DD520DACDDDE /* Personal Finance */ = {
@@ -834,6 +843,7 @@
 				8E2C1822B0B784A4399A7838 /* SavingGoalService.swift in Sources */,
 				37C3DB63B08F87D41E0BACCD /* SavingGoalsView.swift in Sources */,
 				E70000000000000000000001 /* SettingsProfileHeader.swift in Sources */,
+				FD0000000000000000000001 /* AppScreenHeaderModifier.swift in Sources */,
 				E70000000000000000000002 /* SettingsRow.swift in Sources */,
 				09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */,
 				4CD605F9FA9CAA07A33E7F35 /* SkeletonView.swift in Sources */,
@@ -844,6 +854,8 @@
 				E80000000000000000000003 /* TransactionCategoryPickerSheet.swift in Sources */,
 				E80000000000000000000005 /* TransactionDateRange.swift in Sources */,
 				E80000000000000000000002 /* TransactionDetailsSection.swift in Sources */,
+				FB0000000000000000000001 /* TransactionFilter.swift in Sources */,
+				FB0000000000000000000002 /* TransactionFilterSection.swift in Sources */,
 				E80000000000000000000006 /* TransactionGroupingCalculator.swift in Sources */,
 				E80000000000000000000007 /* TransactionPeriodTotals.swift in Sources */,
 				77E61E94AFC70DE5D2AA5E45 /* TransactionService.swift in Sources */,
@@ -932,6 +944,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = NVX687Y635;
 				INFOPLIST_FILE = "Personal Finance/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -958,6 +971,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = NVX687Y635;
 				INFOPLIST_FILE = "Personal Finance/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

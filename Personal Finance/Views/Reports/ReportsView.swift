@@ -25,8 +25,7 @@ struct ReportsView: View {
                 isCurrentPeriod: periodContext.isCurrent,
                 onNavigatePeriod: navigatePeriod
             )
-            .navigationTitle("Reports")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .appScreenHeader("Reports")
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear { recomputeMetrics() }
             .onChange(of: allTx) { _, _ in recomputeMetrics() }

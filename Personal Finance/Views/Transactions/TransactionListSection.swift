@@ -3,6 +3,7 @@ import SwiftUI
 struct TransactionListSection: View {
     let groups: [(Date, [LocalTransaction])]
     let isLoading: Bool
+    var isFiltered = false
     let onTap: (LocalTransaction) -> Void
     let onDeleteRequest: (LocalTransaction) -> Void
 
@@ -16,8 +17,11 @@ struct TransactionListSection: View {
             .listRowSeparator(.hidden)
         } else if groups.isEmpty {
             Section {
-                ContentUnavailableView("No Transactions", systemImage: "tray",
-                    description: Text("Tap + to add a transaction"))
+                ContentUnavailableView(
+                    isFiltered ? "No Matching Transactions" : "No Transactions",
+                    systemImage: isFiltered ? "line.3.horizontal.decrease.circle" : "tray",
+                    description: Text(isFiltered ? "Try changing or clearing the filters" : "Tap + to add a transaction")
+                )
                     .padding(.vertical, 16)
             }
             .listRowBackground(Color(.systemGroupedBackground))

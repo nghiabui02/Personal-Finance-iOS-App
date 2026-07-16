@@ -4,6 +4,7 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    var onClose: (() -> Void)?
     @AppStorage("pf_colorScheme") private var colorScheme = "system"
 
     @State private var showEditName = false
@@ -30,6 +31,13 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", action: onClose)
+                    }
+                }
+            }
         }
         .onChange(of: photoItem) { _, item in
             Task { await handlePhotoPick(item) }

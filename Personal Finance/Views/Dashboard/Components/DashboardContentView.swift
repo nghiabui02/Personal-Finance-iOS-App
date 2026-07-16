@@ -7,11 +7,14 @@ struct DashboardContentView: View {
     let syncError: String?
     let isSyncing: Bool
     let currency: String
+    let onAddTransaction: () -> Void
+    let onAddDebt: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 MonthSelectorView(selectedMonth: $selectedMonth)
+                quickActions
                 syncErrorSection
                 summarySections
                 spendingSection
@@ -20,6 +23,23 @@ struct DashboardContentView: View {
             }
             .padding(.vertical)
         }
+    }
+
+    private var quickActions: some View {
+        HStack(spacing: 10) {
+            Button(action: onAddTransaction) {
+                Label("Transaction", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button(action: onAddDebt) {
+                Label("Debt", systemImage: "person.crop.circle.badge.plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(.horizontal)
     }
 
     @ViewBuilder
