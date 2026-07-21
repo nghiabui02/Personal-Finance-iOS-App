@@ -83,35 +83,7 @@ SUPABASE_AVATAR_BUCKET = Avatar
 
 > `Secrets.xcconfig` is git-ignored and never committed.
 
-**3. Run the Supabase SQL**
-
-In your Supabase project's SQL Editor, run the following to set up required tables and functions:
-
-```sql
--- Atomic wallet balance update (avoids race conditions)
-create or replace function apply_wallet_balance_delta(wallet_id uuid, delta double precision)
-returns void language plpgsql security definer as $$
-begin
-  update wallets set balance = balance + delta where id = wallet_id;
-end;
-$$;
-
--- Notification read/dismiss state
-create table if not exists notification_states (
-  user_id          uuid references auth.users(id) on delete cascade,
-  notification_id  text,
-  read_at          timestamptz,
-  dismissed_at     timestamptz,
-  primary key (user_id, notification_id)
-);
-alter table notification_states enable row level security;
-create policy "Users own their notification states"
-  on notification_states for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-```
-
-**4. Open in Xcode and run**
+**3. Open in Xcode and run**
 
 Open `My Finance.xcodeproj` and press ▶.
 
