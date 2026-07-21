@@ -7,6 +7,8 @@ struct WalletsView: View {
     @StateObject private var sync = SyncManager.shared
 
     @State private var showAdd = false
+    @State private var editingWallet: LocalWallet?
+    @State private var navigatingToWallet: LocalWallet?
     @State private var showTransfer = false
     @State private var transferSourceWalletId: UUID?
     @State private var payingCreditWallet: LocalWallet?
@@ -25,13 +27,21 @@ struct WalletsView: View {
                 metrics: metrics,
                 onTransfer: startTransfer,
                 onAdd: { showAdd = true },
+                onEdit: { editingWallet = $0 },
                 onPayCredit: { payingCreditWallet = $0 },
                 onDelete: requestDelete,
+                onNavigate: { navigatingToWallet = $0 },
                 onRefresh: { await sync.syncAll(modelContext: modelContext) }
             )
+            .navigationDestination(item: $navigatingToWallet) { wallet in
+                WalletDetailView(wallet: wallet)
+            }
             .appScreenHeader("Wallets")
             .sheet(isPresented: $showAdd) {
                 AddEditWalletView(wallet: nil)
+            }
+            .sheet(item: $editingWallet) { wallet in
+                AddEditWalletView(wallet: wallet)
             }
             .sheet(
                 isPresented: $showTransfer,

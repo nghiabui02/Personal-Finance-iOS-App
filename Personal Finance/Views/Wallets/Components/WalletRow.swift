@@ -2,71 +2,119 @@ import SwiftUI
 
 struct WalletRow: View {
     let wallet: LocalWallet
+    let canTransfer: Bool
+    let onTransfer: () -> Void
+    let onEdit: () -> Void
+    let onNavigate: () -> Void
 
     private var accentColor: Color {
-        wallet.color.map { Color(hex: $0) } ?? .blue
+        wallet.color.map { Color(hex: $0) } ?? defaultColor
+    }
+
+    private var defaultColor: Color {
+        switch wallet.type {
+        case "bank":       return Color(red: 0.2, green: 0.7, blue: 0.4)
+        case "e_wallet":   return Color(red: 0.1, green: 0.65, blue: 0.8)
+        case "cash":       return Color(red: 0.8, green: 0.65, blue: 0.1)
+        case "credit":     return Color(red: 0.55, green: 0.2, blue: 0.85)
+        case "investment": return Color(red: 0.2, green: 0.5, blue: 0.9)
+        default:           return Color(red: 0.3, green: 0.5, blue: 0.8)
+        }
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            icon
-            titleSection
-            Spacer()
-            balanceSection
+        VStack(alignment: .leading, spacing: 14) {
+            topRow
+            Text(wallet.name)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
+            balanceRow
+            actionButtons
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [accentColor, accentColor.opacity(0.75)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture { onNavigate() }
     }
 
-    private var icon: some View {
-        ZStack {
-            Circle()
-                .fill(accentColor.opacity(0.15))
-                .frame(width: 44, height: 44)
-            Text(wallet.displayIcon)
-                .font(.system(size: 22))
-        }
-    }
-
-    private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
-                Text(wallet.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                if wallet.isDefault {
-                    StatusBadge(label: "Default", color: .blue)
-                }
-            }
-
-            if wallet.type == "credit" {
-                Text("Used: \(wallet.amountOwed.formatted(currency: "VND")) / \((wallet.creditLimit ?? 0).formatted(currency: "VND"))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            } else {
+    private var topRow: some View {
+        HStack {
+            HStack(spacing: 8) {
+                Text(wallet.displayIcon)
+                    .font(.system(size: 20))
                 Text(wallet.typeLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.2))
+                    .clipShape(Capsule())
+            }
+            Spacer()
+            if wallet.isDefault {
+                Text("Default")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(.white.opacity(0.2))
+                    .clipShape(Capsule())
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var balanceRow: some View {
+        if wallet.type == "credit" {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(wallet.amountOwed.formatted(currency: "VND"))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("used of \((wallet.creditLimit ?? 0).formatted(currency: "VND"))")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.white.opacity(0.7))
             }
-        }
-    }
-
-    private var balanceSection: some View {
-        VStack(alignment: .trailing, spacing: 2) {
+        } else {
             Text(wallet.balance.formatted(currency: "VND"))
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(balanceColor)
-
-            if wallet.type == "credit" {
-                Text("available")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
         }
     }
 
-    private var balanceColor: Color {
-        if wallet.type == "credit" { return .income }
-        return wallet.balance < 0 ? .red : .primary
+    private var actionButtons: some View {
+        HStack(spacing: 10) {
+            if canTransfer {
+                cardButton("arrow.2.squarepath", title: "Transfer", action: onTransfer)
+            }
+            cardButton("pencil", title: "Edit", action: onEdit)
+        }
+    }
+
+    private func cardButton(_ icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.caption.weight(.semibold))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.white.opacity(0.18))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }

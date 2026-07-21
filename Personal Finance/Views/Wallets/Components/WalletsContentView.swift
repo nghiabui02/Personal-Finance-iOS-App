@@ -5,85 +5,85 @@ struct WalletsContentView: View {
     let metrics: WalletListMetrics
     let onTransfer: (LocalWallet?) -> Void
     let onAdd: () -> Void
+    let onEdit: (LocalWallet) -> Void
     let onPayCredit: (LocalWallet) -> Void
     let onDelete: (LocalWallet) -> Void
+    let onNavigate: (LocalWallet) -> Void
     let onRefresh: () async -> Void
 
     var body: some View {
         List {
             Section {
-                HStack(spacing: 10) {
-                    if metrics.canTransfer {
-                        Button {
-                            onTransfer(nil)
-                        } label: {
-                            Label("Transfer", systemImage: "arrow.left.arrow.right")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                    }
-
-                    Button(action: onAdd) {
-                        Label("Add Wallet", systemImage: "plus")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+                WalletSummaryCard(
+                    totalBalance: metrics.totalBalance,
+                    walletCount: metrics.walletCount
+                )
             }
-            .listRowBackground(Color(.systemGroupedBackground))
+            .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
 
             Section {
-                WalletSummaryCard(netWorth: metrics.netWorth)
+                HStack {
+                    Text("\(wallets.count) WALLETS")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .tracking(1)
+                    Spacer()
+                    Button(action: onAdd) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus")
+                                .font(.caption.weight(.bold))
+                            Text("New wallet")
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color(.separator), lineWidth: 0.5))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
 
-            Section(wallets.isEmpty ? "" : "\(wallets.count) wallets") {
+            Section {
                 if wallets.isEmpty {
                     ContentUnavailableView(
                         "No Wallets",
                         systemImage: "creditcard",
                         description: Text("Tap + to add your first wallet")
                     )
-                    .padding(.vertical)
+                    .listRowBackground(Color.clear)
                 } else {
-                    walletRows
+                    walletCards
                 }
             }
+            .listRowSeparator(.hidden)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
         .refreshable { await onRefresh() }
     }
 
-    private var walletRows: some View {
+    private var walletCards: some View {
         ForEach(wallets, id: \.serverId) { wallet in
-            NavigationLink {
-                WalletDetailView(wallet: wallet)
-            } label: {
-                WalletRow(wallet: wallet)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                if metrics.canTransfer {
-                    Button {
-                        onTransfer(wallet)
-                    } label: {
-                        Label("Transfer", systemImage: "arrow.left.arrow.right")
-                    }
-                    .tint(.blue)
-                }
-
-                if wallet.type == "credit" {
-                    Button {
-                        onPayCredit(wallet)
-                    } label: {
-                        Label("Pay Bill", systemImage: "creditcard.fill")
-                    }
-                    .tint(.green)
-                }
-            }
+            WalletRow(
+                wallet: wallet,
+                canTransfer: metrics.canTransfer,
+                onTransfer: { onTransfer(wallet) },
+                onEdit: { onEdit(wallet) },
+                onNavigate: { onNavigate(wallet) }
+            )
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button {
-                    onDelete(wallet)
-                } label: {
+                Button { onDelete(wallet) } label: {
                     Label("Delete", systemImage: "trash")
                 }
                 .tint(.red)
