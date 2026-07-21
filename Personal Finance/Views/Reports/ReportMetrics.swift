@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NetWorthPoint: Identifiable {
     let id: String
+    let date: Date
     let label: String
     let value: Double
 }
@@ -160,6 +161,7 @@ enum ReportMetricsCalculator {
                 }
             return NetWorthPoint(
                 id: fmt.string(from: checkDate),
+                date: checkDay,
                 label: fmt.string(from: checkDate),
                 value: currentNW - delta
             )

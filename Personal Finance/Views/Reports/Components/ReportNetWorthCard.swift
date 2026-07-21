@@ -9,6 +9,8 @@ struct ReportNetWorthCard: View {
     let borrowed: Double
     let history: [NetWorthPoint]
 
+    @State private var selectedPoint: NetWorthPoint?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             netWorthSummary
@@ -60,20 +62,34 @@ struct ReportNetWorthCard: View {
 
     private var netWorthChart: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Net Worth")
-                .font(.subheadline.weight(.semibold))
+            HStack(alignment: .firstTextBaseline) {
+                Text("Net Worth")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if let sel = selectedPoint {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(sel.value.formatted(currency: "VND"))
+                            .font(.caption.weight(.semibold))
+                        Text(sel.label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .transition(.opacity.animation(.easeInOut(duration: 0.15)))
+                }
+            }
+            .animation(.easeInOut(duration: 0.15), value: selectedPoint?.id)
 
             Chart(history) { point in
                 LineMark(
-                    x: .value("Date", point.label),
+                    x: .value("Date", point.date),
                     y: .value("Value", point.value / 1_000_000)
                 )
                 .foregroundStyle(Color.blue)
                 .interpolationMethod(.catmullRom)
 
                 AreaMark(
-                    x: .value("Date", point.label),
-                    yStart: .value("Base", chartMinValue / 1_000_000),
+                    x: .value("Date", point.date),
+                    yStart: .value("Base", 0.0),
                     yEnd: .value("Value", point.value / 1_000_000)
                 )
                 .foregroundStyle(
@@ -83,11 +99,22 @@ struct ReportNetWorthCard: View {
                     )
                 )
                 .interpolationMethod(.catmullRom)
+
+                if let sel = selectedPoint {
+                    RuleMark(x: .value("Selected", sel.date))
+                        .foregroundStyle(Color.primary.opacity(0.35))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                }
             }
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 5)) {
-                    AxisValueLabel()
-                        .font(.caption2)
+                AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                    if let date = value.as(Date.self) {
+                        AxisValueLabel {
+                            Text(date, format: .dateTime.day().month())
+                                .font(.caption2)
+                        }
+                    }
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
                 }
             }
             .chartYAxis {
@@ -99,6 +126,28 @@ struct ReportNetWorthCard: View {
                         }
                     }
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
+                }
+            }
+            .chartOverlay { proxy in
+                GeometryReader { _ in
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    let x = value.location.x
+                                    selectedPoint = history.min(by: {
+                                        abs((proxy.position(forX: $0.date) ?? 0) - x) <
+                                        abs((proxy.position(forX: $1.date) ?? 0) - x)
+                                    })
+                                }
+                                .onEnded { _ in
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        selectedPoint = nil
+                                    }
+                                }
+                        )
                 }
             }
             .frame(height: 160)
