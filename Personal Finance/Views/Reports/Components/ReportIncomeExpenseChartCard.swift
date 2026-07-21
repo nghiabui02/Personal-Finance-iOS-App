@@ -21,7 +21,7 @@ struct ReportIncomeExpenseChartCard: View {
                 ? "DAILY INCOME VS EXPENSE"
                 : "MONTHLY INCOME VS EXPENSE")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(1)
             Spacer()
             ReportChartLegend()
@@ -33,7 +33,7 @@ struct ReportIncomeExpenseChartCard: View {
         if data.isEmpty {
             Text("No data for this period")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, minHeight: 160)
                 .multilineTextAlignment(.center)
         } else {
@@ -54,6 +54,13 @@ struct ReportIncomeExpenseChartCard: View {
                     .position(by: .value("Type", "Expense"))
                 }
             }
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: xAxisDesiredCount)) {
+                    AxisValueLabel()
+                        .font(.caption2)
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
+                }
+            }
             .chartYAxis {
                 AxisMarks { value in
                     AxisValueLabel {
@@ -65,14 +72,22 @@ struct ReportIncomeExpenseChartCard: View {
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4]))
                 }
             }
-            .frame(height: 180)
+            .frame(height: 200)
+        }
+    }
+
+    private var xAxisDesiredCount: Int {
+        switch period {
+        case .month: return 7
+        case .week: return 7
+        default: return data.count
         }
     }
 
     private func compactThousands(_ kValue: Double) -> String {
-        if kValue == 0 { return "0" }
-        if kValue >= 1000 { return "\(Int(kValue / 1000))M" }
-        return "\(Int(kValue))K"
+        if kValue == 0 { return "0 đ" }
+        if kValue >= 1000 { return "\(Int(kValue / 1000))M đ" }
+        return "\(Int(kValue))K đ"
     }
 }
 
@@ -91,7 +106,7 @@ private struct ReportChartLegend: View {
                 .frame(width: 8, height: 8)
             Text(title)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
 }

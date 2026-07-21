@@ -1,11 +1,22 @@
 import SwiftUI
 
+struct NetWorthPoint: Identifiable {
+    let id: String
+    let label: String
+    let value: Double
+}
+
 struct ReportMetrics {
     var income: Double = 0
     var expense: Double = 0
     var currentNetWorth: Double = 0
+    var cash: Double = 0
+    var lent: Double = 0
+    var creditOwed: Double = 0
+    var borrowed: Double = 0
     var chartData: [ReportChartBar] = []
     var spendingBreakdown: [ReportCategoryBreakdown] = []
+    var netWorthHistory: [NetWorthPoint] = []
 
     var net: Double { income - expense }
     var savingsRate: Double { income > 0 ? net / income * 100 : 0 }
@@ -34,31 +45,25 @@ enum ReportMetricsCalculator {
         debts: [LocalDebt],
         context: ReportPeriodContext
     ) -> ReportMetrics {
-        let transactionMetrics = calculateTransactionMetrics(
-            transactions: transactions,
-            context: context
-        )
+        let txMetrics = calculateTransactionMetrics(transactions: transactions, context: context)
+        let nw = calculateNetWorthComponents(wallets: wallets, debts: debts)
+        let history = computeNetWorthHistory(transactions: transactions, currentNW: nw.total)
 
         return ReportMetrics(
-            income: transactionMetrics.income,
-            expense: transactionMetrics.expense,
-            currentNetWorth: calculateCurrentNetWorth(wallets: wallets, debts: debts),
-            chartData: makeChartBars(
-                buckets: transactionMetrics.buckets,
-                context: context
-            ),
-            spendingBreakdown: makeSpendingBreakdown(
-                categoryTotals: transactionMetrics.categoryTotals
-            )
+            income: txMetrics.income,
+            expense: txMetrics.expense,
+            currentNetWorth: nw.total,
+            cash: nw.cash,
+            lent: nw.lent,
+            creditOwed: nw.creditOwed,
+            borrowed: nw.borrowed,
+            chartData: makeChartBars(buckets: txMetrics.buckets, context: context),
+            spendingBreakdown: makeSpendingBreakdown(categoryTotals: txMetrics.categoryTotals),
+            netWorthHistory: history
         )
     }
 
-    private typealias CategoryTotal = (
-        name: String,
-        icon: String,
-        color: String?,
-        total: Double
-    )
+    private typealias CategoryTotal = (name: String, icon: String, color: String?, total: Double)
 
     private static func calculateTransactionMetrics(
         transactions: [LocalTransaction],
@@ -78,30 +83,26 @@ enum ReportMetricsCalculator {
         var buckets: [Date: (income: Double, expense: Double)] = [:]
         var categoryTotals: [String: CategoryTotal] = [:]
 
-        for transaction in transactions {
-            let date = transaction.transactionDate
+        for tx in transactions {
+            let date = tx.transactionDate
             guard date >= range.start && date < dayAfterEnd else { continue }
-            guard !transaction.isTransfer else { continue }
+            guard !tx.isTransfer else { continue }
 
-            let bucketKey = bucketKey(for: date, period: context.period, calendar: calendar)
-            if transaction.type == "income" {
-                income += transaction.amount
-                buckets[bucketKey, default: (0, 0)].income += transaction.amount
+            let key = bucketKey(for: date, period: context.period, calendar: calendar)
+            if tx.type == "income" {
+                income += tx.amount
+                buckets[key, default: (0, 0)].income += tx.amount
             } else {
-                expense += transaction.amount
-                buckets[bucketKey, default: (0, 0)].expense += transaction.amount
-                accumulateExpense(transaction, categoryTotals: &categoryTotals)
+                expense += tx.amount
+                buckets[key, default: (0, 0)].expense += tx.amount
+                accumulateExpense(tx, categoryTotals: &categoryTotals)
             }
         }
 
         return (income, expense, buckets, categoryTotals)
     }
 
-    private static func bucketKey(
-        for date: Date,
-        period: ReportPeriod,
-        calendar: Calendar
-    ) -> Date {
+    private static func bucketKey(for date: Date, period: ReportPeriod, calendar: Calendar) -> Date {
         switch period {
         case .week, .month:
             return calendar.startOfDay(for: date)
@@ -111,31 +112,58 @@ enum ReportMetricsCalculator {
     }
 
     private static func accumulateExpense(
-        _ transaction: LocalTransaction,
+        _ tx: LocalTransaction,
         categoryTotals: inout [String: CategoryTotal]
     ) {
-        let key = transaction.categoryId?.uuidString
-            ?? transaction.categoryName
-            ?? "other"
+        let key = tx.categoryId?.uuidString ?? tx.categoryName ?? "other"
         let existing = categoryTotals[key]
         categoryTotals[key] = (
-            name: existing?.name ?? transaction.categoryName ?? "Other",
-            icon: existing?.icon ?? transaction.categoryIcon ?? "💸",
-            color: existing?.color ?? transaction.categoryColor,
-            total: (existing?.total ?? 0) + transaction.amount
+            name: existing?.name ?? tx.categoryName ?? "Other",
+            icon: existing?.icon ?? tx.categoryIcon ?? "💸",
+            color: existing?.color ?? tx.categoryColor,
+            total: (existing?.total ?? 0) + tx.amount
         )
     }
 
-    private static func calculateCurrentNetWorth(
+    private static func calculateNetWorthComponents(
         wallets: [LocalWallet],
         debts: [LocalDebt]
-    ) -> Double {
+    ) -> (total: Double, cash: Double, lent: Double, creditOwed: Double, borrowed: Double) {
         let cash = wallets.filter { $0.type != "credit" }.reduce(0) { $0 + $1.balance }
-        let creditDebt = wallets.filter { $0.type == "credit" }.reduce(0) { $0 + $1.amountOwed }
+        let creditOwed = wallets.filter { $0.type == "credit" }.reduce(0) { $0 + $1.amountOwed }
         let activeDebts = debts.filter { $0.status != "completed" }
         let lent = activeDebts.filter { $0.type == "lend" }.reduce(0) { $0 + $1.remainingAmount }
         let borrowed = activeDebts.filter { $0.type == "borrow" }.reduce(0) { $0 + $1.remainingAmount }
-        return cash + lent - creditDebt - borrowed
+        return (cash + lent - creditOwed - borrowed, cash, lent, creditOwed, borrowed)
+    }
+
+    private static func computeNetWorthHistory(
+        transactions: [LocalTransaction],
+        currentNW: Double,
+        count: Int = 10
+    ) -> [NetWorthPoint] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let fmt = DateFormatter()
+        fmt.dateFormat = "d/M"
+
+        let nonTransfers = transactions.filter { !$0.isTransfer }
+
+        return (0..<count).reversed().map { weekAgo in
+            let checkDate = calendar.date(byAdding: .weekOfYear, value: -weekAgo, to: today) ?? today
+            let checkDay = calendar.startOfDay(for: checkDate)
+
+            let delta = nonTransfers
+                .filter { calendar.startOfDay(for: $0.transactionDate) > checkDay }
+                .reduce(0.0) { acc, tx in
+                    tx.type == "income" ? acc + tx.amount : acc - tx.amount
+                }
+            return NetWorthPoint(
+                id: fmt.string(from: checkDate),
+                label: fmt.string(from: checkDate),
+                value: currentNW - delta
+            )
+        }
     }
 
     private static func makeChartBars(
@@ -151,11 +179,7 @@ enum ReportMetricsCalculator {
                 context: context
             )
         case .month:
-            let dayCount = context.calendar.range(
-                of: .day,
-                in: .month,
-                for: context.referenceDate
-            )?.count ?? 0
+            let dayCount = context.calendar.range(of: .day, in: .month, for: context.referenceDate)?.count ?? 0
             return makeDailyBars(
                 count: dayCount,
                 labels: (1...max(dayCount, 1)).map(String.init),
@@ -176,15 +200,10 @@ enum ReportMetricsCalculator {
         context: ReportPeriodContext
     ) -> [ReportChartBar] {
         let calendar = context.calendar
-        return (0..<count).map { index in
-            let date = calendar.date(byAdding: .day, value: index, to: context.range.start) ?? context.range.start
+        return (0..<count).map { i in
+            let date = calendar.date(byAdding: .day, value: i, to: context.range.start) ?? context.range.start
             let bucket = buckets[calendar.startOfDay(for: date)] ?? (0, 0)
-            return ReportChartBar(
-                id: "\(index)",
-                label: labels[index],
-                income: bucket.income,
-                expense: bucket.expense
-            )
+            return ReportChartBar(id: "\(i)", label: labels[i], income: bucket.income, expense: bucket.expense)
         }
     }
 
@@ -194,12 +213,12 @@ enum ReportMetricsCalculator {
         context: ReportPeriodContext
     ) -> [ReportChartBar] {
         let calendar = context.calendar
-        return (0..<count).map { index in
-            let date = calendar.date(byAdding: .month, value: index, to: context.range.start) ?? context.range.start
-            let bucketKey = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
-            let bucket = buckets[bucketKey] ?? (0, 0)
+        return (0..<count).map { i in
+            let date = calendar.date(byAdding: .month, value: i, to: context.range.start) ?? context.range.start
+            let key = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
+            let bucket = buckets[key] ?? (0, 0)
             return ReportChartBar(
-                id: "\(index)",
+                id: "\(i)",
                 label: date.formatted(.dateTime.month(.abbreviated)),
                 income: bucket.income,
                 expense: bucket.expense

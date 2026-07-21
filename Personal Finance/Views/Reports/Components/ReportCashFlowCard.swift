@@ -4,12 +4,12 @@ struct ReportCashFlowCard: View {
     let metrics: ReportMetrics
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             header
             netAmount
-            incomeExpenseSummary
             Divider()
-            savingsRateRow
+            incomeExpenseSummary
+            savingsBar
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground))
@@ -17,18 +17,33 @@ struct ReportCashFlowCard: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .center) {
             Text("NET CASH FLOW")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(1)
             Spacer()
-            if metrics.net < 0 {
+            savingsBadge
+        }
+    }
+
+    @ViewBuilder
+    private var savingsBadge: some View {
+        if metrics.income > 0 {
+            if metrics.net >= 0 {
+                Text(String(format: "%.1f%% saved", metrics.savingsRate))
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Color.income)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.income.opacity(0.15))
+                    .clipShape(Capsule())
+            } else {
                 Text("over budget")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
                     .background(Color.expense.opacity(0.85))
                     .clipShape(Capsule())
             }
@@ -36,44 +51,58 @@ struct ReportCashFlowCard: View {
     }
 
     private var netAmount: some View {
-        Text(metrics.net.formatted(currency: "VND"))
+        Text(netFormatted)
             .font(.system(size: 38, weight: .bold, design: .rounded))
-            .foregroundColor(metrics.net >= 0 ? .income : .expense)
+            .foregroundStyle(metrics.net >= 0 ? Color.income : Color.expense)
             .minimumScaleFactor(0.5)
             .lineLimit(1)
     }
 
+    private var netFormatted: String {
+        (metrics.net > 0 ? "+" : "") + metrics.net.formatted(currency: "VND")
+    }
+
     private var incomeExpenseSummary: some View {
         HStack(spacing: 0) {
-            ReportAmountSummaryColumn(
-                title: "INCOME",
-                amount: metrics.income,
-                color: .income
-            )
-
-            Divider()
-                .frame(height: 32)
-                .padding(.horizontal, 16)
-
-            ReportAmountSummaryColumn(
-                title: "EXPENSE",
-                amount: metrics.expense,
-                color: .expense
-            )
-
+            ReportAmountSummaryColumn(title: "INCOME", amount: metrics.income, color: .income)
+            Divider().frame(height: 32).padding(.horizontal, 16)
+            ReportAmountSummaryColumn(title: "EXPENSE", amount: metrics.expense, color: .expense)
             Spacer()
         }
     }
 
-    private var savingsRateRow: some View {
-        HStack {
-            Text("Savings rate")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-            Text("\(metrics.savingsRate, format: .number.precision(.fractionLength(1)))%")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(metrics.savingsRate >= 0 ? .income : .expense)
+    private var savingsBar: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geo in
+                let ratio = metrics.income > 0
+                    ? max(0, min(1, metrics.net / metrics.income))
+                    : 0
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.income)
+                        .frame(width: geo.size.width * ratio)
+                    Rectangle()
+                        .fill(Color.expense)
+                }
+            }
+            .frame(height: 6)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+
+            HStack {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.left")
+                    Text("savings")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                Spacer()
+                HStack(spacing: 3) {
+                    Text("spending")
+                    Image(systemName: "arrow.right")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
         }
     }
 }
@@ -87,11 +116,11 @@ private struct ReportAmountSummaryColumn: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(0.5)
             Text(amount.formatted(currency: "VND"))
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
         }

@@ -7,7 +7,7 @@ struct ReportDateNavigatorView: View {
     let onNext: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             Button(action: onPrevious) {
                 navigationIcon("chevron.left", color: .secondary)
             }
@@ -38,7 +38,7 @@ struct ReportDateNavigatorView: View {
     private func navigationIcon(_ systemName: String, color: Color) -> some View {
         Image(systemName: systemName)
             .font(.subheadline.weight(.semibold))
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .frame(width: 44, height: 36)
             .contentShape(Rectangle())
     }
