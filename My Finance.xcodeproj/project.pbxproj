@@ -127,6 +127,10 @@
 		FB0000000000000000000002 /* TransactionFilterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000002 /* TransactionFilterSection.swift */; };
 		FD0000000000000000000001 /* AppScreenHeaderModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000001 /* AppScreenHeaderModifier.swift */; };
 		FE14BEC58064B835B663B138 /* Personal_FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB43EDEAB7559804CA8B7BEA /* Personal_FinanceApp.swift */; };
+		D61A0000000000000000001A /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000001A /* AppNotification.swift */; };
+		D61A0000000000000000002A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000002A /* NotificationService.swift */; };
+		D61A0000000000000000003A /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000003A /* NotificationViewModel.swift */; };
+		D61A0000000000000000004A /* NotificationsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000004A /* NotificationsSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -271,6 +275,10 @@
 		FA0000000000000000000002 /* TransactionFilterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilterSection.swift; sourceTree = "<group>"; };
 		FC0000000000000000000001 /* AppScreenHeaderModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScreenHeaderModifier.swift; sourceTree = "<group>"; };
 		FBEF9CB7C3F8282F5494D68C /* RemoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteModels.swift; sourceTree = "<group>"; };
+		C61A0000000000000000001A /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
+		C61A0000000000000000002A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		C61A0000000000000000003A /* NotificationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
+		C61A0000000000000000004A /* NotificationsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications/NotificationsSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -384,6 +392,7 @@
 		48FE0CBBE6396DFBF8634802 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C61A0000000000000000001A /* AppNotification.swift */,
 				9B39FCE8E8A6D1B42D20A353 /* LocalModels.swift */,
 				FBEF9CB7C3F8282F5494D68C /* RemoteModels.swift */,
 			);
@@ -488,6 +497,7 @@
 				0073767C6525E2F2064892F4 /* Dashboard */,
 				0629E81C0E90A7199CB4E653 /* Debts */,
 				C599917564863D9B57DDC709 /* More */,
+				C61A0000000000000000004A /* NotificationsSheet.swift */,
 				F0EC4DBC22C8DA687EDD9C12 /* Recurring */,
 				538A32B1FD2AF8BA20ADB33D /* Reports */,
 				31CF033F8D8F70C2F774EE97 /* SavingGoals */,
@@ -588,6 +598,7 @@
 				5990C03C2F82819D1CFBCFE6 /* CategoryService.swift */,
 				5DEC3E5D139DA0AE1D39EA12 /* DebtService.swift */,
 				F90000000000000000000001 /* LocalDataStore.swift */,
+				C61A0000000000000000002A /* NotificationService.swift */,
 				3E970C7990445F773EA68DB0 /* RecurringService.swift */,
 				79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */,
 				D3B8DACBFE33247F97EFB101 /* SupabaseService.swift */,
@@ -603,6 +614,7 @@
 			isa = PBXGroup;
 			children = (
 				4E4B584112C1B9A009F249D6 /* AuthViewModel.swift */,
+				C61A0000000000000000003A /* NotificationViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -886,6 +898,10 @@
 				0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */,
 				C1D2E3F4A5B6001122334455 /* TransferService.swift in Sources */,
 				D2E3F4A5B6C7001122334455 /* TransferSheet.swift in Sources */,
+				D61A0000000000000000001A /* AppNotification.swift in Sources */,
+				D61A0000000000000000002A /* NotificationService.swift in Sources */,
+				D61A0000000000000000003A /* NotificationViewModel.swift in Sources */,
+				D61A0000000000000000004A /* NotificationsSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

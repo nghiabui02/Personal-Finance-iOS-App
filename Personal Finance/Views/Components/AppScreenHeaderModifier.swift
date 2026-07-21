@@ -4,7 +4,7 @@ struct AppScreenHeaderModifier: ViewModifier {
     @EnvironmentObject private var authViewModel: AuthViewModel
     let title: String
 
-    @State private var showsNotifications = false
+    @StateObject private var notifVM = NotificationViewModel()
     @State private var showsProfile = false
 
     func body(content: Content) -> some View {
@@ -14,13 +14,7 @@ struct AppScreenHeaderModifier: ViewModifier {
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {
-                        showsNotifications = true
-                    } label: {
-                        Image(systemName: "bell")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    .accessibilityLabel("Notifications")
+                    NotificationBellButton(vm: notifVM)
 
                     Button {
                         showsProfile = true
@@ -31,27 +25,11 @@ struct AppScreenHeaderModifier: ViewModifier {
                     .accessibilityLabel("Open profile")
                 }
             }
-            .sheet(isPresented: $showsNotifications) {
-                NavigationStack {
-                    ContentUnavailableView(
-                        "No Notifications",
-                        systemImage: "bell.slash",
-                        description: Text("New notifications will appear here")
-                    )
-                    .navigationTitle("Notifications")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showsNotifications = false }
-                        }
-                    }
-                }
-                .presentationDetents([.medium, .large])
-            }
             .sheet(isPresented: $showsProfile) {
                 SettingsView(onClose: { showsProfile = false })
                     .environmentObject(authViewModel)
             }
+            .onAppear { Task { await notifVM.load() } }
     }
 }
 
