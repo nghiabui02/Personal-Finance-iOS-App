@@ -31,18 +31,24 @@ final class BudgetService {
     }
 
     func update(_ budget: LocalBudget, amount: Double, in ctx: ModelContext) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable { let amount: Double }
         let remote: RemoteBudget = try await client
             .from("budgets")
             .update(Body(amount: amount))
             .eq("id", value: budget.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select("*, categories(id, name, icon, color)").single().execute().value
         budget.update(from: remote)
         try ctx.save()
     }
 
     func delete(_ budget: LocalBudget, in ctx: ModelContext) async throws {
-        try await client.from("budgets").delete().eq("id", value: budget.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("budgets").delete()
+            .eq("id", value: budget.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(budget)
         try ctx.save()
     }

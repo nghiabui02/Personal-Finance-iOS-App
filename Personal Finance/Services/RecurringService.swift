@@ -48,6 +48,7 @@ final class RecurringService {
         endDate: Date?, walletId: UUID?, categoryId: UUID?, note: String?,
         in ctx: ModelContext
     ) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable {
             let amount: Double, frequency: String, end_date: String?
             let wallet_id: String?, category_id: String?, note: String?
@@ -59,6 +60,7 @@ final class RecurringService {
                         wallet_id: walletId?.uuidString, category_id: categoryId?.uuidString,
                         note: note?.isEmpty == true ? nil : note))
             .eq("id", value: rec.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select("*, categories(id, name, icon, color), wallets(id, name)")
             .single().execute().value
         rec.update(from: remote)
@@ -66,7 +68,11 @@ final class RecurringService {
     }
 
     func delete(_ rec: LocalRecurringTransaction, in ctx: ModelContext) async throws {
-        try await client.from("recurring_transactions").delete().eq("id", value: rec.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("recurring_transactions").delete()
+            .eq("id", value: rec.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(rec)
         try ctx.save()
     }
@@ -85,6 +91,7 @@ final class RecurringService {
             guard let nextRun = rec.nextRunDate else { continue }
             let wallet = wallets.first { $0.serverId == rec.walletId }
             do {
+                let userId = try await client.auth.session.user.id
                 try await TransactionService.shared.create(
                     type: rec.type, amount: rec.amount, date: nextRun,
                     walletId: rec.walletId, categoryId: rec.categoryId,
@@ -96,11 +103,14 @@ final class RecurringService {
                     .from("recurring_transactions")
                     .update(Body(next_run_date: df.string(from: newNextRun)))
                     .eq("id", value: rec.serverId)
+                    .eq("user_id", value: userId.uuidString)
                     .select("*, categories(id, name, icon, color), wallets(id, name)")
                     .single().execute().value
                 rec.update(from: updated)
             } catch {
+                #if DEBUG
                 print("[RecurringService] error processing \(rec.serverId): \(error)")
+                #endif
             }
         }
         try? ctx.save()

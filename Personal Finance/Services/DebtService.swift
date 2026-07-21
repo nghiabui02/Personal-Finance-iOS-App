@@ -56,6 +56,7 @@ final class DebtService {
         _ debt: LocalDebt, personName: String, personContact: String?,
         dueDate: Date?, note: String?, status: String? = nil, in ctx: ModelContext
     ) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable {
             let person_name: String, person_contact: String?, due_date: String?, note: String?
             let status: String
@@ -70,13 +71,18 @@ final class DebtService {
                 status: status ?? debt.status
             ))
             .eq("id", value: debt.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         debt.update(from: remote)
         try ctx.save()
     }
 
     func delete(_ debt: LocalDebt, in ctx: ModelContext) async throws {
-        try await client.from("debts").delete().eq("id", value: debt.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("debts").delete()
+            .eq("id", value: debt.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(debt)
         try ctx.save()
     }
@@ -91,6 +97,7 @@ final class DebtService {
             throw FinanceValidationError.insufficientFunds
         }
 
+        let userId = try await client.auth.session.user.id
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
             let paid_at: String
@@ -109,6 +116,7 @@ final class DebtService {
             .from("debts")
             .update(DebtBody(remaining_amount: newRemaining, status: newStatus))
             .eq("id", value: debt.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         debt.update(from: remote)
 
@@ -131,6 +139,7 @@ final class DebtService {
     ) async throws {
         guard amount > 0 else { throw FinanceValidationError.invalidAmount }
 
+        let userId = try await client.auth.session.user.id
         struct PayBody: Encodable {
             let debt_id: String, amount: Double, note: String?, type: String
             let paid_at: String
@@ -149,6 +158,7 @@ final class DebtService {
             .from("debts")
             .update(DebtBody(amount: newAmount, remaining_amount: newRemaining, status: "active"))
             .eq("id", value: debt.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         debt.update(from: remote)
 

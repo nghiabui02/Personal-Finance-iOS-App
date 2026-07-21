@@ -166,7 +166,9 @@ final class AuthViewModel: ObservableObject {
             _ = try await storage.from(bucket).remove(paths: ["\(userId)/avatar.jpg"])
         } catch {
             // Keep going so the avatar disappears from the app even if storage cleanup fails.
+            #if DEBUG
             print("[AuthViewModel] avatar delete storage cleanup failed: \(error)")
+            #endif
         }
         currentUser = try await auth.update(user: UserAttributes(data: ["avatar_url": .null]))
     }

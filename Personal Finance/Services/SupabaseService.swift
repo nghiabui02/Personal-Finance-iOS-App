@@ -27,8 +27,11 @@ final class SupabaseService {
     let client: SupabaseClient
 
     private init() {
+        guard let supabaseURL = URL(string: AppConfig.supabaseURL), supabaseURL.host != nil else {
+            fatalError("Supabase URL is missing or invalid. Check Config/Secrets.xcconfig.")
+        }
         client = SupabaseClient(
-            supabaseURL: URL(string: AppConfig.supabaseURL)!,
+            supabaseURL: supabaseURL,
             supabaseKey: AppConfig.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: SupabaseClientOptions.AuthOptions(

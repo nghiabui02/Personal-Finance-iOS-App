@@ -21,18 +21,24 @@ final class CategoryService {
     }
 
     func update(_ cat: LocalCategory, name: String, icon: String?, color: String?, in ctx: ModelContext) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable { let name: String, icon: String?, color: String? }
         let remote: RemoteCategory = try await client
             .from("categories")
             .update(Body(name: name, icon: icon, color: color))
             .eq("id", value: cat.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         cat.update(from: remote)
         try ctx.save()
     }
 
     func delete(_ cat: LocalCategory, in ctx: ModelContext) async throws {
-        try await client.from("categories").delete().eq("id", value: cat.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("categories").delete()
+            .eq("id", value: cat.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(cat)
         try ctx.save()
     }

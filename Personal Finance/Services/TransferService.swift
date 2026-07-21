@@ -83,13 +83,13 @@ final class TransferService {
     }
 
     private func applyBalanceDelta(_ delta: Double, to wallet: LocalWallet) async throws {
-        let newBalance = wallet.balance + delta
-        struct B: Encodable { let balance: Double }
+        struct Params: Encodable { let wallet_id: String; let delta: Double }
         try await client
-            .from("wallets")
-            .update(B(balance: newBalance))
-            .eq("id", value: wallet.serverId)
+            .rpc("apply_wallet_balance_delta", params: Params(
+                wallet_id: wallet.serverId.uuidString.lowercased(),
+                delta: delta
+            ))
             .execute()
-        wallet.balance = newBalance
+        wallet.balance += delta
     }
 }

@@ -5,6 +5,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var authVM = AuthViewModel()
     @AppStorage("pf_colorScheme") private var colorScheme = "system"
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -34,6 +35,14 @@ struct RootView: View {
         .onChange(of: authVM.authState) { _, state in
             if case .unauthenticated = state {
                 LocalDataStore.clearForSignedOutUser(in: modelContext)
+            }
+        }
+        .overlay {
+            if scenePhase != .active {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
             }
         }
     }

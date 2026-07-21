@@ -15,7 +15,12 @@ struct Personal_FinanceApp: App {
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [config])
+            try? FileManager.default.setAttributes(
+                [.protectionKey: FileAttributeProtectionType.completeUnlessOpen],
+                ofItemAtPath: config.url.path
+            )
+            return container
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }

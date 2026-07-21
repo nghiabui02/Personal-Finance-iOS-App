@@ -50,6 +50,7 @@ final class WalletService {
         creditLimit: Double? = nil, statementDay: Int? = nil, paymentDueDay: Int? = nil,
         in ctx: ModelContext
     ) async throws {
+        let userId = try await client.auth.session.user.id
         let remote: RemoteWallet
         if type == "credit" {
             struct CreditBody: Encodable {
@@ -67,6 +68,7 @@ final class WalletService {
                                    payment_due_day: paymentDueDay ?? wallet.paymentDueDay,
                                    balance: max(0, newBalance)))
                 .eq("id", value: wallet.serverId)
+                .eq("user_id", value: userId.uuidString)
                 .select().single().execute().value
         } else {
             struct Body: Encodable {
@@ -76,6 +78,7 @@ final class WalletService {
                 .from("wallets")
                 .update(Body(name: name, type: type, icon: icon, color: color, is_default: isDefault))
                 .eq("id", value: wallet.serverId)
+                .eq("user_id", value: userId.uuidString)
                 .select().single().execute().value
         }
         wallet.update(from: remote)
@@ -83,6 +86,7 @@ final class WalletService {
     }
 
     func delete(_ wallet: LocalWallet, in ctx: ModelContext) async throws {
+        let userId = try await client.auth.session.user.id
         if wallet.type != "credit", wallet.balance > 0 {
             let wallets = (try? ctx.fetch(FetchDescriptor<LocalWallet>())) ?? []
             guard let destination = wallets.first(where: {
@@ -99,7 +103,10 @@ final class WalletService {
                 in: ctx
             )
         }
-        try await client.from("wallets").delete().eq("id", value: wallet.serverId).execute()
+        try await client.from("wallets").delete()
+            .eq("id", value: wallet.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(wallet)
         try ctx.save()
     }

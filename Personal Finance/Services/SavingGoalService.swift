@@ -44,6 +44,7 @@ final class SavingGoalService {
         targetAmount: Double, deadline: Date?, note: String?,
         in ctx: ModelContext
     ) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable {
             let name: String, icon: String?, target_amount: Double, deadline: String?, note: String?
         }
@@ -53,12 +54,14 @@ final class SavingGoalService {
                         deadline: deadline.map { df.string(from: $0) },
                         note: note?.isEmpty == true ? nil : note))
             .eq("id", value: goal.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         goal.update(from: remote)
         try ctx.save()
     }
 
     func addContribution(_ goal: LocalSavingGoal, amount: Double, in ctx: ModelContext) async throws {
+        let userId = try await client.auth.session.user.id
         let newAmount = goal.currentAmount + amount
         let newStatus = newAmount >= goal.targetAmount ? "completed" : goal.status
         struct Body: Encodable { let current_amount: Double, status: String }
@@ -66,13 +69,18 @@ final class SavingGoalService {
             .from("saving_goals")
             .update(Body(current_amount: newAmount, status: newStatus))
             .eq("id", value: goal.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select().single().execute().value
         goal.update(from: remote)
         try ctx.save()
     }
 
     func delete(_ goal: LocalSavingGoal, in ctx: ModelContext) async throws {
-        try await client.from("saving_goals").delete().eq("id", value: goal.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("saving_goals").delete()
+            .eq("id", value: goal.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
         ctx.delete(goal)
         try ctx.save()
     }

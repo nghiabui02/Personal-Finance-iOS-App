@@ -55,6 +55,7 @@ final class TransactionService {
         oldWallet: LocalWallet?, newWallet: LocalWallet?,
         in ctx: ModelContext
     ) async throws {
+        let userId = try await client.auth.session.user.id
         struct Body: Encodable {
             let type: String, amount: Double, transaction_date: String
             let wallet_id: String?, category_id: String?, note: String?
@@ -69,6 +70,7 @@ final class TransactionService {
                 note: note?.isEmpty == true ? nil : note
             ))
             .eq("id", value: tx.serverId)
+            .eq("user_id", value: userId.uuidString)
             .select("*, categories(id, name, icon, color), wallets(id, name)")
             .single().execute().value
 
@@ -89,7 +91,11 @@ final class TransactionService {
     }
 
     func delete(_ tx: LocalTransaction, wallet: LocalWallet?, in ctx: ModelContext) async throws {
-        try await client.from("transactions").delete().eq("id", value: tx.serverId).execute()
+        let userId = try await client.auth.session.user.id
+        try await client.from("transactions").delete()
+            .eq("id", value: tx.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
 
         if let wallet {
             let reverse = tx.type == "income" ? -tx.amount : tx.amount
@@ -100,13 +106,13 @@ final class TransactionService {
     }
 
     private func applyBalanceDelta(_ delta: Double, to wallet: LocalWallet) async throws {
-        let newBalance = wallet.balance + delta
-        struct B: Encodable { let balance: Double }
+        struct Params: Encodable { let wallet_id: String; let delta: Double }
         try await client
-            .from("wallets")
-            .update(B(balance: newBalance))
-            .eq("id", value: wallet.serverId)
+            .rpc("apply_wallet_balance_delta", params: Params(
+                wallet_id: wallet.serverId.uuidString.lowercased(),
+                delta: delta
+            ))
             .execute()
-        wallet.balance = newBalance
+        wallet.balance += delta
     }
 }

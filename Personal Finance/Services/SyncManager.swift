@@ -101,7 +101,9 @@ final class SyncManager: ObservableObject {
             } else {
                 syncError = error.localizedDescription
             }
+            #if DEBUG
             print("[SyncManager] error: \(error)")
+            #endif
         }
     }
 
