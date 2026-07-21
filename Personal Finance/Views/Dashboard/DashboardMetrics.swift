@@ -4,6 +4,7 @@ struct DashboardMetrics {
     var income: Double = 0
     var expense: Double = 0
     var netWorth: Double = 0
+    var cash: Double = 0
     var outstandingLent: Double = 0
     var outstandingBorrowed: Double = 0
     var recentTransactions: [LocalTransaction] = []
@@ -41,6 +42,7 @@ enum DashboardMetricsCalculator {
             income: transactionData.income,
             expense: transactionData.expense,
             netWorth: cash + debtTotals.lent - creditDebt - debtTotals.borrowed,
+            cash: cash,
             outstandingLent: debtTotals.lent,
             outstandingBorrowed: debtTotals.borrowed,
             recentTransactions: transactionData.recent,

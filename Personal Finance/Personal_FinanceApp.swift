@@ -17,7 +17,7 @@ struct Personal_FinanceApp: App {
         do {
             let container = try ModelContainer(for: schema, configurations: [config])
             try? FileManager.default.setAttributes(
-                [.protectionKey: FileAttributeProtectionType.completeUnlessOpen],
+                [.protectionKey: FileProtectionType.completeUnlessOpen],
                 ofItemAtPath: config.url.path
             )
             return container

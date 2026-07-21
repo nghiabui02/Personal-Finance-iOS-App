@@ -64,6 +64,7 @@ struct DashboardContentView: View {
 
             DashboardNetWorthCard(
                 netWorth: metrics.netWorth,
+                cash: metrics.cash,
                 lent: metrics.outstandingLent,
                 borrowed: metrics.outstandingBorrowed,
                 currency: currency
