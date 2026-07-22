@@ -2,6 +2,8 @@ import SwiftUI
 
 struct DebtRow: View {
     let debt: LocalDebt
+    var onPay: (() -> Void)? = nil
+    var onAdd: (() -> Void)? = nil
 
     private var paidAmount: Double { debt.amount - debt.remainingAmount }
     private var progress: Double { debt.amount > 0 ? max(0, min(1, paidAmount / debt.amount)) : 0 }
@@ -11,8 +13,39 @@ struct DebtRow: View {
         VStack(alignment: .leading, spacing: 8) {
             header
             progressSection
+            if debt.status != "completed", onPay != nil || onAdd != nil {
+                actionButtons
+            }
         }
         .padding(.vertical, 4)
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: 12) {
+            if let onPay {
+                Button(action: onPay) {
+                    Label(
+                        debt.type == "lend" ? "Collect" : "Repay",
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.green)
+                }
+                .buttonStyle(.borderless)
+            }
+            if let onAdd {
+                Button(action: onAdd) {
+                    Label(
+                        debt.type == "lend" ? "Lend More" : "Borrow More",
+                        systemImage: "plus.circle.fill"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .padding(.top, 2)
     }
 
     private var header: some View {

@@ -45,7 +45,7 @@ struct DebtsContentView: View {
                 NavigationLink {
                     DebtDetailView(debt: debt)
                 } label: {
-                    DebtRow(debt: debt)
+                    DebtRow(debt: debt, onPay: { onPay(debt) }, onAdd: { onAdd(debt) })
                 }
                 .buttonStyle(.plain)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
