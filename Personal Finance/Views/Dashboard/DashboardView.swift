@@ -5,6 +5,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var sync = SyncManager.shared
+    @EnvironmentObject private var tabRouter: AppTabRouter
 
     @Query(sort: \LocalTransaction.transactionDate, order: .reverse)
     private var transactions: [LocalTransaction]
@@ -34,7 +35,8 @@ struct DashboardView: View {
             syncError: sync.syncError,
                 isSyncing: sync.isSyncing,
                 currency: currency,
-                onAddTransaction: { quickAction = .transaction }
+                onAddTransaction: { quickAction = .transaction },
+                onViewAllTransactions: { tabRouter.selectedTab = .transactions }
         )
             .background(Color(.systemGroupedBackground))
             .appScreenHeader("Overview")

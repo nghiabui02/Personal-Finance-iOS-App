@@ -131,6 +131,7 @@
 		D61A0000000000000000002A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000002A /* NotificationService.swift */; };
 		D61A0000000000000000003A /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000003A /* NotificationViewModel.swift */; };
 		D61A0000000000000000004A /* NotificationsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000004A /* NotificationsSheet.swift */; };
+		D61A0000000000000000005A /* AppTabRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61A0000000000000000005A /* AppTabRouter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -279,6 +280,7 @@
 		C61A0000000000000000002A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		C61A0000000000000000003A /* NotificationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
 		C61A0000000000000000004A /* NotificationsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications/NotificationsSheet.swift; sourceTree = "<group>"; };
+		C61A0000000000000000005A /* AppTabRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabRouter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -615,6 +617,7 @@
 			children = (
 				4E4B584112C1B9A009F249D6 /* AuthViewModel.swift */,
 				C61A0000000000000000003A /* NotificationViewModel.swift */,
+				C61A0000000000000000005A /* AppTabRouter.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -902,6 +905,7 @@
 				D61A0000000000000000002A /* NotificationService.swift in Sources */,
 				D61A0000000000000000003A /* NotificationViewModel.swift in Sources */,
 				D61A0000000000000000004A /* NotificationsSheet.swift in Sources */,
+				D61A0000000000000000005A /* AppTabRouter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

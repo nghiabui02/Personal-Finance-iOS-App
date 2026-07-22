@@ -8,6 +8,7 @@ struct DashboardContentView: View {
     let isSyncing: Bool
     let currency: String
     let onAddTransaction: () -> Void
+    let onViewAllTransactions: () -> Void
 
     var body: some View {
         ScrollView {
@@ -84,7 +85,8 @@ struct DashboardContentView: View {
         DashboardRecentTransactionsSection(
             transactions: metrics.recentTransactions,
             isSyncing: isSyncing,
-            currency: currency
+            currency: currency,
+            onViewAll: onViewAllTransactions
         )
     }
 

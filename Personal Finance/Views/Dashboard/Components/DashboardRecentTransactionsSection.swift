@@ -4,12 +4,18 @@ struct DashboardRecentTransactionsSection: View {
     let transactions: [LocalTransaction]
     let isSyncing: Bool
     let currency: String
+    let onViewAll: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Recent Transactions")
-                .font(.headline)
-                .padding(.horizontal)
+            HStack {
+                Text("Recent Transactions")
+                    .font(.headline)
+                Spacer()
+                Button("View All", action: onViewAll)
+                    .font(.subheadline)
+            }
+            .padding(.horizontal)
 
             if transactions.isEmpty && !isSyncing {
                 ContentUnavailableView(
