@@ -34,11 +34,9 @@ struct DashboardView: View {
             syncError: sync.syncError,
                 isSyncing: sync.isSyncing,
                 currency: currency,
-                onAddTransaction: { quickAction = .transaction },
-                onAddDebt: { quickAction = .debt }
+                onAddTransaction: { quickAction = .transaction }
         )
             .background(Color(.systemGroupedBackground))
-            .gesture(monthSwipeGesture)
             .appScreenHeader("Overview")
             .sheet(item: $quickAction, content: quickActionSheet)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
@@ -59,28 +57,7 @@ struct DashboardView: View {
         switch action {
         case .transaction:
             AddEditTransactionView(transaction: nil)
-        case .debt:
-            AddEditDebtView(debt: nil)
         }
-    }
-
-    private var monthSwipeGesture: some Gesture {
-        DragGesture(minimumDistance: 40)
-            .onEnded { value in
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-                guard abs(horizontal) > abs(vertical) * 2, abs(horizontal) > 60 else { return }
-                moveMonth(by: horizontal < 0 ? 1 : -1)
-            }
-    }
-
-    private func moveMonth(by offset: Int) {
-        guard let month = Calendar.current.date(
-            byAdding: .month,
-            value: offset,
-            to: selectedMonth
-        ) else { return }
-        withAnimation { selectedMonth = month }
     }
 
     private func recompute() {
@@ -137,7 +114,6 @@ struct DashboardView: View {
 
 private enum DashboardQuickAction: String, Identifiable {
     case transaction
-    case debt
 
     var id: String { rawValue }
 }
