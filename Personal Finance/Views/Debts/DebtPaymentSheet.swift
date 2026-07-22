@@ -16,9 +16,38 @@ struct DebtPaymentSheet: View {
     @State private var isSaving = false
     @State private var errorMsg: String?
 
+    init(debt: LocalDebt, wallets: [LocalWallet]) {
+        self.debt = debt
+        self.wallets = wallets
+        let initialWallet: UUID? = debt.walletId
+            ?? wallets.first(where: { $0.isDefault })?.serverId
+            ?? wallets.first?.serverId
+        _selectedWalletId = State(initialValue: initialWallet)
+    }
+
+    private var afterPayment: Double { max(0, debt.remainingAmount - amount) }
+
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    HStack {
+                        Text("Remaining debt")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(debt.remainingAmount.formatted(currency: "VND"))
+                            .fontWeight(.medium)
+                    }
+                    HStack {
+                        Text("After this payment")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(afterPayment.formatted(currency: "VND"))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(afterPayment == 0 ? Color.income : Color.primary)
+                    }
+                }
+
                 DebtAmountEntrySection(
                     amount: $amount,
                     amountText: $amountText,

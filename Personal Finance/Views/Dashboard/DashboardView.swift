@@ -18,7 +18,6 @@ struct DashboardView: View {
     )!
     @State private var metrics = DashboardMetrics()
     @State private var quickAction: DashboardQuickAction?
-    @State private var networkObserver: NSObjectProtocol?
 
     private let currency = "VND"
 
@@ -43,7 +42,6 @@ struct DashboardView: View {
             .sheet(item: $quickAction, content: quickActionSheet)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear(perform: handleAppear)
-            .onDisappear(perform: removeNetworkObserver)
             .onChange(of: transactions) { _, _ in recompute() }
             .onChange(of: wallets) { _, _ in recompute() }
             .onChange(of: budgets) { _, _ in recompute() }
@@ -76,7 +74,6 @@ struct DashboardView: View {
     private func handleAppear() {
         recompute()
         syncData()
-        installNetworkObserver()
     }
 
     private func handleScenePhaseChange(
@@ -94,24 +91,7 @@ struct DashboardView: View {
         }
     }
 
-    private func installNetworkObserver() {
-        guard networkObserver == nil else { return }
-        networkObserver = NotificationCenter.default.addObserver(
-            forName: .networkRestored,
-            object: nil,
-            queue: .main
-        ) { _ in
-            Task { @MainActor in
-                await sync.syncAll(modelContext: modelContext)
-            }
-        }
-    }
 
-    private func removeNetworkObserver() {
-        guard let networkObserver else { return }
-        NotificationCenter.default.removeObserver(networkObserver)
-        self.networkObserver = nil
-    }
 }
 
 private enum DashboardQuickAction: String, Identifiable {

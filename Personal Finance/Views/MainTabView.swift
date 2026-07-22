@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var tabRouter = AppTabRouter()
 
     var body: some View {
@@ -26,5 +27,8 @@ struct MainTabView: View {
                 .tag(AppTab.more)
         }
         .environmentObject(tabRouter)
+        .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
+            Task { await SyncManager.shared.syncAll(modelContext: modelContext) }
+        }
     }
 }
