@@ -16,9 +16,29 @@ struct DebtAdditionSheet: View {
     @State private var isSaving = false
     @State private var errorMsg: String?
 
+    private var afterAddition: Double { debt.remainingAmount + amount }
+
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    HStack {
+                        Text(debt.type == "lend" ? "Currently lent" : "Currently owed")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(debt.remainingAmount.formatted(currency: "VND"))
+                            .fontWeight(.medium)
+                    }
+                    HStack {
+                        Text("After adding")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(afterAddition.formatted(currency: "VND"))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(amount > 0 ? Color.orange : Color.primary)
+                    }
+                }
+
                 DebtAmountEntrySection(
                     amount: $amount,
                     amountText: $amountText,

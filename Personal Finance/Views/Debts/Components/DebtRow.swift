@@ -21,26 +21,36 @@ struct DebtRow: View {
     }
 
     private var actionButtons: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             if let onPay {
                 Button(action: onPay) {
-                    Label(
-                        debt.type == "lend" ? "Collect" : "Repay",
-                        systemImage: "checkmark.circle.fill"
-                    )
-                    .font(.caption.weight(.semibold))
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(debt.type == "lend" ? "Collect" : "Repay")
+                            .font(.caption.weight(.semibold))
+                    }
                     .foregroundStyle(.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.green.opacity(0.12))
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.borderless)
             }
             if let onAdd {
                 Button(action: onAdd) {
-                    Label(
-                        debt.type == "lend" ? "Lend More" : "Borrow More",
-                        systemImage: "plus.circle.fill"
-                    )
-                    .font(.caption.weight(.semibold))
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(debt.type == "lend" ? "Lend More" : "Borrow More")
+                            .font(.caption.weight(.semibold))
+                    }
                     .foregroundStyle(.orange)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.borderless)
             }
