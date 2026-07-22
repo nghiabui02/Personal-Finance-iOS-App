@@ -77,6 +77,7 @@ struct WalletsContentView: View {
                 canTransfer: metrics.canTransfer,
                 onTransfer: { onTransfer(wallet) },
                 onEdit: { onEdit(wallet) },
+                onPayCredit: { onPayCredit(wallet) },
                 onNavigate: { onNavigate(wallet) }
             )
             .listRowBackground(Color.clear)

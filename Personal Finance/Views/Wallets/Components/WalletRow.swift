@@ -5,6 +5,7 @@ struct WalletRow: View {
     let canTransfer: Bool
     let onTransfer: () -> Void
     let onEdit: () -> Void
+    let onPayCredit: () -> Void
     let onNavigate: () -> Void
 
     private var accentColor: Color {
@@ -24,11 +25,18 @@ struct WalletRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            topRow
-            Text(wallet.name)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
-            balanceRow
+            Button(action: onNavigate) {
+                VStack(alignment: .leading, spacing: 14) {
+                    topRow
+                    Text(wallet.name)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                    balanceRow
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             actionButtons
         }
         .padding(.horizontal, 18)
@@ -42,8 +50,6 @@ struct WalletRow: View {
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .contentShape(RoundedRectangle(cornerRadius: 20))
-        .onTapGesture { onNavigate() }
     }
 
     private var topRow: some View {
@@ -96,6 +102,9 @@ struct WalletRow: View {
         HStack(spacing: 10) {
             if canTransfer {
                 cardButton("arrow.2.squarepath", title: "Transfer", action: onTransfer)
+            }
+            if wallet.type == "credit" {
+                cardButton("creditcard.fill", title: "Pay Bill", action: onPayCredit)
             }
             cardButton("pencil", title: "Edit", action: onEdit)
         }

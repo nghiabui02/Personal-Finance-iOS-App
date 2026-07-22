@@ -79,26 +79,28 @@ struct ReportNetWorthCard: View {
             }
             .animation(.easeInOut(duration: 0.15), value: selectedPoint?.id)
 
-            Chart(history) { point in
-                LineMark(
-                    x: .value("Date", point.date),
-                    y: .value("Value", point.value / 1_000_000)
-                )
-                .foregroundStyle(Color.blue)
-                .interpolationMethod(.catmullRom)
-
-                AreaMark(
-                    x: .value("Date", point.date),
-                    yStart: .value("Base", 0.0),
-                    yEnd: .value("Value", point.value / 1_000_000)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.3), .blue.opacity(0.03)],
-                        startPoint: .top, endPoint: .bottom
+            Chart {
+                ForEach(history) { point in
+                    LineMark(
+                        x: .value("Date", point.date),
+                        y: .value("Value", point.value / 1_000_000)
                     )
-                )
-                .interpolationMethod(.catmullRom)
+                    .foregroundStyle(Color.blue)
+                    .interpolationMethod(.catmullRom)
+
+                    AreaMark(
+                        x: .value("Date", point.date),
+                        yStart: .value("Base", 0.0),
+                        yEnd: .value("Value", point.value / 1_000_000)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.blue.opacity(0.3), .blue.opacity(0.03)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+                }
 
                 if let sel = selectedPoint {
                     RuleMark(x: .value("Selected", sel.date))
@@ -129,18 +131,23 @@ struct ReportNetWorthCard: View {
                 }
             }
             .chartOverlay { proxy in
-                GeometryReader { _ in
+                GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
                         .contentShape(Rectangle())
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { value in
-                                    let x = value.location.x
-                                    selectedPoint = history.min(by: {
-                                        abs((proxy.position(forX: $0.date) ?? 0) - x) <
-                                        abs((proxy.position(forX: $1.date) ?? 0) - x)
-                                    })
+                                    guard let plotFrame = proxy.plotFrame else { return }
+                                    let originX = geo[plotFrame].origin.x
+                                    let x = value.location.x - originX
+                                    let positioned = history.compactMap { point -> (NetWorthPoint, CGFloat)? in
+                                        guard let px = proxy.position(forX: point.date) else { return nil }
+                                        return (point, px)
+                                    }
+                                    if let nearest = positioned.min(by: { abs($0.1 - x) < abs($1.1 - x) }) {
+                                        selectedPoint = nearest.0
+                                    }
                                 }
                                 .onEnded { _ in
                                     withAnimation(.easeOut(duration: 0.2)) {
@@ -152,10 +159,6 @@ struct ReportNetWorthCard: View {
             }
             .frame(height: 160)
         }
-    }
-
-    private var chartMinValue: Double {
-        (history.map { $0.value }.min() ?? 0) * 0.95
     }
 
     private func compactLabel(_ millionValue: Double) -> String {

@@ -138,6 +138,12 @@ enum ReportMetricsCalculator {
         return (cash + lent - creditOwed - borrowed, cash, lent, creditOwed, borrowed)
     }
 
+    private static let dayMonthFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "d/M"
+        return fmt
+    }()
+
     private static func computeNetWorthHistory(
         transactions: [LocalTransaction],
         currentNW: Double,
@@ -145,8 +151,6 @@ enum ReportMetricsCalculator {
     ) -> [NetWorthPoint] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let fmt = DateFormatter()
-        fmt.dateFormat = "d/M"
 
         let nonTransfers = transactions.filter { !$0.isTransfer }
 
@@ -160,9 +164,9 @@ enum ReportMetricsCalculator {
                     tx.type == "income" ? acc + tx.amount : acc - tx.amount
                 }
             return NetWorthPoint(
-                id: fmt.string(from: checkDate),
+                id: dayMonthFormatter.string(from: checkDay),
                 date: checkDay,
-                label: fmt.string(from: checkDate),
+                label: dayMonthFormatter.string(from: checkDay),
                 value: currentNW - delta
             )
         }
