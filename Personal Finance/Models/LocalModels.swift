@@ -144,6 +144,8 @@ final class LocalBudget {
     var categoryColor: String?
     var amount: Double
     var month: Date
+    var rollover: Bool
+    var active: Bool
 
     init(from r: RemoteBudget) {
         serverId = r.id
@@ -153,6 +155,8 @@ final class LocalBudget {
         categoryColor = r.categories?.color
         amount = r.amount
         month = yyyyMMdd.date(from: r.month) ?? Date()
+        rollover = r.rollover
+        active = r.active
     }
 
     func update(from r: RemoteBudget) {
@@ -162,6 +166,8 @@ final class LocalBudget {
         categoryColor = r.categories?.color
         amount = r.amount
         month = yyyyMMdd.date(from: r.month) ?? Date()
+        rollover = r.rollover
+        active = r.active
     }
 }
 
@@ -240,6 +246,8 @@ final class LocalRecurringTransaction {
     var endDate: Date?
     var nextRunDate: Date?
     var updatedAt: Date
+    var active: Bool
+    var bankFee: Double
 
     init(from r: RemoteRecurringTransaction) {
         serverId = r.id; walletId = r.walletId; walletName = r.wallets?.name
@@ -250,6 +258,8 @@ final class LocalRecurringTransaction {
         endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
         nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
         updatedAt = r.updatedAt
+        active = r.active
+        bankFee = r.bankFee
     }
     func update(from r: RemoteRecurringTransaction) {
         walletId = r.walletId; walletName = r.wallets?.name
@@ -260,5 +270,7 @@ final class LocalRecurringTransaction {
         endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
         nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
         updatedAt = r.updatedAt
+        active = r.active
+        bankFee = r.bankFee
     }
 }

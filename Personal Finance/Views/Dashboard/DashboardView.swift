@@ -32,10 +32,12 @@ struct DashboardView: View {
             selectedMonth: $selectedMonth,
             metrics: metrics,
             syncError: sync.syncError,
-                isSyncing: sync.isSyncing,
-                currency: currency,
-                onAddTransaction: { quickAction = .transaction },
-                onViewAllTransactions: { tabRouter.selectedTab = .transactions }
+            isSyncing: sync.isSyncing,
+            currency: currency,
+            onAddTransaction: { quickAction = .transaction },
+            onAddTransfer: { quickAction = .transfer },
+            onAddDebt: { quickAction = .debtPayment },
+            onViewAllTransactions: { tabRouter.selectedTab = .transactions }
         )
             .background(Color(.systemGroupedBackground))
             .appScreenHeader("Overview")
@@ -57,6 +59,10 @@ struct DashboardView: View {
         switch action {
         case .transaction:
             AddEditTransactionView(transaction: nil)
+        case .transfer:
+            TransferSheet(wallets: Array(wallets))
+        case .debtPayment:
+            AddEditDebtView(debt: nil)
         }
     }
 
@@ -74,6 +80,22 @@ struct DashboardView: View {
     private func handleAppear() {
         recompute()
         syncData()
+        Task { await writeNetWorthSnapshot(metrics.netWorth) }
+    }
+
+    private func writeNetWorthSnapshot(_ netWorth: Double) async {
+        guard let userId = try? await SupabaseService.shared.client.auth.session.user.id else { return }
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
+        let today = df.string(from: Date())
+        struct Body: Encodable { let user_id: String; let net_worth: Double; let recorded_date: String }
+        try? await SupabaseService.shared.client
+            .from("net_worth_snapshots")
+            .upsert(Body(user_id: userId.uuidString.lowercased(), net_worth: netWorth, recorded_date: today),
+                    onConflict: "user_id,recorded_date")
+            .execute()
     }
 
     private func handleScenePhaseChange(
@@ -95,7 +117,7 @@ struct DashboardView: View {
 }
 
 private enum DashboardQuickAction: String, Identifiable {
-    case transaction
+    case transaction, transfer, debtPayment
 
     var id: String { rawValue }
 }

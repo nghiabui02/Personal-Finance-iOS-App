@@ -9,6 +9,7 @@ struct AddEditTransactionView: View {
 
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
+    @Query private var allDebts: [LocalDebt]
 
     @State private var type = "expense"
     @State private var amount: Double = 0
@@ -23,6 +24,12 @@ struct AddEditTransactionView: View {
     @State private var isSaving = false
     @State private var errorMsg: String?
 
+    @State private var hasBankFee = false
+    @State private var bankFee: Double = 0
+    @State private var bankFeeText = ""
+    @State private var linkedDebtId: UUID? = nil
+    @State private var showDebtPicker = false
+
     private var isEditing: Bool { transaction != nil }
 
     private var filteredCategories: [LocalCategory] {
@@ -35,6 +42,25 @@ struct AddEditTransactionView: View {
 
     private var selectedWallet: LocalWallet? {
         wallets.first { $0.serverId == selectedWalletId }
+    }
+
+    private var isDebtCategory: Bool {
+        guard let cat = selectedCategory else { return false }
+        return (cat.name == "Thu nợ" && cat.type == "income") ||
+               (cat.name == "Trả nợ" && cat.type == "expense")
+    }
+
+    private var debtTypeFilter: String {
+        // "Thu nợ" = collecting from lend debt; "Trả nợ" = repaying borrow debt
+        selectedCategory?.name == "Thu nợ" ? "lend" : "borrow"
+    }
+
+    private var activeDebtsForCategory: [LocalDebt] {
+        allDebts.filter { $0.type == debtTypeFilter && $0.status != "completed" }
+    }
+
+    private var linkedDebt: LocalDebt? {
+        allDebts.first { $0.serverId == linkedDebtId }
     }
 
     var body: some View {
@@ -54,6 +80,34 @@ struct AddEditTransactionView: View {
                     onSelectCategory: { showCategoryPicker = true },
                     onSelectWallet: { showWalletPicker = true }
                 )
+
+                if isDebtCategory && !isEditing {
+                    Section("Debt") {
+                        Button {
+                            showDebtPicker = true
+                        } label: {
+                            HStack {
+                                Text("Link Debt")
+                                Spacer()
+                                if let debt = linkedDebt {
+                                    Text(debt.personName).foregroundStyle(.secondary)
+                                } else {
+                                    Text("None").foregroundStyle(.tertiary)
+                                }
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                }
+
+                if !isEditing {
+                    Section {
+                        Toggle("Bank Fee", isOn: $hasBankFee)
+                        if hasBankFee {
+                            CurrencyAmountField(title: "Fee Amount", amount: $bankFee, amountText: $bankFeeText)
+                        }
+                    }
+                }
 
                 Section {
                     TextField("Note (optional)", text: $note, axis: .vertical)
@@ -89,6 +143,36 @@ struct AddEditTransactionView: View {
                     selected: $selectedWalletId,
                     isPresented: $showWalletPicker
                 )
+            }
+            .sheet(isPresented: $showDebtPicker) {
+                NavigationStack {
+                    List(activeDebtsForCategory, id: \.serverId) { debt in
+                        Button {
+                            linkedDebtId = debt.serverId
+                            showDebtPicker = false
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(debt.personName).fontWeight(.medium)
+                                    Text(debt.remainingAmount.formatted(currency: "VND"))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if linkedDebtId == debt.serverId {
+                                    Image(systemName: "checkmark").foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                    .navigationTitle("Select Debt")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showDebtPicker = false }
+                        }
+                    }
+                }
             }
             .errorAlert($errorMsg)
         }
@@ -133,6 +217,13 @@ struct AddEditTransactionView: View {
                     oldWallet: oldWallet, newWallet: newWallet,
                     in: modelContext
                 )
+            } else if isDebtCategory, let debt = linkedDebt {
+                try await DebtService.shared.recordPayment(
+                    debt, amount: amount,
+                    note: note.isEmpty ? nil : note,
+                    date: date, wallet: selectedWallet,
+                    in: modelContext
+                )
             } else {
                 let wallet = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.create(
@@ -142,6 +233,14 @@ struct AddEditTransactionView: View {
                     wallet: wallet,
                     in: modelContext
                 )
+                if hasBankFee && bankFee > 0 {
+                    try await TransactionService.shared.create(
+                        type: "expense", amount: bankFee, date: date,
+                        walletId: selectedWalletId, categoryId: nil,
+                        note: "Bank fee", wallet: wallet,
+                        in: modelContext
+                    )
+                }
             }
             dismiss()
         } catch {

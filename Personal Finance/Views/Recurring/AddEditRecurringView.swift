@@ -19,6 +19,9 @@ struct AddEditRecurringView: View {
     @State private var selectedCategoryId: UUID?
     @State private var selectedWalletId: UUID?
     @State private var note = ""
+    @State private var bankFee: Double = 0
+    @State private var bankFeeText = ""
+    @State private var hasBankFee = false
     @State private var isSaving = false
     @State private var errorMsg: String?
 
@@ -74,6 +77,13 @@ struct AddEditRecurringView: View {
                 Section {
                     TextField("Note (optional)", text: $note, axis: .vertical).lineLimit(2...4)
                 }
+
+                Section {
+                    Toggle("Bank Fee", isOn: $hasBankFee)
+                    if hasBankFee {
+                        CurrencyAmountField(title: "Fee Amount", amount: $bankFee, amountText: $bankFeeText)
+                    }
+                }
             }
             .formKeyboardHandling()
             .navigationTitle(isEditing ? "Edit Recurring" : "New Recurring")
@@ -97,6 +107,7 @@ struct AddEditRecurringView: View {
                 selectedCategoryId = r.categoryId; selectedWalletId = r.walletId
                 note = r.note ?? ""
                 if let ed = r.endDate { hasEndDate = true; endDate = ed }
+                if r.bankFee > 0 { hasBankFee = true; bankFee = r.bankFee; bankFeeText = r.bankFee.formattedDecimal() }
             } else {
                 selectedWalletId = wallets.first(where: { $0.isDefault })?.serverId ?? wallets.first?.serverId
             }
@@ -112,14 +123,16 @@ struct AddEditRecurringView: View {
                     r, amount: amount, frequency: frequency,
                     endDate: hasEndDate ? endDate : nil,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
-                    note: note.isEmpty ? nil : note, in: modelContext
+                    note: note.isEmpty ? nil : note,
+                    bankFee: hasBankFee ? bankFee : 0, in: modelContext
                 )
             } else {
                 try await RecurringService.shared.create(
                     type: type, amount: amount, frequency: frequency,
                     startDate: startDate, endDate: hasEndDate ? endDate : nil,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
-                    note: note.isEmpty ? nil : note, in: modelContext
+                    note: note.isEmpty ? nil : note,
+                    bankFee: hasBankFee ? bankFee : 0, in: modelContext
                 )
             }
             dismiss()

@@ -8,6 +8,8 @@ struct DashboardContentView: View {
     let isSyncing: Bool
     let currency: String
     let onAddTransaction: () -> Void
+    let onAddTransfer: () -> Void
+    let onAddDebt: () -> Void
     let onViewAllTransactions: () -> Void
 
     var body: some View {
@@ -25,13 +27,21 @@ struct DashboardContentView: View {
     }
 
     private var topRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             MonthSelectorView(selectedMonth: $selectedMonth)
             Spacer()
             Button(action: onAddTransaction) {
-                Label("Transaction", systemImage: "plus")
+                Image(systemName: "plus.circle.fill")
             }
-            .buttonStyle(.borderedProminent)
+            .help("New Transaction")
+            Button(action: onAddTransfer) {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+            }
+            .help("Transfer")
+            Button(action: onAddDebt) {
+                Image(systemName: "person.crop.circle.badge.plus")
+            }
+            .help("Add Debt")
         }
         .padding(.horizontal)
     }

@@ -13,6 +13,8 @@ struct AddEditBudgetView: View {
     @State private var amount: Double = 0
     @State private var amountText = ""
     @State private var month: Date
+    @State private var rollover = false
+    @State private var active = true
     @State private var isSaving = false
     @State private var errorMsg: String?
 
@@ -49,6 +51,10 @@ struct AddEditBudgetView: View {
                         amount: $amount,
                         amountText: $amountText
                     )
+                    Toggle("Rollover", isOn: $rollover)
+                    if budget != nil {
+                        Toggle("Active", isOn: $active)
+                    }
                 }
             }
             .formKeyboardHandling()
@@ -71,6 +77,8 @@ struct AddEditBudgetView: View {
                 amount = b.amount
                 amountText = b.amount.formattedDecimal()
                 month = b.month
+                rollover = b.rollover
+                active = b.active
             }
         }
     }
@@ -80,9 +88,9 @@ struct AddEditBudgetView: View {
         isSaving = true; defer { isSaving = false }
         do {
             if let b = budget {
-                try await BudgetService.shared.update(b, amount: amount, in: modelContext)
+                try await BudgetService.shared.update(b, amount: amount, rollover: rollover, active: active, in: modelContext)
             } else {
-                try await BudgetService.shared.create(categoryId: selectedCategoryId, amount: amount, month: month, in: modelContext)
+                try await BudgetService.shared.create(categoryId: selectedCategoryId, amount: amount, month: month, rollover: rollover, in: modelContext)
             }
             dismiss()
         } catch { errorMsg = error.localizedDescription }

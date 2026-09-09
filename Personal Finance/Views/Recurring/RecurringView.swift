@@ -24,6 +24,20 @@ struct RecurringView: View {
                                 showDeleteConfirmation = true
                             } label: { Label("Delete", systemImage: "trash") }
                             .tint(.red)
+
+                            Button {
+                                Task { await toggleActive(rec) }
+                            } label: {
+                                Label(rec.active ? "Pause" : "Resume", systemImage: rec.active ? "pause.circle" : "play.circle")
+                            }
+                            .tint(rec.active ? .orange : .green)
+
+                            Button {
+                                Task { await skip(rec) }
+                            } label: {
+                                Label("Skip", systemImage: "forward.end")
+                            }
+                            .tint(.blue)
                         }
                 }
             }
@@ -59,6 +73,16 @@ struct RecurringView: View {
         do { try await RecurringService.shared.delete(rec, in: modelContext) }
         catch { errorMsg = error.localizedDescription }
     }
+
+    private func toggleActive(_ rec: LocalRecurringTransaction) async {
+        do { try await RecurringService.shared.toggleActive(rec, in: modelContext) }
+        catch { errorMsg = error.localizedDescription }
+    }
+
+    private func skip(_ rec: LocalRecurringTransaction) async {
+        do { try await RecurringService.shared.skip(rec, in: modelContext) }
+        catch { errorMsg = error.localizedDescription }
+    }
 }
 
 private struct RecurringRow: View {
@@ -91,13 +115,27 @@ private struct RecurringRow: View {
                         Text("·")
                         Text("Next: \(next.formatted(.dateTime.month(.abbreviated).day()))")
                     }
+                    if rec.bankFee > 0 {
+                        Text("·")
+                        Text("+ \(rec.bankFee.formatted(currency: "VND")) fee")
+                    }
                 }
                 .font(.caption).foregroundColor(.secondary)
             }
             Spacer()
-            Text("\(rec.type == "income" ? "+" : "-")\(rec.amount.formatted(currency: "VND"))")
-                .fontWeight(.semibold)
-                .foregroundColor(rec.type == "income" ? .income : .expense)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(rec.type == "income" ? "+" : "-")\(rec.amount.formatted(currency: "VND"))")
+                    .fontWeight(.semibold)
+                    .foregroundColor(rec.type == "income" ? .income : .expense)
+                if !rec.active {
+                    Text("Paused")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+            }
         }
         .padding(.vertical, 2)
     }

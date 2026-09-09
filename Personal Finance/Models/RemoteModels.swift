@@ -81,7 +81,8 @@ struct RemoteBudget: Codable, Identifiable {
     let categoryId: UUID?
     let amount: Double
     let month: String                 // "YYYY-MM-01"
-    // Joined via .select("*, categories(...)")
+    let rollover: Bool
+    let active: Bool
     let categories: CategoryInfo?
 
     struct CategoryInfo: Codable {
@@ -92,7 +93,7 @@ struct RemoteBudget: Codable, Identifiable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, amount, month, categories
+        case id, amount, month, categories, rollover, active
         case categoryId = "category_id"
     }
 }
@@ -183,13 +184,17 @@ struct RemoteRecurringTransaction: Codable, Identifiable {
         let name: String
     }
 
+    let active: Bool
+    let bankFee: Double
+
     enum CodingKeys: String, CodingKey {
-        case id, note, amount, type, frequency, categories, wallets
+        case id, note, amount, type, frequency, categories, wallets, active
         case walletId = "wallet_id"
         case categoryId = "category_id"
         case startDate = "start_date"
         case endDate = "end_date"
         case nextRunDate = "next_run_date"
         case updatedAt = "updated_at"
+        case bankFee = "bank_fee"
     }
 }

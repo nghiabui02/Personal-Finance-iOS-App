@@ -17,7 +17,9 @@ struct BudgetsView: View {
 
     // Cached — recomputed once via onChange, not every render
     @State private var cachedBudgets: [LocalBudget] = []
+    @State private var cachedInactiveBudgets: [LocalBudget] = []
     @State private var cachedSpent: [UUID: Double] = [:]
+    @State private var cachedEffective: [UUID: Double] = [:]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,26 +30,62 @@ struct BudgetsView: View {
                 .background(Color(.secondarySystemGroupedBackground))
 
             List {
-                ForEach(cachedBudgets, id: \.serverId) { budget in
-                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                    BudgetRow(budget: budget, spent: spent)
-                        .onTapGesture { editing = budget }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button {
-                                pendingDeletion = budget
-                                showDeleteConfirmation = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            .tint(.red)
+                if !cachedBudgets.isEmpty {
+                    Section("Active") {
+                        ForEach(cachedBudgets, id: \.serverId) { budget in
+                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                            let effective = cachedEffective[budget.serverId] ?? budget.amount
+                            BudgetRow(budget: budget, spent: spent, effectiveAmount: effective)
+                                .onTapGesture { editing = budget }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button {
+                                        pendingDeletion = budget
+                                        showDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    .tint(.red)
+                                    Button {
+                                        Task { await toggleActive(budget, active: false) }
+                                    } label: {
+                                        Label("Pause", systemImage: "pause.circle")
+                                    }
+                                    .tint(.orange)
+                                }
                         }
+                    }
+                }
+                if !cachedInactiveBudgets.isEmpty {
+                    Section("Inactive") {
+                        ForEach(cachedInactiveBudgets, id: \.serverId) { budget in
+                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                            BudgetRow(budget: budget, spent: spent, effectiveAmount: budget.amount)
+                                .foregroundStyle(.secondary)
+                                .onTapGesture { editing = budget }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button {
+                                        pendingDeletion = budget
+                                        showDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    .tint(.red)
+                                    Button {
+                                        Task { await toggleActive(budget, active: true) }
+                                    } label: {
+                                        Label("Reactivate", systemImage: "play.circle")
+                                    }
+                                    .tint(.green)
+                                }
+                        }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.insetGrouped)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .overlay {
-                if cachedBudgets.isEmpty {
+                if cachedBudgets.isEmpty && cachedInactiveBudgets.isEmpty {
                     ContentUnavailableView(
                         "No Budgets",
                         systemImage: "chart.bar",
@@ -86,22 +124,78 @@ struct BudgetsView: View {
         .errorAlert($errorMsg)
     }
 
-    // Single pass: filter budgets + compute spent — O(n_budgets + n_transactions)
+    // Single pass: filter budgets + compute spent + rollover effective amounts
     private func recompute() {
         let cal = Calendar.current
-        cachedBudgets = allBudgets.filter {
+        let monthBudgets = allBudgets.filter {
             cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
         }
+        cachedBudgets = monthBudgets.filter { $0.active }
+        cachedInactiveBudgets = monthBudgets.filter { !$0.active }
+
+        // Build spent map: (categoryId, monthStart) → total
+        var spentMap: [UUID: [Date: Double]] = [:]
+        for tx in allTx where tx.type == "expense" {
+            guard let catId = tx.categoryId else { continue }
+            let key = cal.date(from: cal.dateComponents([.year, .month], from: tx.transactionDate)) ?? tx.transactionDate
+            spentMap[catId, default: [:]][key, default: 0] += tx.amount
+        }
+
+        // Spent for selected month (quick lookup for display)
         var spent: [UUID: Double] = [:]
-        for tx in allTx where tx.type == "expense" &&
-            cal.isDate(tx.transactionDate, equalTo: selectedMonth, toGranularity: .month) {
-            if let id = tx.categoryId { spent[id, default: 0] += tx.amount }
+        let selectedKey = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
+        for (catId, monthMap) in spentMap {
+            if let s = monthMap[selectedKey] { spent[catId] = s }
         }
         cachedSpent = spent
+
+        // Rollover effective amounts for active budgets
+        var effective: [UUID: Double] = [:]
+        for budget in cachedBudgets {
+            effective[budget.serverId] = computeEffective(budget, spentMap: spentMap, cal: cal)
+        }
+        cachedEffective = effective
+    }
+
+    // Walk backwards through rollover chain, compute effective amount for this month.
+    // effectiveAmount(M) = amount(M) + (rollover(M) ? leftover(M-1) : 0)
+    // leftover(M) = effectiveAmount(M) - spent(M); chain breaks on gap/inactive/rollover=false
+    private func computeEffective(_ budget: LocalBudget, spentMap: [UUID: [Date: Double]], cal: Calendar) -> Double {
+        guard budget.rollover, let catId = budget.categoryId else { return budget.amount }
+
+        // Collect chain: walk backwards until gap/inactive/rollover=false (max 12 months)
+        var chain: [LocalBudget] = []
+        var checkMonth = cal.date(byAdding: .month, value: -1, to: budget.month) ?? budget.month
+        for _ in 0..<12 {
+            guard let prev = allBudgets.first(where: {
+                $0.categoryId == catId &&
+                cal.isDate($0.month, equalTo: checkMonth, toGranularity: .month) &&
+                $0.active && $0.rollover
+            }) else { break }
+            chain.insert(prev, at: 0)
+            checkMonth = cal.date(byAdding: .month, value: -1, to: checkMonth) ?? checkMonth
+        }
+        chain.append(budget)
+
+        // Compute forward through chain; carry leftover (positive or negative)
+        var carry: Double = 0
+        for (i, b) in chain.enumerated() {
+            let key = cal.date(from: cal.dateComponents([.year, .month], from: b.month)) ?? b.month
+            let s = spentMap[catId]?[key] ?? 0
+            let eff = b.amount + carry
+            if i < chain.count - 1 { carry = eff - s }
+            else { return eff }
+        }
+        return budget.amount
     }
 
     private func delete(_ budget: LocalBudget) async {
         do { try await BudgetService.shared.delete(budget, in: modelContext) }
+        catch { errorMsg = error.localizedDescription }
+    }
+
+    private func toggleActive(_ budget: LocalBudget, active: Bool) async {
+        do { try await BudgetService.shared.toggleActive(budget, active: active, in: modelContext) }
         catch { errorMsg = error.localizedDescription }
     }
 }
@@ -109,10 +203,11 @@ struct BudgetsView: View {
 private struct BudgetRow: View {
     let budget: LocalBudget
     let spent: Double
+    let effectiveAmount: Double
 
-    private var progress: Double { budget.amount > 0 ? min(spent / budget.amount, 1.0) : 0 }
-    private var remaining: Double { budget.amount - spent }
-    private var overBudget: Bool { spent > budget.amount }
+    private var progress: Double { effectiveAmount > 0 ? min(spent / effectiveAmount, 1.0) : 0 }
+    private var remaining: Double { effectiveAmount - spent }
+    private var overBudget: Bool { spent > effectiveAmount }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -124,8 +219,18 @@ private struct BudgetRow: View {
                     Text(budget.categoryIcon ?? "📦").font(.system(size: 20))
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(budget.categoryName).fontWeight(.medium)
-                    Text("\(spent.formatted(currency: "VND")) / \(budget.amount.formatted(currency: "VND"))")
+                    HStack(spacing: 4) {
+                        Text(budget.categoryName).fontWeight(.medium)
+                        if budget.rollover {
+                            Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.blue).font(.caption)
+                        }
+                        if !budget.active {
+                            Text("Inactive").font(.caption2).foregroundStyle(.secondary)
+                                .padding(.horizontal, 4).padding(.vertical, 1)
+                                .background(.secondary.opacity(0.15), in: Capsule())
+                        }
+                    }
+                    Text("\(spent.formatted(currency: "VND")) / \(effectiveAmount.formatted(currency: "VND"))")
                         .font(.caption).foregroundColor(.secondary)
                 }
                 Spacer()
