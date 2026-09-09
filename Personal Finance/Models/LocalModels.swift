@@ -144,8 +144,8 @@ final class LocalBudget {
     var categoryColor: String?
     var amount: Double
     var month: Date
-    var rollover: Bool
-    var active: Bool
+    var rollover: Bool = false
+    var active: Bool = true
 
     init(from r: RemoteBudget) {
         serverId = r.id
@@ -246,8 +246,8 @@ final class LocalRecurringTransaction {
     var endDate: Date?
     var nextRunDate: Date?
     var updatedAt: Date
-    var active: Bool
-    var bankFee: Double
+    var active: Bool = true
+    var bankFee: Double = 0
 
     init(from r: RemoteRecurringTransaction) {
         serverId = r.id; walletId = r.walletId; walletName = r.wallets?.name

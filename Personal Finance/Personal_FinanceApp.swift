@@ -22,7 +22,13 @@ struct Personal_FinanceApp: App {
             )
             return container
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Migration failed (schema change) — wipe local cache; data re-syncs from Supabase
+            try? FileManager.default.removeItem(at: config.url)
+            do {
+                return try ModelContainer(for: schema, configurations: [config])
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
     }()
 
