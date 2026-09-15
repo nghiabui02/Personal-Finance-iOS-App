@@ -12,6 +12,7 @@ struct DashboardMetrics {
     var spendingItems: [CategorySpending] = []
     var currentBudgets: [LocalBudget] = []
     var alerts: [DashboardAlert] = []
+    var spendingPaceDeltaPct: Double? = nil
 
     var netBalance: Double { income - expense }
 }
@@ -55,8 +56,66 @@ enum DashboardMetricsCalculator {
                 debts: debts,
                 currency: currency,
                 calendar: calendar
+            ),
+            spendingPaceDeltaPct: calculateSpendingPace(
+                transactions: transactions,
+                selectedMonth: selectedMonth,
+                actualExpense: transactionData.expense
             )
         )
+    }
+
+    private static let monthKeyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
+        return f
+    }()
+
+    // Compares this month's expense so far against the last 3 months' average,
+    // prorated by days elapsed — an unfinished month would otherwise always
+    // look "under budget".
+    private static func calculateSpendingPace(
+        transactions: [LocalTransaction],
+        selectedMonth: Date,
+        actualExpense: Double
+    ) -> Double? {
+        // "Today" must follow the ledger timezone (Asia/Ho_Chi_Minh), same as
+        // transaction_date — not the device's timezone, or pace would read
+        // differently on iOS than web for the same data when traveling.
+        var ledgerCalendar = Calendar(identifier: .gregorian)
+        ledgerCalendar.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh") ?? .current
+
+        guard
+            let startOfTarget = ledgerCalendar.date(from: ledgerCalendar.dateComponents([.year, .month], from: selectedMonth)),
+            let startWindow = ledgerCalendar.date(byAdding: .month, value: -3, to: startOfTarget)
+        else { return nil }
+
+        var byMonth: [String: Double] = [:]
+        for tx in transactions where tx.type == "expense" && !tx.isTransfer {
+            guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
+            byMonth[monthKeyFormatter.string(from: tx.transactionDate), default: 0] += tx.amount
+        }
+        guard !byMonth.isEmpty else { return nil }
+        let monthlyAverage = byMonth.values.reduce(0, +) / Double(byMonth.count)
+        guard monthlyAverage > 0 else { return nil }
+
+        let today = ledgerCalendar.startOfDay(for: Date())
+        let daysInMonth = ledgerCalendar.range(of: .day, in: .month, for: startOfTarget)?.count ?? 30
+        let daysElapsed: Int
+        if ledgerCalendar.isDate(today, equalTo: startOfTarget, toGranularity: .month) {
+            daysElapsed = ledgerCalendar.component(.day, from: today)
+        } else if today > startOfTarget {
+            daysElapsed = daysInMonth
+        } else {
+            daysElapsed = 0
+        }
+        guard daysElapsed > 0 else { return nil }
+
+        let expected = monthlyAverage * (Double(daysElapsed) / Double(daysInMonth))
+        guard expected > 0 else { return nil }
+        return actualExpense / expected - 1
     }
 
     private typealias CategoryTotal = (

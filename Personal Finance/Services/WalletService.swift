@@ -111,6 +111,38 @@ final class WalletService {
         try ctx.save()
     }
 
+    // Reconciles the wallet's tracked balance against a real-world value (e.g. bank app).
+    // Records the gap as an "adjust_up"/"adjust_down" transaction and moves the wallet
+    // balance through TransactionService's own RPC path — never a direct UPDATE, so it
+    // stays race-free with concurrent writes.
+    func reconcile(
+        _ wallet: LocalWallet, actualBalance: Double, note: String?,
+        date: Date = Date(), categories: [LocalCategory], in ctx: ModelContext
+    ) async throws {
+        if wallet.type == "credit" {
+            guard actualBalance >= 0, actualBalance <= (wallet.creditLimit ?? 0) else {
+                throw FinanceValidationError.invalidCreditReconcile
+            }
+        } else {
+            guard actualBalance >= 0 else { throw FinanceValidationError.invalidAmount }
+        }
+
+        let delta = actualBalance - wallet.balance
+        guard delta != 0 else { return }
+
+        let key = delta > 0 ? "adjust_up" : "adjust_down"
+        guard let category = categories.first(where: { $0.systemKey == key }) else {
+            throw FinanceValidationError.adjustmentCategoryMissing
+        }
+
+        try await TransactionService.shared.create(
+            type: delta > 0 ? "income" : "expense", amount: abs(delta), date: date,
+            walletId: wallet.serverId, categoryId: category.serverId,
+            note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note,
+            wallet: wallet, in: ctx
+        )
+    }
+
     func payCredit(
         _ creditWallet: LocalWallet, from sourceWallet: LocalWallet,
         amount: Double, date: Date, note: String?,

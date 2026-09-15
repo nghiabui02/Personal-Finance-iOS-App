@@ -132,52 +132,9 @@ final class RecurringService {
         try ctx.save()
     }
 
-    func processOverdue(transactions: [LocalRecurringTransaction], wallets: [LocalWallet], in ctx: ModelContext) async {
-        let today = df.string(from: Date())
-        let overdue = transactions.filter { rec in
-            guard let nextRun = rec.nextRunDate else { return false }
-            guard df.string(from: nextRun) <= today else { return false }
-            if let end = rec.endDate, df.string(from: end) < today { return false }
-            return true
-        }
-        guard !overdue.isEmpty else { return }
-
-        for rec in overdue {
-            guard rec.active else { continue }
-            guard let nextRun = rec.nextRunDate else { continue }
-            let wallet = wallets.first { $0.serverId == rec.walletId }
-            do {
-                let userId = try await client.auth.session.user.id
-                try await TransactionService.shared.create(
-                    type: rec.type, amount: rec.amount, date: nextRun,
-                    walletId: rec.walletId, categoryId: rec.categoryId,
-                    note: rec.note, wallet: wallet, in: ctx
-                )
-                if rec.bankFee > 0 {
-                    try await TransactionService.shared.create(
-                        type: "expense", amount: rec.bankFee, date: nextRun,
-                        walletId: rec.walletId, categoryId: nil,
-                        note: "Bank fee", wallet: wallet, in: ctx
-                    )
-                }
-                let newNextRun = nextRunDate(after: nextRun, frequency: rec.frequency)
-                struct Body: Encodable { let next_run_date: String }
-                let updated: RemoteRecurringTransaction = try await client
-                    .from("recurring_transactions")
-                    .update(Body(next_run_date: df.string(from: newNextRun)))
-                    .eq("id", value: rec.serverId)
-                    .eq("user_id", value: userId.uuidString)
-                    .select("*, categories(id, name, icon, color), wallets(id, name)")
-                    .single().execute().value
-                rec.update(from: updated)
-            } catch {
-                #if DEBUG
-                print("[RecurringService] error processing \(rec.serverId): \(error)")
-                #endif
-            }
-        }
-        try? ctx.save()
-    }
+    // Firing overdue recurring transactions is server-only: pg_cron job
+    // `process-recurring-daily` runs for all users regardless of app opens.
+    // A client-side equivalent would race the cron and double-create transactions.
     private func nextRunDate(after date: Date, frequency: String) -> Date {
         let cal = Calendar.current
         switch frequency {

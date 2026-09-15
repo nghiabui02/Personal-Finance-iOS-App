@@ -65,6 +65,10 @@ final class LocalWallet {
         default: return "Other"
         }
     }
+
+    // `balance` is available spend for every wallet type — including credit,
+    // where it represents remaining credit limit, not debt owed.
+    func hasSufficientFunds(for total: Double) -> Bool { balance >= total }
 }
 
 @Model
@@ -75,13 +79,16 @@ final class LocalCategory {
     var icon: String?
     var color: String?
     var isDefault: Bool = false
+    var systemKey: String?
 
     init(from r: RemoteCategory) {
         serverId = r.id; name = r.name; type = r.type
         icon = r.icon; color = r.color; isDefault = r.isDefault
+        systemKey = r.systemKey
     }
     func update(from r: RemoteCategory) {
         name = r.name; type = r.type; icon = r.icon; color = r.color; isDefault = r.isDefault
+        systemKey = r.systemKey
     }
 }
 
@@ -102,6 +109,7 @@ final class LocalTransaction {
     var syncStatus: String
     var transferPairId: UUID?
     var debtPaymentId: UUID?
+    var bankFee: Double?
 
     var isTransfer: Bool { transferPairId != nil }
 
@@ -118,6 +126,7 @@ final class LocalTransaction {
         updatedAt = r.updatedAt; syncStatus = "synced"
         transferPairId = r.transferPairId
         debtPaymentId = r.debtPaymentId
+        bankFee = r.bankFee
     }
 
     func update(from r: RemoteTransaction) {
@@ -132,6 +141,7 @@ final class LocalTransaction {
         updatedAt = r.updatedAt; syncStatus = "synced"
         transferPairId = r.transferPairId
         debtPaymentId = r.debtPaymentId
+        bankFee = r.bankFee
     }
 }
 

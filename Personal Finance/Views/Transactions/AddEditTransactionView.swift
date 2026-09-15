@@ -10,6 +10,7 @@ struct AddEditTransactionView: View {
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
     @Query private var allDebts: [LocalDebt]
+    @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
 
     @State private var type = "expense"
     @State private var amount: Double = 0
@@ -29,8 +30,15 @@ struct AddEditTransactionView: View {
     @State private var bankFeeText = ""
     @State private var linkedDebtId: UUID? = nil
     @State private var showDebtPicker = false
+    @State private var frequentSuggestions: [FrequentTransactionSuggestion] = []
 
     private var isEditing: Bool { transaction != nil }
+
+    // Chips only help on a blank form — once the user has started filling it
+    // in, they just take up space.
+    private var showFrequentChips: Bool {
+        !isEditing && amount == 0 && selectedCategoryId == nil && !frequentSuggestions.isEmpty
+    }
 
     private var filteredCategories: [LocalCategory] {
         allCategories.filter { $0.type == type }
@@ -66,6 +74,13 @@ struct AddEditTransactionView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if showFrequentChips {
+                    Section {
+                        FrequentChipsRow(suggestions: frequentSuggestions, onSelect: applySuggestion)
+                    }
+                    .listRowInsets(EdgeInsets())
+                }
+
                 TransactionTypeAmountSection(
                     type: $type,
                     amount: $amount,
@@ -192,6 +207,9 @@ struct AddEditTransactionView: View {
             date = defaultDate ?? Date()
             selectedWalletId = wallets.first(where: { $0.isDefault })?.serverId
                 ?? wallets.first?.serverId
+            frequentSuggestions = FrequentTransactionSuggestionCalculator.calculate(
+                transactions: allTx, categories: allCategories
+            )
         }
     }
 
@@ -199,6 +217,15 @@ struct AddEditTransactionView: View {
         if let selectedCategory, selectedCategory.type != newType {
             selectedCategoryId = nil
         }
+    }
+
+    private func applySuggestion(_ suggestion: FrequentTransactionSuggestion) {
+        type = suggestion.type
+        amount = suggestion.amount
+        amountText = suggestion.amount.formattedDecimal()
+        selectedCategoryId = suggestion.categoryId
+        if let walletId = suggestion.walletId { selectedWalletId = walletId }
+        note = suggestion.note ?? ""
     }
 
     private func save() async {
@@ -230,21 +257,40 @@ struct AddEditTransactionView: View {
                     type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
                     note: note.isEmpty ? nil : note,
-                    wallet: wallet,
+                    wallet: wallet, bankFee: hasBankFee ? bankFee : 0,
                     in: modelContext
                 )
-                if hasBankFee && bankFee > 0 {
-                    try await TransactionService.shared.create(
-                        type: "expense", amount: bankFee, date: date,
-                        walletId: selectedWalletId, categoryId: nil,
-                        note: "Bank fee", wallet: wallet,
-                        in: modelContext
-                    )
-                }
             }
             dismiss()
         } catch {
             errorMsg = error.localizedDescription
+        }
+    }
+}
+
+private struct FrequentChipsRow: View {
+    let suggestions: [FrequentTransactionSuggestion]
+    let onSelect: (FrequentTransactionSuggestion) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(suggestions) { suggestion in
+                    Button { onSelect(suggestion) } label: {
+                        HStack(spacing: 4) {
+                            Text(suggestion.categoryIcon)
+                            Text(suggestion.amount.formatted(currency: "VND"))
+                                .font(.caption).fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 4)
         }
     }
 }

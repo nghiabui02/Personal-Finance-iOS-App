@@ -93,7 +93,7 @@ final class DebtService {
     ) async throws {
         guard amount > 0 else { throw FinanceValidationError.invalidAmount }
         guard amount <= debt.remainingAmount else { throw FinanceValidationError.exceedsRemainingDebt }
-        if debt.type == "borrow", let wallet, wallet.balance < amount {
+        if debt.type == "borrow", let wallet, !wallet.hasSufficientFunds(for: amount) {
             throw FinanceValidationError.insufficientFunds
         }
 
@@ -138,6 +138,9 @@ final class DebtService {
         in ctx: ModelContext
     ) async throws {
         guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+        if debt.type == "lend", let wallet, !wallet.hasSufficientFunds(for: amount) {
+            throw FinanceValidationError.insufficientFunds
+        }
 
         let userId = try await client.auth.session.user.id
         struct PayBody: Encodable {

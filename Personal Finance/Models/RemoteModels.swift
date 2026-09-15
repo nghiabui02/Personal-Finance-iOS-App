@@ -30,10 +30,12 @@ struct RemoteCategory: Codable, Identifiable {
     let icon: String?
     let color: String?
     let isDefault: Bool
+    let systemKey: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, type, icon, color
         case isDefault = "is_default"
+        case systemKey = "system_key"
     }
 }
 
@@ -47,6 +49,7 @@ struct RemoteTransaction: Codable, Identifiable {
     let transactionDate: String       // "YYYY-MM-DD"
     let updatedAt: Date
     let transferPairId: UUID?
+    let bankFee: Double?
     // Joined via .select("*, categories(...), wallets(...)")
     let categories: CategoryInfo?
     let wallets: WalletInfo?
@@ -73,6 +76,7 @@ struct RemoteTransaction: Codable, Identifiable {
         case updatedAt = "updated_at"
         case transferPairId = "transfer_pair_id"
         case debtPaymentId = "debt_payment_id"
+        case bankFee = "bank_fee"
     }
 }
 

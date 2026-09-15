@@ -51,8 +51,11 @@ struct WalletDetailView: View {
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Button("Edit") {
-                activeSheet = .edit
+            Menu {
+                Button("Reconcile Balance") { activeSheet = .reconcile }
+                Button("Edit") { activeSheet = .edit }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
         }
     }
@@ -69,6 +72,8 @@ struct WalletDetailView: View {
             )
         case .creditPayment:
             CreditPaymentSheet(creditWallet: wallet, wallets: wallets)
+        case .reconcile:
+            ReconcileSheet(wallet: wallet)
         }
     }
 
@@ -84,6 +89,7 @@ private enum WalletDetailSheet: String, Identifiable {
     case edit
     case transfer
     case creditPayment
+    case reconcile
 
     var id: String { rawValue }
 }

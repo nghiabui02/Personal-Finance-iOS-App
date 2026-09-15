@@ -83,13 +83,16 @@ final class TransferService {
     }
 
     private func applyBalanceDelta(_ delta: Double, to wallet: LocalWallet) async throws {
-        let newBalance = wallet.balance + delta
-        struct Body: Encodable { let balance: Double }
-        try await client
-            .from("wallets")
-            .update(Body(balance: newBalance))
-            .eq("id", value: wallet.serverId.uuidString.lowercased())
-            .execute()
+        let userId = try await client.auth.session.user.id
+        struct Params: Encodable { let p_wallet_id: String, p_delta: Double, p_user_id: String }
+        let newBalance: Double? = try await client
+            .rpc("adjust_wallet_balance", params: Params(
+                p_wallet_id: wallet.serverId.uuidString.lowercased(),
+                p_delta: delta,
+                p_user_id: userId.uuidString.lowercased()
+            ))
+            .execute().value
+        guard let newBalance else { throw FinanceValidationError.walletNotFound }
         wallet.balance = newBalance
     }
 }

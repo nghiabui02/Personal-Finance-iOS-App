@@ -8,6 +8,9 @@ enum FinanceValidationError: LocalizedError {
     case exceedsRemainingDebt
     case exceedsCreditDebt
     case missingDefaultWallet
+    case walletNotFound
+    case invalidCreditReconcile
+    case adjustmentCategoryMissing
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +20,9 @@ enum FinanceValidationError: LocalizedError {
         case .exceedsRemainingDebt: return "Payment cannot exceed the remaining debt."
         case .exceedsCreditDebt: return "Payment cannot exceed the outstanding credit balance."
         case .missingDefaultWallet: return "Choose another default wallet before deleting a wallet with a positive balance."
+        case .walletNotFound: return "Wallet not found."
+        case .invalidCreditReconcile: return "Available credit must be between 0 and the credit limit."
+        case .adjustmentCategoryMissing: return "Balance adjustment category not found — try syncing the app."
         }
     }
 }

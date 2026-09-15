@@ -17,6 +17,7 @@ struct DashboardContentView: View {
             VStack(spacing: 16) {
                 topRow
                 syncErrorSection
+                spendingPaceSection
                 summarySections
                 spendingSection
                 recentTransactionsSection
@@ -53,6 +54,19 @@ struct DashboardContentView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
+        }
+    }
+
+    @ViewBuilder
+    private var spendingPaceSection: some View {
+        if let pct = metrics.spendingPaceDeltaPct, abs(pct) >= 0.05 {
+            Label(
+                "\(abs(pct * 100).formatted(.number.precision(.fractionLength(0))))% \(pct > 0 ? "above" : "below") your usual pace",
+                systemImage: pct > 0 ? "arrow.up.right" : "arrow.down.right"
+            )
+            .font(.caption)
+            .foregroundStyle(pct > 0 ? Color.expense : Color.income)
+            .padding(.horizontal)
         }
     }
 

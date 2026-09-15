@@ -5,6 +5,7 @@ struct BudgetsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allBudgets: [LocalBudget]
     @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
+    @Query private var allCategories: [LocalCategory]
     @StateObject private var sync = SyncManager.shared
 
     @State private var selectedMonth: Date = Calendar.current.date(
@@ -20,6 +21,7 @@ struct BudgetsView: View {
     @State private var cachedInactiveBudgets: [LocalBudget] = []
     @State private var cachedSpent: [UUID: Double] = [:]
     @State private var cachedEffective: [UUID: Double] = [:]
+    @State private var suggestions: [BudgetSuggestion] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,56 +32,9 @@ struct BudgetsView: View {
                 .background(Color(.secondarySystemGroupedBackground))
 
             List {
-                if !cachedBudgets.isEmpty {
-                    Section("Active") {
-                        ForEach(cachedBudgets, id: \.serverId) { budget in
-                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                            let effective = cachedEffective[budget.serverId] ?? budget.amount
-                            BudgetRow(budget: budget, spent: spent, effectiveAmount: effective)
-                                .onTapGesture { editing = budget }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button {
-                                        pendingDeletion = budget
-                                        showDeleteConfirmation = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                    .tint(.red)
-                                    Button {
-                                        Task { await toggleActive(budget, active: false) }
-                                    } label: {
-                                        Label("Pause", systemImage: "pause.circle")
-                                    }
-                                    .tint(.orange)
-                                }
-                        }
-                    }
-                }
-                if !cachedInactiveBudgets.isEmpty {
-                    Section("Inactive") {
-                        ForEach(cachedInactiveBudgets, id: \.serverId) { budget in
-                            let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                            BudgetRow(budget: budget, spent: spent, effectiveAmount: budget.amount)
-                                .foregroundStyle(.secondary)
-                                .onTapGesture { editing = budget }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button {
-                                        pendingDeletion = budget
-                                        showDeleteConfirmation = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                    .tint(.red)
-                                    Button {
-                                        Task { await toggleActive(budget, active: true) }
-                                    } label: {
-                                        Label("Reactivate", systemImage: "play.circle")
-                                    }
-                                    .tint(.green)
-                                }
-                        }
-                    }
-                }
+                suggestionsSection
+                activeSection
+                inactiveSection
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.insetGrouped)
@@ -106,6 +61,7 @@ struct BudgetsView: View {
         .onAppear { recompute() }
         .onChange(of: allBudgets)    { _, _ in recompute() }
         .onChange(of: allTx)         { _, _ in recompute() }
+        .onChange(of: allCategories) { _, _ in recompute() }
         .onChange(of: selectedMonth) { _, _ in recompute() }
         .sheet(isPresented: $showAdd) {
             AddEditBudgetView(budget: nil, defaultMonth: selectedMonth)
@@ -122,6 +78,81 @@ struct BudgetsView: View {
             Task { await delete(budget) }
         }
         .errorAlert($errorMsg)
+    }
+
+    @ViewBuilder
+    private var suggestionsSection: some View {
+        if !suggestions.isEmpty {
+            Section {
+                ForEach(suggestions) { suggestion in
+                    SuggestionRow(suggestion: suggestion) {
+                        Task { await addSuggestion(suggestion) }
+                    }
+                }
+            } header: {
+                Text("Suggested")
+            } footer: {
+                Text("Based on the median of your last 3 months of spending.")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var activeSection: some View {
+        if !cachedBudgets.isEmpty {
+            Section("Active") {
+                ForEach(cachedBudgets, id: \.serverId) { budget in
+                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                    let effective = cachedEffective[budget.serverId] ?? budget.amount
+                    BudgetRow(budget: budget, spent: spent, effectiveAmount: effective)
+                        .onTapGesture { editing = budget }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                pendingDeletion = budget
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .tint(.red)
+                            Button {
+                                Task { await toggleActive(budget, active: false) }
+                            } label: {
+                                Label("Pause", systemImage: "pause.circle")
+                            }
+                            .tint(.orange)
+                        }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var inactiveSection: some View {
+        if !cachedInactiveBudgets.isEmpty {
+            Section("Inactive") {
+                ForEach(cachedInactiveBudgets, id: \.serverId) { budget in
+                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                    BudgetRow(budget: budget, spent: spent, effectiveAmount: budget.amount)
+                        .foregroundStyle(.secondary)
+                        .onTapGesture { editing = budget }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                pendingDeletion = budget
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .tint(.red)
+                            Button {
+                                Task { await toggleActive(budget, active: true) }
+                            } label: {
+                                Label("Reactivate", systemImage: "play.circle")
+                            }
+                            .tint(.green)
+                        }
+                }
+            }
+        }
     }
 
     // Single pass: filter budgets + compute spent + rollover effective amounts
@@ -155,6 +186,24 @@ struct BudgetsView: View {
             effective[budget.serverId] = computeEffective(budget, spentMap: spentMap, cal: cal)
         }
         cachedEffective = effective
+
+        let existingCategoryIds = Set(monthBudgets.compactMap(\.categoryId))
+        suggestions = BudgetSuggestionCalculator.calculate(
+            transactions: allTx,
+            categories: allCategories,
+            existingBudgetCategoryIds: existingCategoryIds,
+            targetMonth: selectedMonth,
+            calendar: cal
+        )
+    }
+
+    private func addSuggestion(_ suggestion: BudgetSuggestion) async {
+        do {
+            try await BudgetService.shared.create(
+                categoryId: suggestion.categoryId, amount: suggestion.amount,
+                month: selectedMonth, in: modelContext
+            )
+        } catch { errorMsg = error.localizedDescription }
     }
 
     // Walk backwards through rollover chain, compute effective amount for this month.
@@ -197,6 +246,31 @@ struct BudgetsView: View {
     private func toggleActive(_ budget: LocalBudget, active: Bool) async {
         do { try await BudgetService.shared.toggleActive(budget, active: active, in: modelContext) }
         catch { errorMsg = error.localizedDescription }
+    }
+}
+
+private struct SuggestionRow: View {
+    let suggestion: BudgetSuggestion
+    let onAdd: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill((suggestion.categoryColor.map { Color(hex: $0) } ?? .blue).opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Text(suggestion.categoryIcon).font(.system(size: 16))
+            }
+            Text(suggestion.categoryName).fontWeight(.medium)
+            Spacer()
+            Text(suggestion.amount.formatted(currency: "VND"))
+                .font(.subheadline).foregroundColor(.secondary)
+            Button(action: onAdd) {
+                Image(systemName: "plus.circle.fill").foregroundStyle(.blue)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 2)
     }
 }
 
