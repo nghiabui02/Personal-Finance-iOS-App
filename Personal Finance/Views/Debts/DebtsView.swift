@@ -39,7 +39,6 @@ struct DebtsView: View {
             onRefresh: { await sync.syncAll(modelContext: modelContext) }
         )
         .navigationTitle("Debts")
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showAdd = true } label: {

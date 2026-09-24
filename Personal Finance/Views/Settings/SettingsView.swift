@@ -30,7 +30,6 @@ struct SettingsView: View {
             .refreshable { await authVM.fetchUser() }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 if let onClose {
                     ToolbarItem(placement: .cancellationAction) {

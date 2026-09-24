@@ -59,7 +59,6 @@ struct SavingGoalsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Saving Goals")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }

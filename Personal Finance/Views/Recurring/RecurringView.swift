@@ -50,7 +50,6 @@ struct RecurringView: View {
                 }
             }
             .navigationTitle("Recurring")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }

@@ -11,7 +11,6 @@ struct AppScreenHeaderModifier: ViewModifier {
         content
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     NotificationBellButton(vm: notifVM)

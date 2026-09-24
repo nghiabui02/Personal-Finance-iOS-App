@@ -63,7 +63,6 @@ struct CategoriesView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Categories")
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if sync.isSyncing {
