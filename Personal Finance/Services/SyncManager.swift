@@ -16,9 +16,9 @@ final class SyncManager: ObservableObject {
     private let monitorQueue = DispatchQueue(label: "com.nghiabui.pf.network")
     private let client = SupabaseService.shared.client
     private init() {
-        monitor.pathUpdateHandler = { path in
+        monitor.pathUpdateHandler = { [weak self] path in
             let connected = path.status == .satisfied
-            Task { @MainActor [weak self] in
+            Task { @MainActor in
                 guard let self else { return }
                 let wasOffline = !self.isOnline
                 self.isOnline = connected

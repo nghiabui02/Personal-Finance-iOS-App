@@ -12,12 +12,16 @@ struct SuggestionChip: View {
             HStack(spacing: 4) {
                 if let icon { Text(icon) }
                 Text(label)
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+            // Tinted rather than grey: a chip sits on a form row, whose background is
+            // already `secondarySystemGroupedBackground` — a grey fill would vanish into it.
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.accentColor.opacity(0.12), in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
