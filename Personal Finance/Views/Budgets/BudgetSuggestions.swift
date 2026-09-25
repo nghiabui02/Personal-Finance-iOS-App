@@ -12,14 +12,6 @@ struct BudgetSuggestion: Identifiable {
 // Median (not mean) of the last 3 calendar months' spending per category —
 // a single big purchase shouldn't drag the suggested cap up.
 enum BudgetSuggestionCalculator {
-    private static let monthKeyFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     static func calculate(
         transactions: [LocalTransaction],
         categories: [LocalCategory],
@@ -41,7 +33,7 @@ enum BudgetSuggestionCalculator {
             guard tx.type == "expense", !tx.isTransfer, let catId = tx.categoryId else { continue }
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
             guard !systemCategoryIds.contains(catId), !existingBudgetCategoryIds.contains(catId) else { continue }
-            let key = monthKeyFormatter.string(from: tx.transactionDate)
+            let key = LedgerDate.monthKey(for: tx.transactionDate)
             monthlyTotals[catId, default: [:]][key, default: 0] += tx.amount
         }
 

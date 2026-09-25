@@ -1,14 +1,6 @@
 import Foundation
 import SwiftData
 
-private let yyyyMMdd: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "yyyy-MM-dd"
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-    return f
-}()
-
 @Model
 final class LocalWallet {
     var serverId: UUID
@@ -122,7 +114,7 @@ final class LocalTransaction {
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         type = r.type.lowercased(); amount = r.amount; note = r.note
-        transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
+        transactionDate = LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
         transferPairId = r.transferPairId
         debtPaymentId = r.debtPaymentId
@@ -137,7 +129,7 @@ final class LocalTransaction {
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         type = r.type.lowercased(); amount = r.amount; note = r.note
-        transactionDate = yyyyMMdd.date(from: r.transactionDate) ?? Date()
+        transactionDate = LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date()
         updatedAt = r.updatedAt; syncStatus = "synced"
         transferPairId = r.transferPairId
         debtPaymentId = r.debtPaymentId
@@ -164,7 +156,7 @@ final class LocalBudget {
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         amount = r.amount
-        month = yyyyMMdd.date(from: r.month) ?? Date()
+        month = LedgerDate.dayFormatter.date(from: r.month) ?? Date()
         rollover = r.rollover
         active = r.active
     }
@@ -175,7 +167,7 @@ final class LocalBudget {
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         amount = r.amount
-        month = yyyyMMdd.date(from: r.month) ?? Date()
+        month = LedgerDate.dayFormatter.date(from: r.month) ?? Date()
         rollover = r.rollover
         active = r.active
     }
@@ -199,14 +191,14 @@ final class LocalDebt {
         serverId = r.id; walletId = r.walletId; type = r.type
         personName = r.personName; personContact = r.personContact
         amount = r.amount; remainingAmount = r.remainingAmount
-        dueDate = r.dueDate.flatMap { yyyyMMdd.date(from: $0) }
+        dueDate = r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteDebt) {
         walletId = r.walletId; type = r.type
         personName = r.personName; personContact = r.personContact
         amount = r.amount; remainingAmount = r.remainingAmount
-        dueDate = r.dueDate.flatMap { yyyyMMdd.date(from: $0) }
+        dueDate = r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
 }
@@ -228,13 +220,13 @@ final class LocalSavingGoal {
     init(from r: RemoteSavingGoal) {
         serverId = r.id; name = r.name; icon = r.icon
         targetAmount = r.targetAmount; currentAmount = r.currentAmount
-        deadline = r.deadline.flatMap { yyyyMMdd.date(from: $0) }
+        deadline = r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteSavingGoal) {
         name = r.name; icon = r.icon
         targetAmount = r.targetAmount; currentAmount = r.currentAmount
-        deadline = r.deadline.flatMap { yyyyMMdd.date(from: $0) }
+        deadline = r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
 }
@@ -264,9 +256,9 @@ final class LocalRecurringTransaction {
         categoryId = r.categoryId; categoryName = r.categories?.name
         categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
-        startDate = yyyyMMdd.date(from: r.startDate) ?? Date()
-        endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
-        nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
+        startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()
+        endDate = r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
+        nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         updatedAt = r.updatedAt
         active = r.active
         bankFee = r.bankFee
@@ -276,9 +268,9 @@ final class LocalRecurringTransaction {
         categoryId = r.categoryId; categoryName = r.categories?.name
         categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
-        startDate = yyyyMMdd.date(from: r.startDate) ?? Date()
-        endDate = r.endDate.flatMap { yyyyMMdd.date(from: $0) }
-        nextRunDate = r.nextRunDate.flatMap { yyyyMMdd.date(from: $0) }
+        startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()
+        endDate = r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
+        nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         updatedAt = r.updatedAt
         active = r.active
         bankFee = r.bankFee

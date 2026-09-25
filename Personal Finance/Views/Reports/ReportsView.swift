@@ -41,16 +41,7 @@ struct ReportsView: View {
     }
 
     private func recomputeMetrics() {
-        // Only "adjust_up"/"adjust_down" (balance reconciliation) are excluded —
-        // debt system categories (repay_debt/collect_debt/...) are real cash
-        // movement and belong in income/expense totals.
-        let adjustmentCategoryIds = Set(categories.filter {
-            $0.systemKey == "adjust_up" || $0.systemKey == "adjust_down"
-        }.map(\.serverId))
-        let realTx = allTx.filter { tx in
-            guard let catId = tx.categoryId else { return true }
-            return !adjustmentCategoryIds.contains(catId)
-        }
+        let realTx = allTx.excludingAdjustments(using: categories)
         metrics = ReportMetricsCalculator.calculate(
             transactions: realTx,
             wallets: wallets,

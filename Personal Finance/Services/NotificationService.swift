@@ -7,14 +7,6 @@ final class NotificationService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     // MARK: - Fetch
 
     func fetchNotifications() async throws -> [AppNotification] {
@@ -22,13 +14,13 @@ final class NotificationService {
 
         let cal = Calendar.current
         let now = Date()
-        let today = df.string(from: now)
+        let today = LedgerDate.dayFormatter.string(from: now)
         let monthComps = cal.dateComponents([.year, .month], from: now)
-        let monthStart = df.string(from: cal.date(from: monthComps)!)
-        let monthEnd   = df.string(from: cal.date(byAdding: .month, value: 1, to: cal.date(from: monthComps)!)!)
-        let debtHorizon      = df.string(from: cal.date(byAdding: .day, value: 7,  to: now)!)
-        let recurringHorizon = df.string(from: cal.date(byAdding: .day, value: 3,  to: now)!)
-        let goalHorizon      = df.string(from: cal.date(byAdding: .day, value: 14, to: now)!)
+        let monthStart = LedgerDate.dayFormatter.string(from: cal.date(from: monthComps)!)
+        let monthEnd   = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .month, value: 1, to: cal.date(from: monthComps)!)!)
+        let debtHorizon      = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 7,  to: now)!)
+        let recurringHorizon = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 3,  to: now)!)
+        let goalHorizon      = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 14, to: now)!)
 
         async let budgetsTask: [BRow]    = client.from("budgets")
             .select("id, amount, category_id, categories(name, icon)")
@@ -46,6 +38,7 @@ final class NotificationService {
         async let recurringTask: [RRow]  = client.from("recurring_transactions")
             .select("id, type, amount, note, next_run_date, end_date, categories(name, icon)")
             .eq("user_id", value: userId)
+            .eq("active", value: true)
             .lte("next_run_date", value: recurringHorizon)
             .execute().value
         async let goalsTask: [GRow]      = client.from("saving_goals")

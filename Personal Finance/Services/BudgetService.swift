@@ -7,14 +7,6 @@ final class BudgetService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func create(categoryId: UUID?, amount: Double, month: Date, rollover: Bool = false, in ctx: ModelContext) async throws {
         let userId = try await client.auth.session.user.id
         let monthStr = monthString(from: month)
@@ -70,6 +62,6 @@ final class BudgetService {
         let cal = Calendar.current
         let comps = cal.dateComponents([.year, .month], from: date)
         let first = cal.date(from: comps)!
-        return df.string(from: first)
+        return LedgerDate.dayFormatter.string(from: first)
     }
 }

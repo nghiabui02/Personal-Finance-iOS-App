@@ -7,14 +7,6 @@ final class TransactionService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func create(
         type: String, amount: Double, date: Date,
         walletId: UUID?, categoryId: UUID?, note: String?,
@@ -38,7 +30,7 @@ final class TransactionService {
             .from("transactions")
             .insert(Body(
                 user_id: userId.uuidString, type: type, amount: total,
-                transaction_date: df.string(from: date),
+                transaction_date: LedgerDate.dayFormatter.string(from: date),
                 wallet_id: walletId?.uuidString,
                 category_id: categoryId?.uuidString,
                 note: note?.isEmpty == true ? nil : note,
@@ -85,7 +77,7 @@ final class TransactionService {
             .from("transactions")
             .update(Body(
                 type: type, amount: amount,
-                transaction_date: df.string(from: date),
+                transaction_date: LedgerDate.dayFormatter.string(from: date),
                 wallet_id: walletId?.uuidString,
                 category_id: categoryId?.uuidString,
                 note: note?.isEmpty == true ? nil : note

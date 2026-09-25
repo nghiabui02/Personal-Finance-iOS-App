@@ -130,7 +130,7 @@ final class WalletService {
         let delta = actualBalance - wallet.balance
         guard delta != 0 else { return }
 
-        let key = delta > 0 ? "adjust_up" : "adjust_down"
+        let key = delta > 0 ? SystemCategory.adjustUp : SystemCategory.adjustDown
         guard let category = categories.first(where: { $0.systemKey == key }) else {
             throw FinanceValidationError.adjustmentCategoryMissing
         }

@@ -20,6 +20,18 @@ struct TransactionTypeAmountSection: View {
             }
 
             CurrencyAmountField(amount: $amount, amountText: $amountText)
+
+            let suggestions = amountSuggestions(amountText)
+            if !suggestions.isEmpty {
+                FlowLayout {
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        SuggestionChip(label: suggestion) {
+                            applyAmountFormat(new: suggestion, amountText: &amountText, amount: &amount)
+                        }
+                    }
+                }
+                .listRowSeparator(.hidden)
+            }
         }
     }
 }

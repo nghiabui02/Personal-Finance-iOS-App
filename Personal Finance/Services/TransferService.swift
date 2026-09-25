@@ -7,14 +7,6 @@ final class TransferService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private static let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func transfer(
         from fromWallet: LocalWallet,
         to toWallet: LocalWallet,
@@ -29,7 +21,7 @@ final class TransferService {
 
         let userId = try await client.auth.session.user.id
         let pairId = UUID()
-        let dateStr = TransferService.df.string(from: date)
+        let dateStr = LedgerDate.dayFormatter.string(from: date)
         let noteVal: String? = (note?.isEmpty == true) ? nil : note
 
         struct TxBody: Encodable {

@@ -7,14 +7,6 @@ final class RecurringService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func create(
         type: String, amount: Double, frequency: String,
         startDate: Date, endDate: Date?,
@@ -33,9 +25,9 @@ final class RecurringService {
             .from("recurring_transactions")
             .insert(Body(
                 user_id: userId.uuidString, type: type, amount: amount, frequency: frequency,
-                start_date: df.string(from: startDate),
-                end_date: endDate.map { df.string(from: $0) },
-                next_run_date: df.string(from: startDate),
+                start_date: LedgerDate.dayFormatter.string(from: startDate),
+                end_date: endDate.map { LedgerDate.dayFormatter.string(from: $0) },
+                next_run_date: LedgerDate.dayFormatter.string(from: startDate),
                 wallet_id: walletId?.uuidString, category_id: categoryId?.uuidString,
                 note: note?.isEmpty == true ? nil : note,
                 bank_fee: bankFee, active: true
@@ -61,7 +53,7 @@ final class RecurringService {
         let remote: RemoteRecurringTransaction = try await client
             .from("recurring_transactions")
             .update(Body(amount: amount, frequency: frequency,
-                        end_date: endDate.map { df.string(from: $0) },
+                        end_date: endDate.map { LedgerDate.dayFormatter.string(from: $0) },
                         wallet_id: walletId?.uuidString, category_id: categoryId?.uuidString,
                         note: note?.isEmpty == true ? nil : note,
                         bank_fee: bankFee))
@@ -87,7 +79,7 @@ final class RecurringService {
             struct ResumeBody: Encodable { let active: Bool; let next_run_date: String }
             remote = try await client
                 .from("recurring_transactions")
-                .update(ResumeBody(active: true, next_run_date: df.string(from: candidate)))
+                .update(ResumeBody(active: true, next_run_date: LedgerDate.dayFormatter.string(from: candidate)))
                 .eq("id", value: rec.serverId)
                 .eq("user_id", value: userId.uuidString)
                 .select("*, categories(id, name, icon, color), wallets(id, name)")
@@ -113,7 +105,7 @@ final class RecurringService {
         struct Body: Encodable { let next_run_date: String }
         let remote: RemoteRecurringTransaction = try await client
             .from("recurring_transactions")
-            .update(Body(next_run_date: df.string(from: newNext)))
+            .update(Body(next_run_date: LedgerDate.dayFormatter.string(from: newNext)))
             .eq("id", value: rec.serverId)
             .eq("user_id", value: userId.uuidString)
             .select("*, categories(id, name, icon, color), wallets(id, name)")

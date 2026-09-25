@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import Personal_Finance
+@testable import My_Finance
 
 struct Personal_FinanceTests {
 

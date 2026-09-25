@@ -65,14 +65,6 @@ enum DashboardMetricsCalculator {
         )
     }
 
-    private static let monthKeyFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     // Compares this month's expense so far against the last 3 months' average,
     // prorated by days elapsed — an unfinished month would otherwise always
     // look "under budget".
@@ -81,21 +73,19 @@ enum DashboardMetricsCalculator {
         selectedMonth: Date,
         actualExpense: Double
     ) -> Double? {
-        // "Today" must follow the ledger timezone (Asia/Ho_Chi_Minh), same as
-        // transaction_date — not the device's timezone, or pace would read
+        // "Today" must follow ledger time, not the device's — otherwise pace reads
         // differently on iOS than web for the same data when traveling.
-        var ledgerCalendar = Calendar(identifier: .gregorian)
-        ledgerCalendar.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh") ?? .current
+        let ledgerCalendar = LedgerDate.calendar
 
         guard
-            let startOfTarget = ledgerCalendar.date(from: ledgerCalendar.dateComponents([.year, .month], from: selectedMonth)),
+            let startOfTarget = LedgerDate.startOfMonth(for: selectedMonth),
             let startWindow = ledgerCalendar.date(byAdding: .month, value: -3, to: startOfTarget)
         else { return nil }
 
         var byMonth: [String: Double] = [:]
         for tx in transactions where tx.type == "expense" && !tx.isTransfer {
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
-            byMonth[monthKeyFormatter.string(from: tx.transactionDate), default: 0] += tx.amount
+            byMonth[LedgerDate.monthKey(for: tx.transactionDate), default: 0] += tx.amount
         }
         guard !byMonth.isEmpty else { return nil }
         let monthlyAverage = byMonth.values.reduce(0, +) / Double(byMonth.count)

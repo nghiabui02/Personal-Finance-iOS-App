@@ -276,17 +276,12 @@ private struct FrequentChipsRow: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(suggestions) { suggestion in
-                    Button { onSelect(suggestion) } label: {
-                        HStack(spacing: 4) {
-                            Text(suggestion.categoryIcon)
-                            Text(suggestion.amount.formatted(currency: "VND"))
-                                .font(.caption).fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                    SuggestionChip(
+                        icon: suggestion.categoryIcon,
+                        label: suggestion.amount.formatted(currency: "VND")
+                    ) {
+                        onSelect(suggestion)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal)

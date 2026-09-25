@@ -7,14 +7,6 @@ final class DebtService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func create(
         type: String, personName: String, personContact: String?,
         amount: Double, walletId: UUID?, dueDate: Date?, note: String?,
@@ -33,7 +25,7 @@ final class DebtService {
                 person_contact: personContact?.isEmpty == true ? nil : personContact,
                 amount: amount, remaining_amount: amount,
                 wallet_id: walletId?.uuidString,
-                due_date: dueDate.map { df.string(from: $0) },
+                due_date: dueDate.map { LedgerDate.dayFormatter.string(from: $0) },
                 note: note?.isEmpty == true ? nil : note,
                 status: "active"
             ))
@@ -66,7 +58,7 @@ final class DebtService {
             .update(Body(
                 person_name: personName,
                 person_contact: personContact?.isEmpty == true ? nil : personContact,
-                due_date: dueDate.map { df.string(from: $0) },
+                due_date: dueDate.map { LedgerDate.dayFormatter.string(from: $0) },
                 note: note?.isEmpty == true ? nil : note,
                 status: status ?? debt.status
             ))
@@ -106,7 +98,7 @@ final class DebtService {
             .from("debt_payments")
             .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
                             note: note?.isEmpty == true ? nil : note, type: "payment",
-                            paid_at: df.string(from: date)))
+                            paid_at: LedgerDate.dayFormatter.string(from: date)))
             .execute()
 
         let newRemaining = max(0, debt.remainingAmount - amount)
@@ -151,7 +143,7 @@ final class DebtService {
             .from("debt_payments")
             .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
                             note: note?.isEmpty == true ? nil : note, type: "addition",
-                            paid_at: df.string(from: date)))
+                            paid_at: LedgerDate.dayFormatter.string(from: date)))
             .execute()
 
         let newAmount = debt.amount + amount

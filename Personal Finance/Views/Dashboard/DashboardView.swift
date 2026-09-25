@@ -69,16 +69,7 @@ struct DashboardView: View {
     }
 
     private func recompute() {
-        // Only "adjust_up"/"adjust_down" (balance reconciliation) are excluded —
-        // debt system categories (repay_debt/collect_debt/...) are real cash
-        // movement and belong in income/expense totals.
-        let adjustmentCategoryIds = Set(categories.filter {
-            $0.systemKey == "adjust_up" || $0.systemKey == "adjust_down"
-        }.map(\.serverId))
-        let realTx = transactions.filter { tx in
-            guard let catId = tx.categoryId else { return true }
-            return !adjustmentCategoryIds.contains(catId)
-        }
+        let realTx = transactions.excludingAdjustments(using: categories)
         metrics = DashboardMetricsCalculator.calculate(
             transactions: realTx,
             wallets: wallets,
@@ -97,11 +88,7 @@ struct DashboardView: View {
 
     private func writeNetWorthSnapshot(_ netWorth: Double) async {
         guard let userId = try? await SupabaseService.shared.client.auth.session.user.id else { return }
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        df.locale = Locale(identifier: "en_US_POSIX")
-        df.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        let today = df.string(from: Date())
+        let today = LedgerDate.string(from: Date())
         struct Body: Encodable { let user_id: String; let net_worth: Double; let recorded_date: String }
         try? await SupabaseService.shared.client
             .from("net_worth_snapshots")

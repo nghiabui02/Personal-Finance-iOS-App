@@ -1,13 +1,7 @@
 import Foundation
 
 enum TransactionDateRange {
-    static let apiDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return formatter
-    }()
+    static let apiDateFormatter = LedgerDate.dayFormatter
 
     static func monthStart(
         for date: Date,

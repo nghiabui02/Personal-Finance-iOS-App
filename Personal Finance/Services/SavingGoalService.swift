@@ -7,14 +7,6 @@ final class SavingGoalService {
     private let client = SupabaseService.shared.client
     private init() {}
 
-    private let df: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     func create(
         name: String, icon: String?, targetAmount: Double,
         deadline: Date?, note: String?, in ctx: ModelContext
@@ -30,7 +22,7 @@ final class SavingGoalService {
             .insert(Body(
                 user_id: userId.uuidString, name: name, icon: icon,
                 target_amount: targetAmount, current_amount: 0,
-                deadline: deadline.map { df.string(from: $0) },
+                deadline: deadline.map { LedgerDate.dayFormatter.string(from: $0) },
                 note: note?.isEmpty == true ? nil : note,
                 status: "active"
             ))
@@ -51,7 +43,7 @@ final class SavingGoalService {
         let remote: RemoteSavingGoal = try await client
             .from("saving_goals")
             .update(Body(name: name, icon: icon, target_amount: targetAmount,
-                        deadline: deadline.map { df.string(from: $0) },
+                        deadline: deadline.map { LedgerDate.dayFormatter.string(from: $0) },
                         note: note?.isEmpty == true ? nil : note))
             .eq("id", value: goal.serverId)
             .eq("user_id", value: userId.uuidString)

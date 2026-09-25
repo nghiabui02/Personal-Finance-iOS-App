@@ -15,14 +15,6 @@ final class SyncManager: ObservableObject {
     private let monitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.nghiabui.pf.network")
     private let client = SupabaseService.shared.client
-    private let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
-        return f
-    }()
-
     private init() {
         monitor.pathUpdateHandler = { path in
             let connected = path.status == .satisfied
@@ -115,7 +107,7 @@ final class SyncManager: ObservableObject {
             .from("transactions")
             .select("*, categories(id, name, icon, color), wallets(id, name)")
             .eq("user_id", value: userId)
-            .gte("transaction_date", value: dateFormatter.string(from: since))
+            .gte("transaction_date", value: LedgerDate.dayFormatter.string(from: since))
             .order("transaction_date", ascending: false)
             .order("updated_at", ascending: false)
             .execute()
@@ -131,7 +123,7 @@ final class SyncManager: ObservableObject {
             .from("budgets")
             .select("*, categories(id, name, icon, color)")
             .eq("user_id", value: userId)
-            .gte("month", value: dateFormatter.string(from: start))
+            .gte("month", value: LedgerDate.dayFormatter.string(from: start))
             .execute()
             .value
     }
