@@ -4,13 +4,13 @@ A native iOS app for tracking personal finances — wallets, transactions, budge
 
 ## Features
 
-- **Dashboard** — Net worth overview, monthly income/expense summary, spending chart, budget progress, and recent transactions
-- **Transactions** — Add/edit expenses and income with category, wallet, and date filters; calendar view and pagination
-- **Wallets** — Multiple wallet types (cash, bank, e-wallet, credit card); transfer between wallets; credit card bill payment
-- **Budgets** — Monthly category budgets with progress tracking
+- **Dashboard** — Net worth overview, monthly income/expense summary, spending chart, budget progress, spending pace vs. your 3-month average, and recent transactions
+- **Transactions** — Add/edit expenses and income with category, wallet, and date filters; calendar view and pagination; bank fee on a single row; one-tap chips for frequent amounts and repeat transactions
+- **Wallets** — Multiple wallet types (cash, bank, e-wallet, credit card); transfer between wallets; credit card bill payment; reconcile a wallet against its real-world balance
+- **Budgets** — Monthly category budgets with progress tracking, month-to-month rollover, pause/resume, and suggested amounts from your spending history
 - **Debts** — Track money lent and borrowed; payment history; due date reminders
 - **Saving Goals** — Goal tracking with contributions and deadline alerts
-- **Recurring Transactions** — Scheduled income/expense automation
+- **Recurring Transactions** — Scheduled income/expense automation with pause, resume, and skip
 - **Reports** — Period-based (week/month/quarter/year) cash flow, spending breakdown, net worth history chart
 - **Notifications** — Smart alerts for overdue debts, exceeded budgets, upcoming recurring payments, and goal deadlines
 - **Settings** — Profile, avatar upload, password change
@@ -19,12 +19,17 @@ A native iOS app for tracking personal finances — wallets, transactions, budge
 
 | Layer | Technology |
 |---|---|
-| UI | SwiftUI |
+| UI | SwiftUI (Liquid Glass) |
 | Local persistence | SwiftData |
 | Backend / Auth | Supabase (PostgreSQL + Auth + Storage) |
 | Architecture | MVVM + Service Layer |
-| Charts | Swift Charts (iOS 16+) |
-| Min deployment | iOS 17 |
+| Charts | Swift Charts |
+| Build SDK | iOS 27 |
+| Min deployment | iOS 18 |
+
+Navigation and tab bars use the system's default materials so they pick up Liquid Glass
+automatically — the app deliberately avoids `.toolbarBackground` overrides that would
+opt it back out.
 
 ## Architecture
 
@@ -36,6 +41,8 @@ Personal Finance/
 │   └── SyncManager       # Orchestrates full sync from Supabase → SwiftData
 ├── ViewModels/           # ObservableObject VMs (Auth, Notifications, Transactions)
 ├── Views/
+│   ├── Components/       # Cross-feature UI (SuggestionChip, FlowLayout, CurrencyAmountField…)
+│   ├── Auth/
 │   ├── Dashboard/
 │   ├── Transactions/
 │   ├── Wallets/
@@ -44,21 +51,30 @@ Personal Finance/
 │   ├── SavingGoals/
 │   ├── Reports/
 │   ├── Recurring/
+│   ├── Categories/
 │   ├── Notifications/
-│   └── Settings/
-└── Extensions/           # Color+Hex, Double+Currency, View+Helpers
+│   ├── Settings/
+│   └── More/
+└── Extensions/           # LedgerDate, SystemCategory, Color+Hex, Double+Currency, View+Helpers
 ```
+
+Each feature folder keeps screens and calculators at its root, with view pieces under
+its own `Components/` subfolder.
 
 **Key patterns:**
 - Supabase RLS enforces row-level ownership server-side; all mutating calls also include `.eq("user_id", ...)` client-side as defense-in-depth
-- Balance updates go through a Postgres RPC (`apply_wallet_balance_delta`) to avoid TOCTOU races
+- Balance updates go through the `adjust_wallet_balance` Postgres RPC, which reads and writes in one statement — a client-side read-then-write would lose concurrent updates
+- Dates are *ledger* dates, not device-local ones: `LedgerDate` pins every date format and "today" calculation to `Asia/Ho_Chi_Minh` so the same data reads identically here, on the web client, and abroad
+- `transactions.amount` already includes `bank_fee`; the fee column is stored for display only and is never summed separately
+- Balance reconciliations (`adjust_up` / `adjust_down` categories) are excluded from spending totals via `SystemCategory` — they correct the books rather than record real spending. Debt categories stay in, since that money genuinely moves
+- Recurring transactions fire from a server-side `pg_cron` job, never from the app — a client-side runner would race the cron and double-post
 - `SyncManager` pulls all user data into SwiftData on login/pull-to-refresh; UI reads from local store
 - `notification_states` table tracks read/dismissed state; notification content is derived fresh on each fetch
 
 ## Prerequisites
 
-- Xcode 16+
-- iOS 17 simulator or device
+- Xcode 27+ (builds against the iOS 27 SDK)
+- iOS 18 simulator or device
 - A [Supabase](https://supabase.com) project
 
 ## Setup
@@ -86,6 +102,14 @@ SUPABASE_AVATAR_BUCKET = Avatar
 **3. Open in Xcode and run**
 
 Open `My Finance.xcodeproj` and press ▶.
+
+## Tests
+
+```bash
+xcodebuild test -project "My Finance.xcodeproj" \
+  -scheme "Personal Finance" \
+  -destination "platform=iOS Simulator,name=iPhone 17e"
+```
 
 ## Security Notes
 
