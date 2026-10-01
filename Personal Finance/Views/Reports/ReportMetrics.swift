@@ -18,9 +18,30 @@ struct ReportMetrics {
     var chartData: [ReportChartBar] = []
     var spendingBreakdown: [ReportCategoryBreakdown] = []
     var netWorthHistory: [NetWorthPoint] = []
+    var debtFlow = DebtAdjustmentFlow()
 
     var net: Double { income - expense }
     var savingsRate: Double { income > 0 ? net / income * 100 : 0 }
+
+    /// Includes the loan principal that `net` deliberately leaves out.
+    var netIncludingDebt: Double {
+        net + debtFlow.debtIncome - debtFlow.debtExpense
+    }
+}
+
+/// Money that moved without being earned or spent — shown in its own block so the
+/// headline totals can stay strictly about income and spending.
+struct DebtAdjustmentFlow {
+    /// Borrowing and debt collections.
+    var debtIncome: Double = 0
+    /// Lending and principal repayments.
+    var debtExpense: Double = 0
+    var adjustmentIncome: Double = 0
+    var adjustmentExpense: Double = 0
+
+    var isEmpty: Bool {
+        debtIncome == 0 && debtExpense == 0 && adjustmentIncome == 0 && adjustmentExpense == 0
+    }
 }
 
 struct ReportChartBar: Identifiable {
@@ -40,15 +61,22 @@ struct ReportCategoryBreakdown: Identifiable {
 }
 
 enum ReportMetricsCalculator {
+    /// Takes *all* transactions plus the category list — it needs the full set to
+    /// report debt and adjustment flow alongside the operating totals.
     static func calculate(
         transactions: [LocalTransaction],
+        categories: [LocalCategory],
         wallets: [LocalWallet],
         debts: [LocalDebt],
         context: ReportPeriodContext
     ) -> ReportMetrics {
-        let txMetrics = calculateTransactionMetrics(transactions: transactions, context: context)
+        let operating = transactions.operatingOnly(using: categories)
+        let txMetrics = calculateTransactionMetrics(transactions: operating, context: context)
         let nw = calculateNetWorthComponents(wallets: wallets, debts: debts)
-        let history = computeNetWorthHistory(transactions: transactions, currentNW: nw.total)
+        let history = computeNetWorthHistory(transactions: operating, currentNW: nw.total)
+        let debtFlow = calculateDebtAdjustmentFlow(
+            transactions: transactions, categories: categories, context: context
+        )
 
         return ReportMetrics(
             income: txMetrics.income,
@@ -60,8 +88,35 @@ enum ReportMetricsCalculator {
             borrowed: nw.borrowed,
             chartData: makeChartBars(buckets: txMetrics.buckets, context: context),
             spendingBreakdown: makeSpendingBreakdown(categoryTotals: txMetrics.categoryTotals),
-            netWorthHistory: history
+            netWorthHistory: history,
+            debtFlow: debtFlow
         )
+    }
+
+    private static func calculateDebtAdjustmentFlow(
+        transactions: [LocalTransaction],
+        categories: [LocalCategory],
+        context: ReportPeriodContext
+    ) -> DebtAdjustmentFlow {
+        let calendar = context.calendar
+        let range = context.range
+        let dayAfterEnd = calendar.date(byAdding: .day, value: 1, to: range.end) ?? range.end
+        let keys = categories.systemKeysByCategoryId
+
+        var flow = DebtAdjustmentFlow()
+        for tx in transactions {
+            guard tx.transactionDate >= range.start, tx.transactionDate < dayAfterEnd else { continue }
+            let isIncome = tx.type == "income"
+            switch tx.reportingGroup(systemKeysByCategoryId: keys) {
+            case .debt:
+                if isIncome { flow.debtIncome += tx.amount } else { flow.debtExpense += tx.amount }
+            case .adjustment:
+                if isIncome { flow.adjustmentIncome += tx.amount } else { flow.adjustmentExpense += tx.amount }
+            case .operating, .transfer:
+                continue
+            }
+        }
+        return flow
     }
 
     private typealias CategoryTotal = (name: String, icon: String, color: String?, total: Double)

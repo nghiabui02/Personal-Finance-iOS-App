@@ -35,6 +35,16 @@ struct ReportsContentView: View {
                         .padding(.horizontal)
                 }
 
+                // Sits after the main story (earned, spent, where) — it explains what
+                // those totals left out, so it reads better once they've been seen.
+                if !metrics.debtFlow.isEmpty {
+                    ReportDebtFlowCard(
+                        flow: metrics.debtFlow,
+                        netIncludingDebt: metrics.netIncludingDebt
+                    )
+                    .padding(.horizontal)
+                }
+
                 ReportNetWorthCard(
                     amount: metrics.currentNetWorth,
                     cash: metrics.cash,

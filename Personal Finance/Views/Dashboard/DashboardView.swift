@@ -69,7 +69,7 @@ struct DashboardView: View {
     }
 
     private func recompute() {
-        let realTx = transactions.excludingAdjustments(using: categories)
+        let realTx = transactions.operatingOnly(using: categories)
         metrics = DashboardMetricsCalculator.calculate(
             transactions: realTx,
             wallets: wallets,

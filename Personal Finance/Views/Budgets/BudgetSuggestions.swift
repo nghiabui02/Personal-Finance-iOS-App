@@ -25,14 +25,14 @@ enum BudgetSuggestionCalculator {
             let startWindow = calendar.date(byAdding: .month, value: -3, to: startOfTarget)
         else { return [] }
 
-        let systemCategoryIds = Set(categories.filter { $0.systemKey != nil }.map(\.serverId))
         let categoryLookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.serverId, $0) })
+        let operating = transactions.operatingOnly(using: categories)
 
         var monthlyTotals: [UUID: [String: Double]] = [:]
-        for tx in transactions {
-            guard tx.type == "expense", !tx.isTransfer, let catId = tx.categoryId else { continue }
+        for tx in operating {
+            guard tx.type == "expense", let catId = tx.categoryId else { continue }
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
-            guard !systemCategoryIds.contains(catId), !existingBudgetCategoryIds.contains(catId) else { continue }
+            guard !existingBudgetCategoryIds.contains(catId) else { continue }
             let key = LedgerDate.monthKey(for: tx.transactionDate)
             monthlyTotals[catId, default: [:]][key, default: 0] += tx.amount
         }

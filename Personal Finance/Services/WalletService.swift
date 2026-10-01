@@ -44,43 +44,27 @@ final class WalletService {
         try ctx.save()
     }
 
+    /// Only `name` and `color` are editable.
+    ///
+    /// Everything else is structural: `balance` must only ever move through a
+    /// transaction or Reconcile, or the transaction history stops adding up to it —
+    /// and changing `credit_limit` on an existing card used to silently rewrite
+    /// `balance` along with it. Type/limit/statement days are fixed at creation.
     func update(
-        _ wallet: LocalWallet, name: String, type: String,
-        icon: String?, color: String?, isDefault: Bool,
-        creditLimit: Double? = nil, statementDay: Int? = nil, paymentDueDay: Int? = nil,
+        _ wallet: LocalWallet, name: String, color: String?,
         in ctx: ModelContext
     ) async throws {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { throw FinanceValidationError.invalidWalletName }
+
         let userId = try await client.auth.session.user.id
-        let remote: RemoteWallet
-        if type == "credit" {
-            struct CreditBody: Encodable {
-                let name: String, type: String, icon: String?, color: String?, is_default: Bool
-                let credit_limit: Double, statement_day: Int?, payment_due_day: Int?, balance: Double
-            }
-            let newLimit = creditLimit ?? wallet.creditLimit ?? 0
-            let debtUsed = max(0, (wallet.creditLimit ?? 0) - wallet.balance)
-            let newBalance = newLimit - debtUsed
-            remote = try await client
-                .from("wallets")
-                .update(CreditBody(name: name, type: type, icon: icon, color: color, is_default: isDefault,
-                                   credit_limit: newLimit,
-                                   statement_day: statementDay ?? wallet.statementDay,
-                                   payment_due_day: paymentDueDay ?? wallet.paymentDueDay,
-                                   balance: max(0, newBalance)))
-                .eq("id", value: wallet.serverId)
-                .eq("user_id", value: userId.uuidString)
-                .select().single().execute().value
-        } else {
-            struct Body: Encodable {
-                let name: String, type: String, icon: String?, color: String?, is_default: Bool
-            }
-            remote = try await client
-                .from("wallets")
-                .update(Body(name: name, type: type, icon: icon, color: color, is_default: isDefault))
-                .eq("id", value: wallet.serverId)
-                .eq("user_id", value: userId.uuidString)
-                .select().single().execute().value
-        }
+        struct Body: Encodable { let name: String, color: String? }
+        let remote: RemoteWallet = try await client
+            .from("wallets")
+            .update(Body(name: trimmedName, color: color))
+            .eq("id", value: wallet.serverId)
+            .eq("user_id", value: userId.uuidString)
+            .select().single().execute().value
         wallet.update(from: remote)
         try ctx.save()
     }

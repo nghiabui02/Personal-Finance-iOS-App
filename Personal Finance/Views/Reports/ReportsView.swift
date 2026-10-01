@@ -30,6 +30,7 @@ struct ReportsView: View {
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onAppear { recomputeMetrics() }
             .onChange(of: allTx) { _, _ in recomputeMetrics() }
+            .onChange(of: categories) { _, _ in recomputeMetrics() }
             .onChange(of: selectedPeriod) { _, _ in recomputeMetrics() }
             .onChange(of: referenceDate) { _, _ in recomputeMetrics() }
         }
@@ -41,9 +42,9 @@ struct ReportsView: View {
     }
 
     private func recomputeMetrics() {
-        let realTx = allTx.excludingAdjustments(using: categories)
         metrics = ReportMetricsCalculator.calculate(
-            transactions: realTx,
+            transactions: allTx,
+            categories: categories,
             wallets: wallets,
             debts: debts,
             context: periodContext

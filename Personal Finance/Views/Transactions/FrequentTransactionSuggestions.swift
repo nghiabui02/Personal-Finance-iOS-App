@@ -28,7 +28,7 @@ enum FrequentTransactionSuggestionCalculator {
         let cutoff = Calendar.current.date(byAdding: .day, value: -windowDays, to: now) ?? now
         let categoryLookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.serverId, $0) })
         // A reconciliation is a one-off correction, never a habit worth a shortcut.
-        let transactions = transactions.excludingAdjustments(using: categories)
+        let transactions = transactions.operatingOnly(using: categories)
 
         struct Group {
             let type: String, categoryId: UUID, walletId: UUID?, amount: Double

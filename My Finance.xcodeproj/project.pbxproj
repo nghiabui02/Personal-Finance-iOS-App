@@ -37,6 +37,7 @@
 		55F593D611D8BC09BCB41CE2 /* TransactionFilterSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3560C00C023912810557128 /* TransactionFilterSection.swift */; };
 		55FB2C5387B6898D00E26E8B /* MonthSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DECE608EB80E21A40E7431C /* MonthSelectorView.swift */; };
 		59B492622A2FBAB635DB6CC3 /* Personal_FinanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB44E9E5CA4D415B1A8D0A1 /* Personal_FinanceUITests.swift */; };
+		5A59ACBFB7FD9B0346C17AD4 /* ReportDebtFlowCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D43C9485B6C0B61CF592B6 /* ReportDebtFlowCard.swift */; };
 		5CAC15D889E4A48A2EF75283 /* RecentTransactionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C4828A584CB63941DB2B340 /* RecentTransactionRowView.swift */; };
 		6064F19498011F6DBC127F1B /* TransactionCategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C0B6954D1DEB10216CAFCB /* TransactionCategoryPickerSheet.swift */; };
 		61BD36C9C93481E76D382788 /* RemoteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEF9CB7C3F8282F5494D68C /* RemoteModels.swift */; };
@@ -196,6 +197,7 @@
 		6C2A488F662A057107B8E9D1 /* My FinanceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "My FinanceTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C4828A584CB63941DB2B340 /* RecentTransactionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionRowView.swift; sourceTree = "<group>"; };
 		6DB0107894E7F746E8EC6B09 /* TransactionTypeAmountSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionTypeAmountSection.swift; sourceTree = "<group>"; };
+		70D43C9485B6C0B61CF592B6 /* ReportDebtFlowCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReportDebtFlowCard.swift; sourceTree = "<group>"; };
 		78C0240555C6E44D0B6915A8 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
 		79C34285F2EFAECDAD015EFB /* SavingGoalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingGoalService.swift; sourceTree = "<group>"; };
 		7A87D61DA3670C98CAAFA441 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
@@ -511,6 +513,7 @@
 				A70000000000000000000012 /* ReportPeriodSelectorView.swift */,
 				A70000000000000000000017 /* ReportSpendingBreakdownCard.swift */,
 				A70000000000000000000011 /* ReportsContentView.swift */,
+				70D43C9485B6C0B61CF592B6 /* ReportDebtFlowCard.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -946,6 +949,7 @@
 				234293CAED773C4D7EF85E2F /* TransactionWalletPickerSheet.swift in Sources */,
 				9D1057D6524D6BDFA315C184 /* TxStatBox.swift in Sources */,
 				CE327EEF80AAC92A447B72D8 /* WeekSelectorView.swift in Sources */,
+				5A59ACBFB7FD9B0346C17AD4 /* ReportDebtFlowCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1012,7 +1016,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = nghiabui.personalfinance;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nghiabui.personalfinance;
 				PRODUCT_NAME = "My Finance";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1039,7 +1043,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = nghiabui.personalfinance;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nghiabui.personalfinance;
 				PRODUCT_NAME = "My Finance";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;

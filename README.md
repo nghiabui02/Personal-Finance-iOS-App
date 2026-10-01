@@ -108,8 +108,10 @@ Open `My Finance.xcodeproj` and press ▶.
 ```bash
 xcodebuild test -project "My Finance.xcodeproj" \
   -scheme "Personal Finance" \
-  -destination "platform=iOS Simulator,name=iPhone 17e"
+  -destination "platform=iOS Simulator,OS=latest,name=iPhone 16 Pro"
 ```
+
+Swap the device name for any simulator you have installed (`xcrun simctl list devices available`).
 
 ## Security Notes
 

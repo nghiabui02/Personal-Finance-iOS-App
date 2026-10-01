@@ -163,9 +163,11 @@ struct BudgetsView: View {
         cachedBudgets = monthBudgets.filter { $0.active }
         cachedInactiveBudgets = monthBudgets.filter { !$0.active }
 
-        // Build spent map: (categoryId, monthStart) → total
+        // Build spent map: (categoryId, monthStart) → total.
+        // Loan principal and adjustments never count against a budget.
+        let operatingTx = allTx.operatingOnly(using: allCategories)
         var spentMap: [UUID: [Date: Double]] = [:]
-        for tx in allTx where tx.type == "expense" {
+        for tx in operatingTx where tx.type == "expense" {
             guard let catId = tx.categoryId else { continue }
             let key = cal.date(from: cal.dateComponents([.year, .month], from: tx.transactionDate)) ?? tx.transactionDate
             spentMap[catId, default: [:]][key, default: 0] += tx.amount

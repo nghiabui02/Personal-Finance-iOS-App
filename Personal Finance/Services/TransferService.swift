@@ -15,7 +15,8 @@ final class TransferService {
         note: String?,
         in ctx: ModelContext
     ) async throws {
-        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
+        // `.isFinite` guards NaN/infinity, which slip past a bare `> 0` comparison
+        guard amount.isFinite, amount > 0 else { throw FinanceValidationError.invalidAmount }
         guard fromWallet.serverId != toWallet.serverId else { throw FinanceValidationError.sameWallet }
         guard fromWallet.balance >= amount else { throw FinanceValidationError.insufficientFunds }
 

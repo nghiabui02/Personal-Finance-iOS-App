@@ -30,26 +30,28 @@ struct AddEditWalletView: View {
                 Section("Details") {
                     TextField("Wallet name", text: $name)
 
-                    Picker("Type", selection: $type) {
-                        Label("Cash", systemImage: "banknote").tag("cash")
-                        Label("Bank", systemImage: "building.columns").tag("bank")
-                        Label("E-Wallet", systemImage: "iphone").tag("e_wallet")
-                        Label("Investment", systemImage: "chart.line.uptrend.xyaxis").tag("investment")
-                        Label("Credit", systemImage: "creditcard").tag("credit")
-                        Label("Other", systemImage: "ellipsis.circle").tag("other")
-                    }
+                    if !isEditing {
+                        Picker("Type", selection: $type) {
+                            Label("Cash", systemImage: "banknote").tag("cash")
+                            Label("Bank", systemImage: "building.columns").tag("bank")
+                            Label("E-Wallet", systemImage: "iphone").tag("e_wallet")
+                            Label("Investment", systemImage: "chart.line.uptrend.xyaxis").tag("investment")
+                            Label("Credit", systemImage: "creditcard").tag("credit")
+                            Label("Other", systemImage: "ellipsis.circle").tag("other")
+                        }
 
-                    if !isEditing && type != "credit" {
-                        CurrencyAmountField(
-                            title: "Initial Balance",
-                            currencySymbol: "",
-                            amount: $initialBalance,
-                            amountText: $initialBalanceText
-                        )
+                        if type != "credit" {
+                            CurrencyAmountField(
+                                title: "Initial Balance",
+                                currencySymbol: "",
+                                amount: $initialBalance,
+                                amountText: $initialBalanceText
+                            )
+                        }
                     }
                 }
 
-                if type == "credit" {
+                if type == "credit" && !isEditing {
                     Section("Credit") {
                         CurrencyAmountField(
                             title: "Credit Limit",
@@ -62,16 +64,28 @@ struct AddEditWalletView: View {
                 }
 
                 Section("Appearance") {
-                    HStack {
-                        Text("Icon")
-                        Spacer()
-                        EmojiPickerButton(emoji: $icon)
+                    if !isEditing {
+                        HStack {
+                            Text("Icon")
+                            Spacer()
+                            EmojiPickerButton(emoji: $icon)
+                        }
                     }
                     ColorSwatchPicker(selected: $colorHex)
                 }
 
-                Section {
-                    Toggle("Set as default wallet", isOn: $isDefault)
+                if !isEditing {
+                    Section {
+                        Toggle("Set as default wallet", isOn: $isDefault)
+                    }
+                }
+
+                if isEditing {
+                    Section {
+                        Text("Balance, type and credit settings are fixed after creation. Use Reconcile on the wallet to correct its balance.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .formKeyboardHandling()
@@ -127,12 +141,7 @@ struct AddEditWalletView: View {
         do {
             if let w = wallet {
                 try await WalletService.shared.update(
-                    w, name: trimName, type: type,
-                    icon: iconVal, color: colorHex, isDefault: isDefault,
-                    creditLimit: type == "credit" ? creditLimit : nil,
-                    statementDay: type == "credit" ? statementDay : nil,
-                    paymentDueDay: type == "credit" ? paymentDueDay : nil,
-                    in: modelContext
+                    w, name: trimName, color: colorHex, in: modelContext
                 )
             } else {
                 try await WalletService.shared.create(

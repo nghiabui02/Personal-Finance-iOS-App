@@ -11,6 +11,7 @@ enum FinanceValidationError: LocalizedError {
     case walletNotFound
     case invalidCreditReconcile
     case adjustmentCategoryMissing
+    case invalidWalletName
 
     var errorDescription: String? {
         switch self {
@@ -23,6 +24,7 @@ enum FinanceValidationError: LocalizedError {
         case .walletNotFound: return "Wallet not found."
         case .invalidCreditReconcile: return "Available credit must be between 0 and the credit limit."
         case .adjustmentCategoryMissing: return "Balance adjustment category not found — try syncing the app."
+        case .invalidWalletName: return "Wallet name cannot be empty."
         }
     }
 }

@@ -64,9 +64,9 @@ struct ReportCashFlowCard: View {
 
     private var incomeExpenseSummary: some View {
         HStack(spacing: 0) {
-            ReportAmountSummaryColumn(title: "INCOME", amount: metrics.income, color: .income)
+            ReportAmountSummaryColumn(title: "EARNED", amount: metrics.income, color: .income)
             Divider().frame(height: 32).padding(.horizontal, 16)
-            ReportAmountSummaryColumn(title: "EXPENSE", amount: metrics.expense, color: .expense)
+            ReportAmountSummaryColumn(title: "SPENT", amount: metrics.expense, color: .expense)
             Spacer()
         }
     }
