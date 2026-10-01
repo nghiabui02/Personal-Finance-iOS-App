@@ -189,7 +189,8 @@ struct RemoteRecurringTransaction: Codable, Identifiable {
     }
 
     let active: Bool
-    let bankFee: Double
+    /// NULL when the rule has no fee — the server stores `bank_fee > 0 ? fee : null`.
+    let bankFee: Double?
 
     enum CodingKeys: String, CodingKey {
         case id, note, amount, type, frequency, categories, wallets, active

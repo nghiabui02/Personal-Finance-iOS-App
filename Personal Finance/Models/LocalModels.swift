@@ -261,7 +261,7 @@ final class LocalRecurringTransaction {
         nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         updatedAt = r.updatedAt
         active = r.active
-        bankFee = r.bankFee
+        bankFee = r.bankFee ?? 0
     }
     func update(from r: RemoteRecurringTransaction) {
         walletId = r.walletId; walletName = r.wallets?.name
@@ -273,6 +273,6 @@ final class LocalRecurringTransaction {
         nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
         updatedAt = r.updatedAt
         active = r.active
-        bankFee = r.bankFee
+        bankFee = r.bankFee ?? 0
     }
 }

@@ -94,10 +94,34 @@ final class SyncManager: ObservableObject {
                 syncError = error.localizedDescription
             }
             #if DEBUG
-            print("[SyncManager] error: \(error)")
+            print("[SyncManager] error: \(Self.describe(error))")
             #endif
         }
     }
+
+    #if DEBUG
+    /// `localizedDescription` on a DecodingError says only "the data couldn't be read
+    /// because it's missing" — it drops the coding path, which is the one thing that
+    /// identifies the offending field.
+    private static func describe(_ error: Error) -> String {
+        guard let decoding = error as? DecodingError else { return "\(error)" }
+        func path(_ context: DecodingError.Context) -> String {
+            context.codingPath.map(\.stringValue).joined(separator: ".")
+        }
+        switch decoding {
+        case let .keyNotFound(key, context):
+            return "DecodingError.keyNotFound — missing key '\(key.stringValue)' at [\(path(context))]"
+        case let .valueNotFound(type, context):
+            return "DecodingError.valueNotFound — null for non-optional \(type) at [\(path(context))]"
+        case let .typeMismatch(type, context):
+            return "DecodingError.typeMismatch — expected \(type) at [\(path(context))]"
+        case let .dataCorrupted(context):
+            return "DecodingError.dataCorrupted at [\(path(context))]: \(context.debugDescription)"
+        @unknown default:
+            return "DecodingError (unknown): \(decoding)"
+        }
+    }
+    #endif
 
     // MARK: - Remote fetch
 
