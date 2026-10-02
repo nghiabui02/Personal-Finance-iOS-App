@@ -57,10 +57,6 @@ final class LocalWallet {
         default: return "Other"
         }
     }
-
-    // `balance` is available spend for every wallet type — including credit,
-    // where it represents remaining credit limit, not debt owed.
-    func hasSufficientFunds(for total: Double) -> Bool { balance >= total }
 }
 
 @Model

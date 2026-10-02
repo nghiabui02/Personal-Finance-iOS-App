@@ -7,6 +7,9 @@ final class TransferService {
     private let client = SupabaseService.shared.client
     private init() {}
 
+    /// Both wallets are locked in id order inside the database function — two
+    /// transfers running in opposite directions between the same pair would
+    /// otherwise deadlock, and the balance check could pass twice.
     func transfer(
         from fromWallet: LocalWallet,
         to toWallet: LocalWallet,
@@ -15,77 +18,26 @@ final class TransferService {
         note: String?,
         in ctx: ModelContext
     ) async throws {
-        // `.isFinite` guards NaN/infinity, which slip past a bare `> 0` comparison
-        guard amount.isFinite, amount > 0 else { throw FinanceValidationError.invalidAmount }
-        guard fromWallet.serverId != toWallet.serverId else { throw FinanceValidationError.sameWallet }
-        guard fromWallet.balance >= amount else { throw FinanceValidationError.insufficientFunds }
-
-        let userId = try await client.auth.session.user.id
-        let pairId = UUID()
-        let dateStr = LedgerDate.dayFormatter.string(from: date)
-        let noteVal: String? = (note?.isEmpty == true) ? nil : note
-
-        struct TxBody: Encodable {
-            let user_id: String
-            let wallet_id: String
-            let type: String
-            let amount: Double
-            let transaction_date: String
-            let note: String?
-            let transfer_pair_id: String
+        struct Params: Encodable {
+            let p_from_wallet_id: String
+            let p_to_wallet_id: String
+            let p_amount: Double
+            let p_date: String
+            let p_note: String?
         }
-
-        let expense: RemoteTransaction = try await client
-            .from("transactions")
-            .insert(TxBody(
-                user_id: userId.uuidString.lowercased(),
-                wallet_id: fromWallet.serverId.uuidString.lowercased(),
-                type: "expense",
-                amount: amount,
-                transaction_date: dateStr,
-                note: noteVal,
-                transfer_pair_id: pairId.uuidString.lowercased()
-            ))
-            .select("*, categories(id, name, icon, color), wallets(id, name)")
-            .single()
-            .execute()
-            .value
-
-        let income: RemoteTransaction = try await client
-            .from("transactions")
-            .insert(TxBody(
-                user_id: userId.uuidString.lowercased(),
-                wallet_id: toWallet.serverId.uuidString.lowercased(),
-                type: "income",
-                amount: amount,
-                transaction_date: dateStr,
-                note: noteVal,
-                transfer_pair_id: pairId.uuidString.lowercased()
-            ))
-            .select("*, categories(id, name, icon, color), wallets(id, name)")
-            .single()
-            .execute()
-            .value
-
-        try await applyBalanceDelta(-amount, to: fromWallet)
-        try await applyBalanceDelta(+amount, to: toWallet)
-
-        ctx.insert(LocalTransaction(from: expense))
-        ctx.insert(LocalTransaction(from: income))
-        try ctx.save()
-    }
-
-    private func applyBalanceDelta(_ delta: Double, to wallet: LocalWallet) async throws {
-        let userId = try await client.auth.session.user.id
-        struct Params: Encodable { let p_wallet_id: String, p_delta: Double, p_user_id: String }
-        let newBalance: Double? = try await client
-            .rpc("adjust_wallet_balance", params: Params(
-                p_wallet_id: wallet.serverId.uuidString.lowercased(),
-                p_delta: delta,
-                p_user_id: userId.uuidString.lowercased()
-            ))
-            .execute().value
-        guard let newBalance else { throw FinanceValidationError.walletNotFound }
-        wallet.balance = newBalance
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("transfer_funds", params: Params(
+                    p_from_wallet_id: fromWallet.serverId.uuidString,
+                    p_to_wallet_id: toWallet.serverId.uuidString,
+                    p_amount: amount,
+                    p_date: LedgerDate.string(from: date),
+                    p_note: note?.isEmpty == true ? nil : note
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
+        }
     }
 }

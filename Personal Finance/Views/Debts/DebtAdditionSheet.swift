@@ -76,14 +76,13 @@ struct DebtAdditionSheet: View {
         isSaving = true
         defer { isSaving = false }
 
-        let wallet = wallets.first { $0.serverId == selectedWalletId }
         do {
             try await DebtService.shared.addAmount(
                 to: debt,
                 amount: amount,
                 note: note.isEmpty ? nil : note,
                 date: date,
-                wallet: wallet,
+                walletId: selectedWalletId,
                 in: modelContext
             )
             dismiss()

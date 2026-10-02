@@ -28,6 +28,15 @@ enum SystemCategory {
     static let debtKeys: Set<String> = [lendOut, borrowIn, collectDebt, repayDebt]
     static let adjustmentKeys: Set<String> = [adjustUp, adjustDown]
 
+    /// How an adjustment category is presented. Both directions share a name and
+    /// look; only `type` differs. Kept here so this client creates one identical
+    /// to the web's when a user reconciles for the first time.
+    enum Adjustment {
+        static let name = "Balance Adjustment"
+        static let icon = "⚖️"
+        static let color = "#64748b"
+    }
+
     /// Classifies a transaction. Transfers are checked first: a credit card
     /// principal payment is a transfer pair *and* carries a debt-ish category,
     /// and it belongs with transfers.

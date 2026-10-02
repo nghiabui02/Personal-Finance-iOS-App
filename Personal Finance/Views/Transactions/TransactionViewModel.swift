@@ -217,11 +217,12 @@ final class TransactionViewModel: ObservableObject {
     }
 
     func deleteTx(_ tx: LocalTransaction, in ctx: ModelContext) async {
-        let wallets = (try? ctx.fetch(FetchDescriptor<LocalWallet>())) ?? []
-        let wallet  = wallets.first { $0.serverId == tx.walletId }
         do {
-            try await TransactionService.shared.delete(tx, wallet: wallet, in: ctx)
-            loadedTxs.removeAll { $0.serverId == tx.serverId }
+            try await TransactionService.shared.delete(tx, in: ctx)
+            // Dropping only the tapped row is not enough: deleting one leg of a
+            // transfer removes both, so the list is rebuilt from what survived
+            // rather than from an assumption about what went away.
+            replaceLoaded(with: loadedTxs.filter { !$0.isDeleted })
             recomputeGrouped()
             Task { await fetchPeriodTotals(in: ctx) }
         } catch { errorMsg = error.localizedDescription }
@@ -289,7 +290,7 @@ final class TransactionViewModel: ObservableObject {
         let existing = (try? ctx.fetch(FetchDescriptor<LocalTransaction>(
             predicate: #Predicate { $0.transactionDate >= start && $0.transactionDate < end }
         ))) ?? []
-        let localMap = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        let localMap = Dictionary(existing.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         for r in remotes {
             if let local = localMap[r.id] {
                 local.update(from: r)
@@ -309,8 +310,16 @@ final class TransactionViewModel: ObservableObject {
         let all = (try? ctx.fetch(
             FetchDescriptor<LocalTransaction>(sortBy: [SortDescriptor(\.transactionDate, order: .reverse)])
         )) ?? []
-        loadedTxs = all.filter { $0.transactionDate >= range.start && $0.transactionDate < range.end }
+        replaceLoaded(with: all.filter { $0.transactionDate >= range.start && $0.transactionDate < range.end })
         recomputeGrouped()
+    }
+
+    /// `loadedIds` is what stops a row being appended twice, so it has to be
+    /// rebuilt whenever the list is replaced wholesale. Leaving it stale let a
+    /// later fetch re-append rows the list already held.
+    private func replaceLoaded(with transactions: [LocalTransaction]) {
+        loadedTxs = transactions
+        loadedIds = Set(transactions.map(\.serverId))
     }
 
     private func applyPeriodTotals(_ totals: TransactionPeriodTotals) {

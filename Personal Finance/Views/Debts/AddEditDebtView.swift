@@ -129,14 +129,13 @@ struct AddEditDebtView: View {
                 )
             } else {
                 guard amount > 0 else { return }
-                let wallet = wallets.first { $0.serverId == selectedWalletId }
                 try await DebtService.shared.create(
                     type: type, personName: name,
                     personContact: personContact.isEmpty ? nil : personContact,
                     amount: amount, walletId: selectedWalletId,
                     dueDate: hasDueDate ? dueDate : nil,
                     note: note.isEmpty ? nil : note,
-                    wallet: wallet, in: modelContext
+                    in: modelContext
                 )
             }
             dismiss()

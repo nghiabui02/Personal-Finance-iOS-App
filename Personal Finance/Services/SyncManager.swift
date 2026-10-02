@@ -48,8 +48,8 @@ final class SyncManager: ObservableObject {
             async let categoriesTask: [RemoteCategory] = client.from("categories").select()
                 .or("user_id.is.null,user_id.eq.\(userId)").execute().value
             let (wallets, categories) = try await (walletsTask, categoriesTask)
-            upsertWallets(wallets, in: modelContext)
-            upsertCategories(categories, in: modelContext)
+            reconcile(LocalWallet.self, with: wallets, in: modelContext)
+            reconcile(LocalCategory.self, with: categories, in: modelContext)
 
             let txSince  = Calendar.current.date(byAdding: .month, value: -12, to: Date())!
             let budSince = Calendar.current.date(
@@ -77,9 +77,9 @@ final class SyncManager: ObservableObject {
 
             upsertTransactions(transactions, since: txSince, in: modelContext)
             upsertBudgets(budgets, since: budSince, in: modelContext)
-            upsertDebts(debts, in: modelContext)
-            upsertSavingGoals(goals, in: modelContext)
-            upsertRecurring(recurring, in: modelContext)
+            reconcile(LocalDebt.self, with: debts, in: modelContext)
+            reconcile(LocalSavingGoal.self, with: goals, in: modelContext)
+            reconcile(LocalRecurringTransaction.self, with: recurring, in: modelContext)
 
             try modelContext.save()
             lastSyncDate = Date()
@@ -154,31 +154,27 @@ final class SyncManager: ObservableObject {
 
     // MARK: - SwiftData upsert
 
-    private func upsertWallets(_ remotes: [RemoteWallet], in ctx: ModelContext) {
-        let walletIds = remotes.map { $0.id }
-        let predicate = #Predicate<LocalWallet> { wallet in
-            walletIds.contains(wallet.serverId)
-        }
-        let desc = FetchDescriptor<LocalWallet>(predicate: predicate)
-        let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
-        for r in remotes {
-            if let local = map[r.id] { local.update(from: r) }
-            else { ctx.insert(LocalWallet(from: r)) }
-        }
-    }
+    /// Makes the local copy of a fully-fetched table match the server exactly.
+    ///
+    /// The remote set is the whole table, so anything local that is not in it was
+    /// deleted elsewhere and is removed here. Tables synced by date window
+    /// (transactions, budgets) cannot use this — their remote set is a slice, and
+    /// pruning against it would delete rows outside the window.
+    private func reconcile<Model: ServerBacked>(
+        _ type: Model.Type,
+        with remotes: [Model.Remote],
+        in ctx: ModelContext
+    ) {
+        let remoteIds = Set(remotes.map(Model.remoteId))
+        let existing = (try? ctx.fetch(FetchDescriptor<Model>())) ?? []
+        let map = Dictionary(existing.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
 
-    private func upsertCategories(_ remotes: [RemoteCategory], in ctx: ModelContext) {
-        let categoryIds = remotes.map { $0.id }
-        let predicate = #Predicate<LocalCategory> { category in
-            categoryIds.contains(category.serverId)
+        for local in existing where !remoteIds.contains(local.serverId) {
+            ctx.delete(local)
         }
-        let desc = FetchDescriptor<LocalCategory>(predicate: predicate)
-        let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
-        for r in remotes {
-            if let local = map[r.id] { local.update(from: r) }
-            else { ctx.insert(LocalCategory(from: r)) }
+        for remote in remotes {
+            if let local = map[Model.remoteId(remote)] { local.update(from: remote) }
+            else { ctx.insert(Model(from: remote)) }
         }
     }
 
@@ -188,7 +184,7 @@ final class SyncManager: ObservableObject {
             predicate: #Predicate<LocalTransaction> { $0.transactionDate >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        let map = Dictionary(existing.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         for local in existing where !remoteIds.contains(local.serverId) {
             ctx.delete(local)
         }
@@ -204,7 +200,7 @@ final class SyncManager: ObservableObject {
             predicate: #Predicate<LocalBudget> { $0.month >= since }
         )
         let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
+        let map = Dictionary(existing.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         for local in existing where !remoteIds.contains(local.serverId) {
             ctx.delete(local)
         }
@@ -214,47 +210,8 @@ final class SyncManager: ObservableObject {
         }
     }
 
-    private func upsertDebts(_ remotes: [RemoteDebt], in ctx: ModelContext) {
-        let debtIds = remotes.map { $0.id }
-        let predicate = #Predicate<LocalDebt> { debt in
-            debtIds.contains(debt.serverId)
-        }
-        let desc = FetchDescriptor<LocalDebt>(predicate: predicate)
-        let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
-        for r in remotes {
-            if let local = map[r.id] { local.update(from: r) }
-            else { ctx.insert(LocalDebt(from: r)) }
-        }
-    }
 
-    private func upsertSavingGoals(_ remotes: [RemoteSavingGoal], in ctx: ModelContext) {
-        let goalIds = remotes.map { $0.id }
-        let predicate = #Predicate<LocalSavingGoal> { goal in
-            goalIds.contains(goal.serverId)
-        }
-        let desc = FetchDescriptor<LocalSavingGoal>(predicate: predicate)
-        let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
-        for r in remotes {
-            if let local = map[r.id] { local.update(from: r) }
-            else { ctx.insert(LocalSavingGoal(from: r)) }
-        }
-    }
 
-    private func upsertRecurring(_ remotes: [RemoteRecurringTransaction], in ctx: ModelContext) {
-        let recurringIds = remotes.map { $0.id }
-        let predicate = #Predicate<LocalRecurringTransaction> { rec in
-            recurringIds.contains(rec.serverId)
-        }
-        let desc = FetchDescriptor<LocalRecurringTransaction>(predicate: predicate)
-        let existing = (try? ctx.fetch(desc)) ?? []
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.serverId, $0) })
-        for r in remotes {
-            if let local = map[r.id] { local.update(from: r) }
-            else { ctx.insert(LocalRecurringTransaction(from: r)) }
-        }
-    }
 }
 
 extension Notification.Name {

@@ -235,29 +235,28 @@ struct AddEditTransactionView: View {
 
         do {
             if let tx = transaction {
-                let oldWallet = wallets.first { $0.serverId == tx.walletId }
-                let newWallet = wallets.first { $0.serverId == selectedWalletId }
+                _ = wallets.first { $0.serverId == tx.walletId }
+                _ = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.update(
                     tx, type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
                     note: note.isEmpty ? nil : note,
-                    oldWallet: oldWallet, newWallet: newWallet,
                     in: modelContext
                 )
             } else if isDebtCategory, let debt = linkedDebt {
                 try await DebtService.shared.recordPayment(
                     debt, amount: amount,
                     note: note.isEmpty ? nil : note,
-                    date: date, wallet: selectedWallet,
+                    date: date, walletId: selectedWalletId,
+                    categoryId: selectedCategoryId,
                     in: modelContext
                 )
             } else {
-                let wallet = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.create(
                     type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
                     note: note.isEmpty ? nil : note,
-                    wallet: wallet, bankFee: hasBankFee ? bankFee : 0,
+                    bankFee: hasBankFee ? bankFee : 0,
                     in: modelContext
                 )
             }

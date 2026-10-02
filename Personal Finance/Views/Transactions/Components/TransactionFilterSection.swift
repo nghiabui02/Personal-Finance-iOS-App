@@ -55,7 +55,9 @@ struct TransactionFilterSection: View {
         let isSelected = filter.categoryId == categoryId
 
         return Button {
-            filter.categoryId = categoryId
+            // Tapping the selected category clears it, falling back to "All".
+            // "All" is already nil, so tapping it is a no-op rather than a toggle.
+            filter.categoryId = isSelected ? nil : categoryId
         } label: {
             HStack(spacing: 5) {
                 if let icon, !icon.isEmpty {

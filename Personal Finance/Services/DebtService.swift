@@ -7,43 +7,47 @@ final class DebtService {
     private let client = SupabaseService.shared.client
     private init() {}
 
+    /// The debt row, its opening transaction and the wallet movement are written
+    /// together — a wallet that cannot cover the loan no longer leaves a debt
+    /// record behind with no money having moved.
     func create(
         type: String, personName: String, personContact: String?,
-        amount: Double, walletId: UUID?, dueDate: Date?, note: String?,
-        wallet: LocalWallet?, in ctx: ModelContext
+        amount: Double, walletId: UUID?, categoryId: UUID? = nil,
+        dueDate: Date?, note: String?, date: Date = Date(),
+        in ctx: ModelContext
     ) async throws {
-        let userId = try await client.auth.session.user.id
-        struct Body: Encodable {
-            let user_id: String, type: String, person_name: String
-            let person_contact: String?, amount: Double, remaining_amount: Double
-            let wallet_id: String?, due_date: String?, note: String?, status: String
+        struct Params: Encodable {
+            let p_type: String
+            let p_person_name: String
+            let p_amount: Double
+            let p_date: String
+            let p_person_contact: String?
+            let p_due_date: String?
+            let p_note: String?
+            let p_wallet_id: String?
+            let p_category_id: String?
         }
-        let remote: RemoteDebt = try await client
-            .from("debts")
-            .insert(Body(
-                user_id: userId.uuidString, type: type, person_name: personName,
-                person_contact: personContact?.isEmpty == true ? nil : personContact,
-                amount: amount, remaining_amount: amount,
-                wallet_id: walletId?.uuidString,
-                due_date: dueDate.map { LedgerDate.dayFormatter.string(from: $0) },
-                note: note?.isEmpty == true ? nil : note,
-                status: "active"
-            ))
-            .select().single().execute().value
-        ctx.insert(LocalDebt(from: remote))
-
-        if let wallet {
-            let txType = type == "lend" ? "expense" : "income"
-            try await TransactionService.shared.create(
-                type: txType, amount: amount, date: Date(),
-                walletId: walletId, categoryId: nil,
-                note: "\(type == "lend" ? "Lend to" : "Borrow from") \(personName)",
-                wallet: wallet, in: ctx
-            )
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("create_debt", params: Params(
+                    p_type: type,
+                    p_person_name: personName,
+                    p_amount: amount,
+                    p_date: LedgerDate.string(from: date),
+                    p_person_contact: personContact?.isEmpty == true ? nil : personContact,
+                    p_due_date: dueDate.map { LedgerDate.string(from: $0) },
+                    p_note: note?.isEmpty == true ? nil : note,
+                    p_wallet_id: walletId?.uuidString,
+                    p_category_id: categoryId?.uuidString
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
         }
-        try ctx.save()
     }
 
+    /// Editing a debt's details touches no money, so it stays a plain update.
     func update(
         _ debt: LocalDebt, personName: String, personContact: String?,
         dueDate: Date?, note: String?, status: String? = nil, in ctx: ModelContext
@@ -58,7 +62,7 @@ final class DebtService {
             .update(Body(
                 person_name: personName,
                 person_contact: personContact?.isEmpty == true ? nil : personContact,
-                due_date: dueDate.map { LedgerDate.dayFormatter.string(from: $0) },
+                due_date: dueDate.map { LedgerDate.string(from: $0) },
                 note: note?.isEmpty == true ? nil : note,
                 status: status ?? debt.status
             ))
@@ -79,93 +83,67 @@ final class DebtService {
         try ctx.save()
     }
 
+    /// Collecting on a loan is income; repaying what you borrowed is an expense —
+    /// the direction follows the debt, never the wallet it is settled from.
     func recordPayment(
         _ debt: LocalDebt, amount: Double, note: String?,
-        date: Date = Date(), wallet: LocalWallet?, in ctx: ModelContext
-    ) async throws {
-        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
-        guard amount <= debt.remainingAmount else { throw FinanceValidationError.exceedsRemainingDebt }
-        if debt.type == "borrow", let wallet, !wallet.hasSufficientFunds(for: amount) {
-            throw FinanceValidationError.insufficientFunds
-        }
-
-        let userId = try await client.auth.session.user.id
-        struct PayBody: Encodable {
-            let debt_id: String, amount: Double, note: String?, type: String
-            let paid_at: String
-        }
-        try await client
-            .from("debt_payments")
-            .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
-                            note: note?.isEmpty == true ? nil : note, type: "payment",
-                            paid_at: LedgerDate.dayFormatter.string(from: date)))
-            .execute()
-
-        let newRemaining = max(0, debt.remainingAmount - amount)
-        struct DebtBody: Encodable { let remaining_amount: Double, status: String }
-        let newStatus = newRemaining == 0 ? "completed" : debt.status
-        let remote: RemoteDebt = try await client
-            .from("debts")
-            .update(DebtBody(remaining_amount: newRemaining, status: newStatus))
-            .eq("id", value: debt.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .select().single().execute().value
-        debt.update(from: remote)
-
-        if let wallet {
-            let txType = debt.type == "lend" ? "income" : "expense"
-            try await TransactionService.shared.create(
-                type: txType, amount: amount, date: date,
-                walletId: wallet.serverId, categoryId: nil,
-                note: "Payment: \(debt.personName)",
-                wallet: wallet, in: ctx
-            )
-        }
-        try ctx.save()
-    }
-
-    func addAmount(
-        to debt: LocalDebt, amount: Double, note: String?,
-        date: Date = Date(), wallet: LocalWallet?,
+        date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
         in ctx: ModelContext
     ) async throws {
-        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
-        if debt.type == "lend", let wallet, !wallet.hasSufficientFunds(for: amount) {
-            throw FinanceValidationError.insufficientFunds
+        struct Params: Encodable {
+            let p_debt_id: String
+            let p_amount: Double
+            let p_date: String
+            let p_wallet_id: String?
+            let p_category_id: String?
+            let p_note: String?
         }
-
-        let userId = try await client.auth.session.user.id
-        struct PayBody: Encodable {
-            let debt_id: String, amount: Double, note: String?, type: String
-            let paid_at: String
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("record_debt_payment", params: Params(
+                    p_debt_id: debt.serverId.uuidString,
+                    p_amount: amount,
+                    p_date: LedgerDate.string(from: date),
+                    p_wallet_id: walletId?.uuidString,
+                    p_category_id: categoryId?.uuidString,
+                    p_note: note?.isEmpty == true ? nil : note
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
         }
-        try await client
-            .from("debt_payments")
-            .insert(PayBody(debt_id: debt.serverId.uuidString, amount: amount,
-                            note: note?.isEmpty == true ? nil : note, type: "addition",
-                            paid_at: LedgerDate.dayFormatter.string(from: date)))
-            .execute()
+    }
 
-        let newAmount = debt.amount + amount
-        let newRemaining = debt.remainingAmount + amount
-        struct DebtBody: Encodable { let amount: Double, remaining_amount: Double, status: String }
-        let remote: RemoteDebt = try await client
-            .from("debts")
-            .update(DebtBody(amount: newAmount, remaining_amount: newRemaining, status: "active"))
-            .eq("id", value: debt.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .select().single().execute().value
-        debt.update(from: remote)
-
-        if let wallet {
-            let txType = debt.type == "lend" ? "expense" : "income"
-            try await TransactionService.shared.create(
-                type: txType, amount: amount, date: date,
-                walletId: wallet.serverId, categoryId: nil,
-                note: "Addition: \(debt.personName)",
-                wallet: wallet, in: ctx
-            )
+    /// Lending more / borrowing more: raises both the debt's total and what is
+    /// still outstanding, and moves the wallet in the same breath.
+    func addAmount(
+        to debt: LocalDebt, amount: Double, note: String?,
+        date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
+        in ctx: ModelContext
+    ) async throws {
+        struct Params: Encodable {
+            let p_debt_id: String
+            let p_amount: Double
+            let p_date: String
+            let p_wallet_id: String?
+            let p_category_id: String?
+            let p_note: String?
         }
-        try ctx.save()
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("add_to_debt", params: Params(
+                    p_debt_id: debt.serverId.uuidString,
+                    p_amount: amount,
+                    p_date: LedgerDate.string(from: date),
+                    p_wallet_id: walletId?.uuidString,
+                    p_category_id: categoryId?.uuidString,
+                    p_note: note?.isEmpty == true ? nil : note
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
+        }
     }
 }

@@ -1,6 +1,12 @@
 import Foundation
 import SwiftData
 
+/// Every method here is one `rpc` call.
+///
+/// The database functions run as a single transaction, lock the wallets they
+/// touch, and raise on any rule they enforce — so there is no window where a row
+/// exists without its balance change, and two concurrent spends can no longer
+/// both read "enough funds" and both go through.
 @MainActor
 final class TransactionService {
     static let shared = TransactionService()
@@ -10,121 +16,84 @@ final class TransactionService {
     func create(
         type: String, amount: Double, date: Date,
         walletId: UUID?, categoryId: UUID?, note: String?,
-        wallet: LocalWallet?, bankFee: Double = 0,
+        bankFee: Double = 0,
         in ctx: ModelContext
     ) async throws {
-        // amount is the base (pre-fee) value; the stored amount includes the fee,
-        // matching web — bank_fee is kept only for display, never summed separately.
-        let total = amount + bankFee
-        if type == "expense", let wallet, !wallet.hasSufficientFunds(for: total) {
-            throw FinanceValidationError.insufficientFunds
+        struct Params: Encodable {
+            let p_type: String
+            let p_amount: Double
+            let p_transaction_date: String
+            let p_category_id: String?
+            let p_wallet_id: String?
+            let p_note: String?
+            let p_bank_fee: Double?
         }
-        let userId = try await client.auth.session.user.id
-        struct Body: Encodable {
-            let user_id: String, type: String, amount: Double
-            let transaction_date: String
-            let wallet_id: String?, category_id: String?, note: String?
-            let bank_fee: Double?
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("create_transaction", params: Params(
+                    p_type: type,
+                    p_amount: amount,
+                    p_transaction_date: LedgerDate.string(from: date),
+                    p_category_id: categoryId?.uuidString,
+                    p_wallet_id: walletId?.uuidString,
+                    p_note: note?.isEmpty == true ? nil : note,
+                    p_bank_fee: bankFee > 0 ? bankFee : nil
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
         }
-        let remote: RemoteTransaction = try await client
-            .from("transactions")
-            .insert(Body(
-                user_id: userId.uuidString, type: type, amount: total,
-                transaction_date: LedgerDate.dayFormatter.string(from: date),
-                wallet_id: walletId?.uuidString,
-                category_id: categoryId?.uuidString,
-                note: note?.isEmpty == true ? nil : note,
-                bank_fee: bankFee > 0 ? bankFee : nil
-            ))
-            .select("*, categories(id, name, icon, color), wallets(id, name)")
-            .single().execute().value
-
-        ctx.insert(LocalTransaction(from: remote))
-
-        if let wallet {
-            let delta = type == "income" ? total : -total
-            try await applyBalanceDelta(delta, to: wallet)
-        }
-        try ctx.save()
     }
 
     func update(
         _ tx: LocalTransaction,
         type: String, amount: Double, date: Date,
         walletId: UUID?, categoryId: UUID?, note: String?,
-        oldWallet: LocalWallet?, newWallet: LocalWallet?,
+        bankFee: Double = 0,
         in ctx: ModelContext
     ) async throws {
-        // Reverse old wallet effect, apply new effect
-        let oldEffect = tx.type == "income" ? tx.amount : -tx.amount
-        let newEffect = type == "income" ? amount : -amount
-
-        if let ow = oldWallet, let nw = newWallet, ow.serverId == nw.serverId {
-            let net = newEffect - oldEffect
-            if net < 0, !ow.hasSufficientFunds(for: -net) {
-                throw FinanceValidationError.insufficientFunds
-            }
-        } else if let nw = newWallet, newEffect < 0, !nw.hasSufficientFunds(for: -newEffect) {
-            throw FinanceValidationError.insufficientFunds
+        struct Params: Encodable {
+            let p_id: String
+            let p_type: String
+            let p_amount: Double
+            let p_transaction_date: String
+            let p_category_id: String?
+            let p_wallet_id: String?
+            let p_note: String?
+            let p_bank_fee: Double?
         }
-
-        let userId = try await client.auth.session.user.id
-        struct Body: Encodable {
-            let type: String, amount: Double, transaction_date: String
-            let wallet_id: String?, category_id: String?, note: String?
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("update_transaction", params: Params(
+                    p_id: tx.serverId.uuidString,
+                    p_type: type,
+                    p_amount: amount,
+                    p_transaction_date: LedgerDate.string(from: date),
+                    p_category_id: categoryId?.uuidString,
+                    p_wallet_id: walletId?.uuidString,
+                    p_note: note?.isEmpty == true ? nil : note,
+                    p_bank_fee: bankFee > 0 ? bankFee : nil
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
         }
-        let remote: RemoteTransaction = try await client
-            .from("transactions")
-            .update(Body(
-                type: type, amount: amount,
-                transaction_date: LedgerDate.dayFormatter.string(from: date),
-                wallet_id: walletId?.uuidString,
-                category_id: categoryId?.uuidString,
-                note: note?.isEmpty == true ? nil : note
-            ))
-            .eq("id", value: tx.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .select("*, categories(id, name, icon, color), wallets(id, name)")
-            .single().execute().value
-
-        if let ow = oldWallet, let nw = newWallet, ow.serverId == nw.serverId {
-            let net = newEffect - oldEffect
-            if net != 0 { try await applyBalanceDelta(net, to: ow) }
-        } else {
-            if let ow = oldWallet { try await applyBalanceDelta(-oldEffect, to: ow) }
-            if let nw = newWallet { try await applyBalanceDelta(newEffect, to: nw) }
-        }
-
-        tx.update(from: remote)
-        try ctx.save()
     }
 
-    func delete(_ tx: LocalTransaction, wallet: LocalWallet?, in ctx: ModelContext) async throws {
-        let userId = try await client.auth.session.user.id
-        try await client.from("transactions").delete()
-            .eq("id", value: tx.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-
-        if let wallet {
-            let reverse = tx.type == "income" ? -tx.amount : tx.amount
-            try await applyBalanceDelta(reverse, to: wallet)
+    /// Deleting one leg of a transfer removes both legs and restores both wallets —
+    /// the server decides what that means, so a transfer can no longer be left
+    /// half-deleted with the other wallet permanently wrong.
+    func delete(_ tx: LocalTransaction, in ctx: ModelContext) async throws {
+        struct Params: Encodable { let p_id: String }
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("delete_transaction", params: Params(p_id: tx.serverId.uuidString))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
         }
-        ctx.delete(tx)
-        try ctx.save()
-    }
-
-    private func applyBalanceDelta(_ delta: Double, to wallet: LocalWallet) async throws {
-        let userId = try await client.auth.session.user.id
-        struct Params: Encodable { let p_wallet_id: String, p_delta: Double, p_user_id: String }
-        let newBalance: Double? = try await client
-            .rpc("adjust_wallet_balance", params: Params(
-                p_wallet_id: wallet.serverId.uuidString.lowercased(),
-                p_delta: delta,
-                p_user_id: userId.uuidString.lowercased()
-            ))
-            .execute().value
-        guard let newBalance else { throw FinanceValidationError.walletNotFound }
-        wallet.balance = newBalance
     }
 }

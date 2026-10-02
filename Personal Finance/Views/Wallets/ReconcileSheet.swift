@@ -4,7 +4,6 @@ import SwiftData
 struct ReconcileSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Query private var categories: [LocalCategory]
 
     let wallet: LocalWallet
 
@@ -75,7 +74,7 @@ struct ReconcileSheet: View {
         do {
             try await WalletService.shared.reconcile(
                 wallet, actualBalance: actualBalance,
-                note: note, categories: categories,
+                note: note,
                 in: modelContext
             )
             dismiss()

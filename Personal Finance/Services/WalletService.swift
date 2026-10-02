@@ -69,76 +69,106 @@ final class WalletService {
         try ctx.save()
     }
 
+    /// Moving a leftover balance to the default wallet and removing the wallet
+    /// happen together. Past transactions keep their history — the foreign key
+    /// clears `wallet_id` rather than deleting them.
     func delete(_ wallet: LocalWallet, in ctx: ModelContext) async throws {
-        let userId = try await client.auth.session.user.id
-        if wallet.type != "credit", wallet.balance > 0 {
-            let wallets = (try? ctx.fetch(FetchDescriptor<LocalWallet>())) ?? []
-            guard let destination = wallets.first(where: {
-                $0.serverId != wallet.serverId && $0.isDefault
-            }) else {
-                throw FinanceValidationError.missingDefaultWallet
-            }
-            try await TransferService.shared.transfer(
-                from: wallet,
-                to: destination,
-                amount: wallet.balance,
-                date: Date(),
-                note: "Balance moved before deleting \(wallet.name)",
-                in: ctx
-            )
+        struct Params: Encodable {
+            let p_wallet_id: String
+            let p_date: String
         }
-        try await client.from("wallets").delete()
-            .eq("id", value: wallet.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-        ctx.delete(wallet)
-        try ctx.save()
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("delete_wallet", params: Params(
+                    p_wallet_id: wallet.serverId.uuidString,
+                    p_date: LedgerDate.string(from: Date())
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
+        }
     }
 
-    // Reconciles the wallet's tracked balance against a real-world value (e.g. bank app).
-    // Records the gap as an "adjust_up"/"adjust_down" transaction and moves the wallet
-    // balance through TransactionService's own RPC path — never a direct UPDATE, so it
-    // stays race-free with concurrent writes.
+    /// Records the gap between the tracked balance and a real-world one.
+    ///
+    /// Which direction the gap runs is only knowable once the wallet row is
+    /// locked, so both candidate categories are passed down and the database
+    /// picks — guessing here and sending one would be wrong whenever another
+    /// write lands in between.
     func reconcile(
         _ wallet: LocalWallet, actualBalance: Double, note: String?,
-        date: Date = Date(), categories: [LocalCategory], in ctx: ModelContext
+        date: Date = Date(), in ctx: ModelContext
     ) async throws {
-        if wallet.type == "credit" {
-            guard actualBalance >= 0, actualBalance <= (wallet.creditLimit ?? 0) else {
-                throw FinanceValidationError.invalidCreditReconcile
-            }
-        } else {
-            guard actualBalance >= 0 else { throw FinanceValidationError.invalidAmount }
-        }
-
-        let delta = actualBalance - wallet.balance
-        guard delta != 0 else { return }
-
-        let key = delta > 0 ? SystemCategory.adjustUp : SystemCategory.adjustDown
-        guard let category = categories.first(where: { $0.systemKey == key }) else {
-            throw FinanceValidationError.adjustmentCategoryMissing
-        }
-
-        try await TransactionService.shared.create(
-            type: delta > 0 ? "income" : "expense", amount: abs(delta), date: date,
-            walletId: wallet.serverId, categoryId: category.serverId,
-            note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note,
-            wallet: wallet, in: ctx
+        // Created on demand: an account that has never reconciled has neither
+        // category yet, and the first attempt would otherwise fail.
+        let up = try await CategoryService.shared.ensureSystemCategory(
+            SystemCategory.adjustUp, type: "income",
+            name: SystemCategory.Adjustment.name,
+            icon: SystemCategory.Adjustment.icon,
+            color: SystemCategory.Adjustment.color,
+            in: ctx
         )
+        let down = try await CategoryService.shared.ensureSystemCategory(
+            SystemCategory.adjustDown, type: "expense",
+            name: SystemCategory.Adjustment.name,
+            icon: SystemCategory.Adjustment.icon,
+            color: SystemCategory.Adjustment.color,
+            in: ctx
+        )
+
+        struct Params: Encodable {
+            let p_wallet_id: String
+            let p_actual_balance: Double
+            let p_date: String
+            let p_category_up: String?
+            let p_category_down: String?
+            let p_note: String?
+        }
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("reconcile_wallet", params: Params(
+                    p_wallet_id: wallet.serverId.uuidString,
+                    p_actual_balance: actualBalance,
+                    p_date: LedgerDate.string(from: date),
+                    p_category_up: up.serverId.uuidString,
+                    p_category_down: down.serverId.uuidString,
+                    p_note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
+        }
     }
 
+    /// Paying a card raises its available credit and lowers the source wallet,
+    /// written as a transfer pair.
     func payCredit(
         _ creditWallet: LocalWallet, from sourceWallet: LocalWallet,
         amount: Double, date: Date, note: String?,
         in ctx: ModelContext
     ) async throws {
-        guard amount > 0 else { throw FinanceValidationError.invalidAmount }
-        guard amount <= creditWallet.amountOwed else { throw FinanceValidationError.exceedsCreditDebt }
-        guard sourceWallet.balance >= amount else { throw FinanceValidationError.insufficientFunds }
-
-        try await TransferService.shared.transfer(
-            from: sourceWallet, to: creditWallet,
-            amount: amount, date: date, note: note, in: ctx
-        )
+        struct Params: Encodable {
+            let p_card_wallet_id: String
+            let p_from_wallet_id: String
+            let p_amount: Double
+            let p_date: String
+            let p_note: String?
+        }
+        do {
+            let result: RPC.Envelope = try await client
+                .rpc("pay_credit_card", params: Params(
+                    p_card_wallet_id: creditWallet.serverId.uuidString,
+                    p_from_wallet_id: sourceWallet.serverId.uuidString,
+                    p_amount: amount,
+                    p_date: LedgerDate.string(from: date),
+                    p_note: note?.isEmpty == true ? nil : note
+                ))
+                .execute().value
+            try RPCResultApplier.apply(result, in: ctx)
+        } catch {
+            throw error.asDisplayableError()
+        }
     }
 }
