@@ -155,10 +155,14 @@ struct TransactionsView: View {
                 }
                 loadSelectedPeriodIfNeeded(period: filter.period, date: selectedDate)
             }
-            .sheet(isPresented: $showAdd) {
+            // The list is driven by the view model's own array rather than a @Query,
+            // so a sheet writing to the store does not reach it on its own.
+            .sheet(isPresented: $showAdd, onDismiss: reloadAfterEdit) {
                 AddEditTransactionView(transaction: nil, defaultDate: selectedDate)
             }
-            .sheet(item: $editing) { tx in AddEditTransactionView(transaction: tx) }
+            .sheet(item: $editing, onDismiss: reloadAfterEdit) { tx in
+                AddEditTransactionView(transaction: tx)
+            }
             .deleteConfirmation(
                 item: $pendingDeletion,
                 isPresented: $showDeleteConfirmation,
@@ -169,6 +173,11 @@ struct TransactionsView: View {
             }
             .errorAlert($vm.errorMsg)
         }
+    }
+
+    private func reloadAfterEdit() {
+        vm.resetAndLoad(in: modelContext)
+        loadSelectedPeriodIfNeeded(period: filter.period, date: selectedDate)
     }
 
     private func loadSelectedPeriodIfNeeded(period: TransactionPeriodFilter, date: Date?) {

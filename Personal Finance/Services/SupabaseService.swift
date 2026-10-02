@@ -29,11 +29,33 @@ struct BusinessRuleError: LocalizedError {
 }
 
 extension Error {
-    /// Converts a database rule violation into a displayable error, leaving every
-    /// other failure untouched.
+    /// Turns a failure into something worth showing.
+    ///
+    /// Two cases get rewritten: a rule the database enforced, which already reads
+    /// as a sentence, and losing the connection — every write goes to the server,
+    /// so "offline" is the useful explanation rather than the URLError text.
     func asDisplayableError() -> Error {
-        guard let postgrest = self as? PostgrestError, postgrest.code == "P0001" else { return self }
-        return BusinessRuleError(message: postgrest.message)
+        if let postgrest = self as? PostgrestError, postgrest.code == "P0001" {
+            return BusinessRuleError(message: postgrest.message)
+        }
+        if isOfflineError {
+            return BusinessRuleError(
+                message: "No internet connection. This app needs to be online to record changes."
+            )
+        }
+        return self
+    }
+
+    private var isOfflineError: Bool {
+        guard let urlError = self as? URLError else { return false }
+        switch urlError.code {
+        case .notConnectedToInternet, .networkConnectionLost,
+             .cannotFindHost, .cannotConnectToHost, .timedOut,
+             .dataNotAllowed, .internationalRoamingOff:
+            return true
+        default:
+            return false
+        }
     }
 }
 

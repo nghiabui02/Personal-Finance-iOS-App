@@ -4,8 +4,29 @@ import SwiftData
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var tabRouter = AppTabRouter()
+    @StateObject private var sync = SyncManager.shared
 
     var body: some View {
+        tabs
+            .safeAreaInset(edge: .top) { offlineBanner }
+            .animation(.easeInOut(duration: 0.2), value: sync.isOnline)
+    }
+
+    /// Recording anything needs the server, so the whole app is read-only while
+    /// offline. Saying so up front beats letting each save fail on its own.
+    @ViewBuilder
+    private var offlineBanner: some View {
+        if !sync.isOnline {
+            Label("Offline — showing saved data. You can't record changes.", systemImage: "wifi.slash")
+                .font(.caption)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.expense)
+        }
+    }
+
+    private var tabs: some View {
         TabView(selection: $tabRouter.selectedTab) {
             DashboardView()
                 .tabItem { Label("Overview", systemImage: "chart.pie.fill") }
