@@ -17,7 +17,7 @@ enum BudgetSuggestionCalculator {
         categories: [LocalCategory],
         existingBudgetCategoryIds: Set<UUID>,
         targetMonth: Date,
-        calendar: Calendar = .current,
+        calendar: Calendar = LedgerDate.calendar,
         limit: Int = 5
     ) -> [BudgetSuggestion] {
         guard

@@ -8,8 +8,8 @@ struct DashboardMetrics {
     var outstandingLent: Double = 0
     var outstandingBorrowed: Double = 0
     var recentTransactions: [LocalTransaction] = []
-    var spendingByCategoryId: [UUID: Double] = [:]
     var spendingItems: [CategorySpending] = []
+    var budgetUsage: [UUID: BudgetUsage] = [:]
     var currentBudgets: [LocalBudget] = []
     var alerts: [DashboardAlert] = []
     var spendingPaceDeltaPct: Double? = nil
@@ -20,45 +20,48 @@ struct DashboardMetrics {
 enum DashboardMetricsCalculator {
     static func calculate(
         transactions: [LocalTransaction],
+        categories: [LocalCategory],
         wallets: [LocalWallet],
         budgets: [LocalBudget],
         debts: [LocalDebt],
         selectedMonth: Date,
         currency: String,
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) -> DashboardMetrics {
+        let operating = transactions.operatingOnly(using: categories)
         let transactionData = calculateTransactions(
-            transactions,
+            operating,
             selectedMonth: selectedMonth,
             calendar: calendar
         )
         let currentBudgets = budgets.filter {
-            calendar.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
+            $0.active && calendar.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
         }
-        let debtTotals = calculateDebtTotals(debts)
-        let cash = wallets.filter { $0.type != "credit" }.reduce(0) { $0 + $1.balance }
-        let creditDebt = wallets.filter { $0.type == "credit" }.reduce(0) { $0 + $1.amountOwed }
+        let netWorth = NetWorth.calculate(wallets: wallets, debts: debts)
+        let budgetUsage = BudgetUsageCalculator.calculate(budgets: budgets, operatingTransactions: operating)
 
         return DashboardMetrics(
             income: transactionData.income,
             expense: transactionData.expense,
-            netWorth: cash + debtTotals.lent - creditDebt - debtTotals.borrowed,
-            cash: cash,
-            outstandingLent: debtTotals.lent,
-            outstandingBorrowed: debtTotals.borrowed,
-            recentTransactions: transactionData.recent,
-            spendingByCategoryId: transactionData.spendingByCategoryId,
+            netWorth: netWorth.total,
+            cash: netWorth.cash,
+            outstandingLent: netWorth.lent,
+            outstandingBorrowed: netWorth.borrowed,
+            recentTransactions: Array(transactions.lazy.filter {
+                calendar.isDate($0.transactionDate, equalTo: selectedMonth, toGranularity: .month)
+            }.prefix(6)),
             spendingItems: makeSpendingItems(from: transactionData.categoryTotals),
+            budgetUsage: budgetUsage,
             currentBudgets: currentBudgets,
             alerts: makeAlerts(
                 budgets: currentBudgets,
-                spending: transactionData.spendingByCategoryId,
+                usage: budgetUsage,
                 debts: debts,
                 currency: currency,
                 calendar: calendar
             ),
             spendingPaceDeltaPct: calculateSpendingPace(
-                transactions: transactions,
+                transactions: operating,
                 selectedMonth: selectedMonth,
                 actualExpense: transactionData.expense
             )
@@ -122,14 +125,10 @@ enum DashboardMetricsCalculator {
     ) -> (
         income: Double,
         expense: Double,
-        recent: [LocalTransaction],
-        spendingByCategoryId: [UUID: Double],
         categoryTotals: [String: CategoryTotal]
     ) {
         var income = 0.0
         var expense = 0.0
-        var recent: [LocalTransaction] = []
-        var spending: [UUID: Double] = [:]
         var categories: [String: CategoryTotal] = [:]
 
         for transaction in transactions {
@@ -139,31 +138,20 @@ enum DashboardMetricsCalculator {
                 toGranularity: .month
             ) else { continue }
 
-            if !transaction.isTransfer {
-                if transaction.type == "income" {
-                    income += transaction.amount
-                } else {
-                    expense += transaction.amount
-                    accumulateExpense(
-                        transaction,
-                        categoryTotals: &categories,
-                        spendingByCategoryId: &spending
-                    )
-                }
-            }
-
-            if recent.count < 6 {
-                recent.append(transaction)
+            if transaction.type == "income" {
+                income += transaction.amount
+            } else {
+                expense += transaction.amount
+                accumulateExpense(transaction, categoryTotals: &categories)
             }
         }
 
-        return (income, expense, recent, spending, categories)
+        return (income, expense, categories)
     }
 
     private static func accumulateExpense(
         _ transaction: LocalTransaction,
-        categoryTotals: inout [String: CategoryTotal],
-        spendingByCategoryId: inout [UUID: Double]
+        categoryTotals: inout [String: CategoryTotal]
     ) {
         let key = transaction.categoryId?.uuidString
             ?? transaction.categoryName
@@ -175,9 +163,6 @@ enum DashboardMetricsCalculator {
             color: existing?.color ?? transaction.categoryColor,
             total: (existing?.total ?? 0) + transaction.amount
         )
-        if let categoryId = transaction.categoryId {
-            spendingByCategoryId[categoryId, default: 0] += transaction.amount
-        }
     }
 
     private static func makeSpendingItems(
@@ -199,25 +184,16 @@ enum DashboardMetricsCalculator {
         }
     }
 
-    private static func calculateDebtTotals(
-        _ debts: [LocalDebt]
-    ) -> (lent: Double, borrowed: Double) {
-        let active = debts.filter { $0.status != "completed" }
-        let lent = active.filter { $0.type == "lend" }.reduce(0) { $0 + $1.remainingAmount }
-        let borrowed = active.filter { $0.type == "borrow" }.reduce(0) { $0 + $1.remainingAmount }
-        return (lent, borrowed)
-    }
-
     private static func makeAlerts(
         budgets: [LocalBudget],
-        spending: [UUID: Double],
+        usage: [UUID: BudgetUsage],
         debts: [LocalDebt],
         currency: String,
         calendar: Calendar
     ) -> [DashboardAlert] {
         var alerts = makeBudgetAlerts(
             budgets: budgets,
-            spending: spending,
+            usage: usage,
             currency: currency
         )
         alerts.append(contentsOf: makeDebtAlerts(
@@ -230,17 +206,19 @@ enum DashboardMetricsCalculator {
 
     private static func makeBudgetAlerts(
         budgets: [LocalBudget],
-        spending: [UUID: Double],
+        usage: [UUID: BudgetUsage],
         currency: String
     ) -> [DashboardAlert] {
         budgets.compactMap { budget in
-            let spent = budget.categoryId.map { spending[$0, default: 0] } ?? 0
-            guard budget.amount > 0, spent >= budget.amount * 0.8 else { return nil }
-            let exceeded = spent > budget.amount
+            guard let budgetUsage = usage[budget.serverId] else { return nil }
+            let spent = budgetUsage.spent
+            let limit = budgetUsage.effectiveAmount
+            let exceeded = spent > limit
+            guard exceeded || (limit > 0 && spent / limit >= 0.8) else { return nil }
             return DashboardAlert(
                 id: "budget-\(budget.serverId)",
                 title: exceeded ? "Budget exceeded" : "Budget almost used",
-                message: "\(budget.categoryName): \(spent.formatted(currency: currency)) of \(budget.amount.formatted(currency: currency))",
+                message: "\(budget.categoryName): \(spent.formatted(currency: currency)) of \(limit.formatted(currency: currency))",
                 symbol: exceeded ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill",
                 color: exceeded ? .red : .orange,
                 priority: exceeded ? 0 : 2

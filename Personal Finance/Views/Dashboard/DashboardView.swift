@@ -3,7 +3,6 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var sync = SyncManager.shared
     @EnvironmentObject private var tabRouter: AppTabRouter
 
@@ -14,10 +13,7 @@ struct DashboardView: View {
     @Query private var debts: [LocalDebt]
     @Query private var categories: [LocalCategory]
 
-    @State private var selectedMonth = Calendar.current.date(
-        from: Calendar.current.dateComponents([.year, .month], from: Date())
-    )!
-    @State private var metrics = DashboardMetrics()
+    @State private var selectedMonth = TransactionDateRange.monthStart(for: Date())
     @State private var quickAction: DashboardQuickAction?
 
     private let currency = "VND"
@@ -44,16 +40,6 @@ struct DashboardView: View {
             .appScreenHeader("Overview")
             .sheet(item: $quickAction, content: quickActionSheet)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
-            .onAppear(perform: handleAppear)
-            .onChange(of: transactions) { _, _ in recompute() }
-            .onChange(of: wallets) { _, _ in recompute() }
-            .onChange(of: budgets) { _, _ in recompute() }
-            .onChange(of: debts) { _, _ in recompute() }
-            .onChange(of: categories) { _, _ in recompute() }
-            .onChange(of: selectedMonth) { _, _ in recompute() }
-            .onChange(of: scenePhase) { oldPhase, newPhase in
-                handleScenePhaseChange(oldPhase, newPhase)
-            }
     }
 
     @ViewBuilder
@@ -68,10 +54,10 @@ struct DashboardView: View {
         }
     }
 
-    private func recompute() {
-        let realTx = transactions.operatingOnly(using: categories)
-        metrics = DashboardMetricsCalculator.calculate(
-            transactions: realTx,
+    private var metrics: DashboardMetrics {
+        DashboardMetricsCalculator.calculate(
+            transactions: transactions,
+            categories: categories,
             wallets: wallets,
             budgets: budgets,
             debts: debts,
@@ -79,28 +65,6 @@ struct DashboardView: View {
             currency: currency
         )
     }
-
-    private func handleAppear() {
-        recompute()
-        syncData()
-    }
-
-    private func handleScenePhaseChange(
-        _ oldPhase: ScenePhase,
-        _ newPhase: ScenePhase
-    ) {
-        if newPhase == .active {
-            syncData()
-        }
-    }
-
-    private func syncData() {
-        Task { @MainActor in
-            await sync.syncAll(modelContext: modelContext)
-        }
-    }
-
-
 }
 
 private enum DashboardQuickAction: String, Identifiable {

@@ -17,6 +17,10 @@ struct ReportNetWorthCard: View {
             if !history.isEmpty {
                 Divider()
                 netWorthChart
+            } else {
+                Text("No net worth snapshots available")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(16)
@@ -86,7 +90,14 @@ struct ReportNetWorthCard: View {
                         y: .value("Value", point.value / 1_000_000)
                     )
                     .foregroundStyle(Color.blue)
-                    .interpolationMethod(.catmullRom)
+
+
+                    PointMark(
+                        x: .value("Date", point.date),
+                        y: .value("Value", point.value / 1_000_000)
+                    )
+                    .foregroundStyle(Color.blue)
+                    .symbolSize(14)
 
                     AreaMark(
                         x: .value("Date", point.date),
@@ -99,7 +110,7 @@ struct ReportNetWorthCard: View {
                             startPoint: .top, endPoint: .bottom
                         )
                     )
-                    .interpolationMethod(.catmullRom)
+
                 }
 
                 if let sel = selectedPoint {
@@ -112,7 +123,7 @@ struct ReportNetWorthCard: View {
                 AxisMarks(values: .automatic(desiredCount: 5)) { value in
                     if let date = value.as(Date.self) {
                         AxisValueLabel {
-                            Text(date, format: .dateTime.day().month())
+                            Text(date, format: LedgerDate.format(.dateTime.day().month()))
                                 .font(.caption2)
                         }
                     }

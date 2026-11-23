@@ -117,7 +117,7 @@ struct DashboardContentView: View {
     private var budgetSection: some View {
         BudgetProgressView(
             budgets: metrics.currentBudgets,
-            spendingByCategoryId: metrics.spendingByCategoryId,
+            usage: metrics.budgetUsage,
             currency: currency
         )
         .padding(.horizontal)

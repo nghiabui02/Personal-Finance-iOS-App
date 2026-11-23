@@ -8,22 +8,31 @@ struct BudgetsView: View {
     @Query private var allCategories: [LocalCategory]
     @StateObject private var sync = SyncManager.shared
 
-    @State private var selectedMonth: Date = Calendar.current.date(
-        from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+    @State private var selectedMonth = TransactionDateRange.monthStart(for: Date())
     @State private var showAdd = false
     @State private var editing: LocalBudget?
     @State private var pendingDeletion: LocalBudget?
     @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
-    // Cached — recomputed once via onChange, not every render
-    @State private var cachedBudgets: [LocalBudget] = []
-    @State private var cachedInactiveBudgets: [LocalBudget] = []
-    @State private var cachedSpent: [UUID: Double] = [:]
-    @State private var cachedEffective: [UUID: Double] = [:]
-    @State private var suggestions: [BudgetSuggestion] = []
+    private var monthBudgets: [LocalBudget] {
+        allBudgets.filter { LedgerDate.calendar.isDate($0.month, equalTo: selectedMonth, toGranularity: .month) }
+    }
+
+    private var suggestions: [BudgetSuggestion] {
+        BudgetSuggestionCalculator.calculate(
+            transactions: allTx, categories: allCategories,
+            existingBudgetCategoryIds: Set(monthBudgets.compactMap(\.categoryId)),
+            targetMonth: selectedMonth
+        )
+    }
 
     var body: some View {
+        let activeBudgets = monthBudgets.filter(\.active)
+        let inactiveBudgets = monthBudgets.filter { !$0.active }
+        let usage = BudgetUsageCalculator.calculate(
+            budgets: allBudgets, operatingTransactions: allTx.operatingOnly(using: allCategories)
+        )
         VStack(spacing: 0) {
             MonthSelectorView(selectedMonth: $selectedMonth)
                 .padding(.horizontal)
@@ -33,14 +42,14 @@ struct BudgetsView: View {
 
             List {
                 suggestionsSection
-                activeSection
-                inactiveSection
+                activeSection(activeBudgets, usage: usage)
+                inactiveSection(inactiveBudgets, usage: usage)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.insetGrouped)
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .overlay {
-                if cachedBudgets.isEmpty && cachedInactiveBudgets.isEmpty {
+                if monthBudgets.isEmpty {
                     ContentUnavailableView(
                         "No Budgets",
                         systemImage: "chart.bar",
@@ -57,11 +66,6 @@ struct BudgetsView: View {
                 Button { showAdd = true } label: { Image(systemName: "plus") }
             }
         }
-        .onAppear { recompute() }
-        .onChange(of: allBudgets)    { _, _ in recompute() }
-        .onChange(of: allTx)         { _, _ in recompute() }
-        .onChange(of: allCategories) { _, _ in recompute() }
-        .onChange(of: selectedMonth) { _, _ in recompute() }
         .sheet(isPresented: $showAdd) {
             AddEditBudgetView(budget: nil, defaultMonth: selectedMonth)
         }
@@ -97,12 +101,12 @@ struct BudgetsView: View {
     }
 
     @ViewBuilder
-    private var activeSection: some View {
-        if !cachedBudgets.isEmpty {
+    private func activeSection(_ budgets: [LocalBudget], usage: [UUID: BudgetUsage]) -> some View {
+        if !budgets.isEmpty {
             Section("Active") {
-                ForEach(cachedBudgets, id: \.serverId) { budget in
-                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
-                    let effective = cachedEffective[budget.serverId] ?? budget.amount
+                ForEach(budgets, id: \.serverId) { budget in
+                    let spent = usage[budget.serverId]?.spent ?? 0
+                    let effective = usage[budget.serverId]?.effectiveAmount ?? budget.amount
                     BudgetRow(budget: budget, spent: spent, effectiveAmount: effective)
                         .onTapGesture { editing = budget }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -126,11 +130,11 @@ struct BudgetsView: View {
     }
 
     @ViewBuilder
-    private var inactiveSection: some View {
-        if !cachedInactiveBudgets.isEmpty {
+    private func inactiveSection(_ budgets: [LocalBudget], usage: [UUID: BudgetUsage]) -> some View {
+        if !budgets.isEmpty {
             Section("Inactive") {
-                ForEach(cachedInactiveBudgets, id: \.serverId) { budget in
-                    let spent = cachedSpent[budget.categoryId ?? UUID()] ?? 0
+                ForEach(budgets, id: \.serverId) { budget in
+                    let spent = usage[budget.serverId]?.spent ?? 0
                     BudgetRow(budget: budget, spent: spent, effectiveAmount: budget.amount)
                         .foregroundStyle(.secondary)
                         .onTapGesture { editing = budget }
@@ -154,99 +158,23 @@ struct BudgetsView: View {
         }
     }
 
-    // Single pass: filter budgets + compute spent + rollover effective amounts
-    private func recompute() {
-        let cal = Calendar.current
-        let monthBudgets = allBudgets.filter {
-            cal.isDate($0.month, equalTo: selectedMonth, toGranularity: .month)
-        }
-        cachedBudgets = monthBudgets.filter { $0.active }
-        cachedInactiveBudgets = monthBudgets.filter { !$0.active }
-
-        // Build spent map: (categoryId, monthStart) → total.
-        // Loan principal and adjustments never count against a budget.
-        let operatingTx = allTx.operatingOnly(using: allCategories)
-        var spentMap: [UUID: [Date: Double]] = [:]
-        for tx in operatingTx where tx.type == "expense" {
-            guard let catId = tx.categoryId else { continue }
-            let key = cal.date(from: cal.dateComponents([.year, .month], from: tx.transactionDate)) ?? tx.transactionDate
-            spentMap[catId, default: [:]][key, default: 0] += tx.amount
-        }
-
-        // Spent for selected month (quick lookup for display)
-        var spent: [UUID: Double] = [:]
-        let selectedKey = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
-        for (catId, monthMap) in spentMap {
-            if let s = monthMap[selectedKey] { spent[catId] = s }
-        }
-        cachedSpent = spent
-
-        // Rollover effective amounts for active budgets
-        var effective: [UUID: Double] = [:]
-        for budget in cachedBudgets {
-            effective[budget.serverId] = computeEffective(budget, spentMap: spentMap, cal: cal)
-        }
-        cachedEffective = effective
-
-        let existingCategoryIds = Set(monthBudgets.compactMap(\.categoryId))
-        suggestions = BudgetSuggestionCalculator.calculate(
-            transactions: allTx,
-            categories: allCategories,
-            existingBudgetCategoryIds: existingCategoryIds,
-            targetMonth: selectedMonth,
-            calendar: cal
-        )
-    }
-
     private func addSuggestion(_ suggestion: BudgetSuggestion) async {
         do {
             try await BudgetService.shared.create(
                 categoryId: suggestion.categoryId, amount: suggestion.amount,
                 month: selectedMonth, in: modelContext
             )
-        } catch { errorMsg = error.localizedDescription }
-    }
-
-    // Walk backwards through rollover chain, compute effective amount for this month.
-    // effectiveAmount(M) = amount(M) + (rollover(M) ? leftover(M-1) : 0)
-    // leftover(M) = effectiveAmount(M) - spent(M); chain breaks on gap/inactive/rollover=false
-    private func computeEffective(_ budget: LocalBudget, spentMap: [UUID: [Date: Double]], cal: Calendar) -> Double {
-        guard budget.rollover, let catId = budget.categoryId else { return budget.amount }
-
-        // Collect chain: walk backwards until gap/inactive/rollover=false (max 12 months)
-        var chain: [LocalBudget] = []
-        var checkMonth = cal.date(byAdding: .month, value: -1, to: budget.month) ?? budget.month
-        for _ in 0..<12 {
-            guard let prev = allBudgets.first(where: {
-                $0.categoryId == catId &&
-                cal.isDate($0.month, equalTo: checkMonth, toGranularity: .month) &&
-                $0.active && $0.rollover
-            }) else { break }
-            chain.insert(prev, at: 0)
-            checkMonth = cal.date(byAdding: .month, value: -1, to: checkMonth) ?? checkMonth
-        }
-        chain.append(budget)
-
-        // Compute forward through chain; carry leftover (positive or negative)
-        var carry: Double = 0
-        for (i, b) in chain.enumerated() {
-            let key = cal.date(from: cal.dateComponents([.year, .month], from: b.month)) ?? b.month
-            let s = spentMap[catId]?[key] ?? 0
-            let eff = b.amount + carry
-            if i < chain.count - 1 { carry = eff - s }
-            else { return eff }
-        }
-        return budget.amount
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 
     private func delete(_ budget: LocalBudget) async {
         do { try await BudgetService.shared.delete(budget, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 
     private func toggleActive(_ budget: LocalBudget, active: Bool) async {
         do { try await BudgetService.shared.toggleActive(budget, active: active, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }
 

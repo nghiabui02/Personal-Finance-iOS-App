@@ -17,7 +17,7 @@ struct ReportPeriodContext {
     init(
         period: ReportPeriod,
         referenceDate: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) {
         self.period = period
         self.referenceDate = referenceDate
@@ -73,9 +73,10 @@ struct ReportPeriodContext {
         switch period {
         case .week:
             let range = range
-            return "\(range.start.formatted(.dateTime.month(.abbreviated).day())) – \(range.end.formatted(.dateTime.month(.abbreviated).day())), \(calendar.component(.year, from: range.end))"
+            let style = LedgerDate.format(.dateTime.month(.abbreviated).day())
+            return "\(range.start.formatted(style)) – \(range.end.formatted(style)), \(calendar.component(.year, from: range.end))"
         case .month:
-            return referenceDate.formatted(.dateTime.month(.wide).year())
+            return referenceDate.formatted(LedgerDate.format(.dateTime.month(.wide).year()))
         case .quarter:
             let quarter = (calendar.component(.month, from: range.start) - 1) / 3 + 1
             return "Q\(quarter) \(calendar.component(.year, from: referenceDate))"
@@ -88,7 +89,7 @@ struct ReportPeriodContext {
         let now = Date()
         switch period {
         case .week:
-            return calendar.isDate(referenceDate, equalTo: now, toGranularity: .weekOfYear)
+            return now >= range.start && calendar.date(byAdding: .day, value: 1, to: range.end).map { now < $0 } == true
         case .month:
             return calendar.isDate(referenceDate, equalTo: now, toGranularity: .month)
         case .quarter:

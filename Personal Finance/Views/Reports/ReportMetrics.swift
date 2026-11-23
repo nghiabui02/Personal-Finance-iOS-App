@@ -18,6 +18,8 @@ struct ReportMetrics {
     var chartData: [ReportChartBar] = []
     var spendingBreakdown: [ReportCategoryBreakdown] = []
     var netWorthHistory: [NetWorthPoint] = []
+    var monthlyBudgets: [LocalBudget] = []
+    var budgetUsage: [UUID: BudgetUsage] = [:]
     var debtFlow = DebtAdjustmentFlow()
 
     var net: Double { income - expense }
@@ -68,12 +70,16 @@ enum ReportMetricsCalculator {
         categories: [LocalCategory],
         wallets: [LocalWallet],
         debts: [LocalDebt],
+        budgets: [LocalBudget],
+        snapshots: [RemoteNetWorthSnapshot],
         context: ReportPeriodContext
     ) -> ReportMetrics {
         let operating = transactions.operatingOnly(using: categories)
         let txMetrics = calculateTransactionMetrics(transactions: operating, context: context)
-        let nw = calculateNetWorthComponents(wallets: wallets, debts: debts)
-        let history = computeNetWorthHistory(transactions: operating, currentNW: nw.total)
+        let nw = NetWorth.calculate(wallets: wallets, debts: debts)
+        let monthlyBudgets = context.period == .month ? budgets.filter {
+            $0.active && context.calendar.isDate($0.month, equalTo: context.referenceDate, toGranularity: .month)
+        } : []
         let debtFlow = calculateDebtAdjustmentFlow(
             transactions: transactions, categories: categories, context: context
         )
@@ -88,7 +94,11 @@ enum ReportMetricsCalculator {
             borrowed: nw.borrowed,
             chartData: makeChartBars(buckets: txMetrics.buckets, context: context),
             spendingBreakdown: makeSpendingBreakdown(categoryTotals: txMetrics.categoryTotals),
-            netWorthHistory: history,
+            netWorthHistory: historyPoints(from: snapshots),
+            monthlyBudgets: monthlyBudgets,
+            budgetUsage: monthlyBudgets.isEmpty ? [:] : BudgetUsageCalculator.calculate(
+                budgets: budgets, operatingTransactions: operating
+            ),
             debtFlow: debtFlow
         )
     }
@@ -181,49 +191,17 @@ enum ReportMetricsCalculator {
         )
     }
 
-    private static func calculateNetWorthComponents(
-        wallets: [LocalWallet],
-        debts: [LocalDebt]
-    ) -> (total: Double, cash: Double, lent: Double, creditOwed: Double, borrowed: Double) {
-        let cash = wallets.filter { $0.type != "credit" }.reduce(0) { $0 + $1.balance }
-        let creditOwed = wallets.filter { $0.type == "credit" }.reduce(0) { $0 + $1.amountOwed }
-        let activeDebts = debts.filter { $0.status != "completed" }
-        let lent = activeDebts.filter { $0.type == "lend" }.reduce(0) { $0 + $1.remainingAmount }
-        let borrowed = activeDebts.filter { $0.type == "borrow" }.reduce(0) { $0 + $1.remainingAmount }
-        return (cash + lent - creditOwed - borrowed, cash, lent, creditOwed, borrowed)
-    }
-
-    private static let dayMonthFormatter: DateFormatter = {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "d/M"
-        return fmt
-    }()
-
-    private static func computeNetWorthHistory(
-        transactions: [LocalTransaction],
-        currentNW: Double,
-        count: Int = 10
-    ) -> [NetWorthPoint] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-
-        let nonTransfers = transactions.filter { !$0.isTransfer }
-
-        return (0..<count).reversed().map { weekAgo in
-            let checkDate = calendar.date(byAdding: .weekOfYear, value: -weekAgo, to: today) ?? today
-            let checkDay = calendar.startOfDay(for: checkDate)
-
-            let delta = nonTransfers
-                .filter { calendar.startOfDay(for: $0.transactionDate) > checkDay }
-                .reduce(0.0) { acc, tx in
-                    tx.type == "income" ? acc + tx.amount : acc - tx.amount
-                }
-            return NetWorthPoint(
-                id: dayMonthFormatter.string(from: checkDay),
-                date: checkDay,
-                label: dayMonthFormatter.string(from: checkDay),
-                value: currentNW - delta
-            )
+    private static func historyPoints(from snapshots: [RemoteNetWorthSnapshot]) -> [NetWorthPoint] {
+        let calendar = LedgerDate.calendar
+        let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()).map(LedgerDate.string(from:))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d/M"
+        formatter.timeZone = LedgerDate.timeZone
+        return snapshots.sorted { $0.recordedDate < $1.recordedDate }.compactMap { row in
+            guard cutoff.map({ row.recordedDate >= $0 }) ?? true,
+                  let date = LedgerDate.date(from: row.recordedDate) else { return nil }
+            return NetWorthPoint(id: row.recordedDate, date: date,
+                                 label: formatter.string(from: date), value: row.netWorth)
         }
     }
 
@@ -280,7 +258,7 @@ enum ReportMetricsCalculator {
             let bucket = buckets[key] ?? (0, 0)
             return ReportChartBar(
                 id: "\(i)",
-                label: date.formatted(.dateTime.month(.abbreviated)),
+                label: date.formatted(LedgerDate.format(.dateTime.month(.abbreviated))),
                 income: bucket.income,
                 expense: bucket.expense
             )

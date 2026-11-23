@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BudgetProgressView: View {
     let budgets: [LocalBudget]
-    let spendingByCategoryId: [UUID: Double]
+    let usage: [UUID: BudgetUsage]
     let currency: String
 
     var body: some View {
@@ -21,7 +21,8 @@ struct BudgetProgressView: View {
                     ForEach(budgets) { budget in
                         BudgetRowView(
                             budget: budget,
-                            spent: budget.categoryId.flatMap { spendingByCategoryId[$0] } ?? 0,
+                            spent: usage[budget.serverId]?.spent ?? 0,
+                            effectiveAmount: usage[budget.serverId]?.effectiveAmount ?? budget.amount,
                             currency: currency
                         )
                     }
@@ -36,11 +37,12 @@ struct BudgetProgressView: View {
 private struct BudgetRowView: View {
     let budget: LocalBudget
     let spent: Double
+    let effectiveAmount: Double
     let currency: String
 
-    private var progress: Double { budget.amount > 0 ? min(spent / budget.amount, 1.0) : 0 }
-    private var remaining: Double { budget.amount - spent }
-    private var isOver: Bool { spent > budget.amount }
+    private var progress: Double { effectiveAmount > 0 ? min(spent / effectiveAmount, 1.0) : (isOver ? 1 : 0) }
+    private var remaining: Double { effectiveAmount - spent }
+    private var isOver: Bool { spent > effectiveAmount }
 
     private var barColor: Color {
         if isOver { return .red }
@@ -87,7 +89,7 @@ private struct BudgetRowView: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("of \(budget.amount.formatted(currency: currency))")
+                Text("of \(effectiveAmount.formatted(currency: currency))")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

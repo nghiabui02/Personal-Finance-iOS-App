@@ -35,6 +35,11 @@ struct ReportsContentView: View {
                         .padding(.horizontal)
                 }
 
+                if !metrics.monthlyBudgets.isEmpty {
+                    BudgetProgressView(budgets: metrics.monthlyBudgets, usage: metrics.budgetUsage, currency: "VND")
+                        .padding(.horizontal)
+                }
+
                 // Sits after the main story (earned, spent, where) — it explains what
                 // those totals left out, so it reads better once they've been seen.
                 if !metrics.debtFlow.isEmpty {

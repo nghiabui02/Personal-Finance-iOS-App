@@ -95,6 +95,7 @@
 		B50000000000000000000009 /* WalletSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000009 /* WalletSummaryCard.swift */; };
 		B5000000000000000000000A /* WalletRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5000000000000000000000A /* WalletRow.swift */; };
 		B5AE8BA43A7CA34FED7B0502 /* BudgetSuggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6695B669916D888022707AB4 /* BudgetSuggestions.swift */; };
+		33BFCCD36A0B49E69CAC250D /* BudgetUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB676A7EFFB44BA9FC69B54 /* BudgetUsage.swift */; };
 		B5E6ACB5C2DFDD83F777397E /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DE55716C3E771D1A35DE04 /* MonthCalendarView.swift */; };
 		B60000000000000000000001 /* DeleteConfirmationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000001 /* DeleteConfirmationModifier.swift */; };
 		B60000000000000000000002 /* CurrencyAmountField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000002 /* CurrencyAmountField.swift */; };
@@ -198,6 +199,7 @@
 		62514F436416338A82625D20 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		666D2A4AB32A151A3F676DFF /* Personal_FinanceUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Personal_FinanceUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		6695B669916D888022707AB4 /* BudgetSuggestions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BudgetSuggestions.swift; sourceTree = "<group>"; };
+		7BB676A7EFFB44BA9FC69B54 /* BudgetUsage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BudgetUsage.swift; sourceTree = "<group>"; };
 		66976D0D1557A6ADFDEF5959 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		6C2A488F662A057107B8E9D1 /* My FinanceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "My FinanceTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C4828A584CB63941DB2B340 /* RecentTransactionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionRowView.swift; sourceTree = "<group>"; };
@@ -475,6 +477,7 @@
 				0EEF878BC087FB60122FF4A0 /* AddEditBudgetView.swift */,
 				BD880D4AEBFEEA72177182C0 /* BudgetsView.swift */,
 				6695B669916D888022707AB4 /* BudgetSuggestions.swift */,
+				7BB676A7EFFB44BA9FC69B54 /* BudgetUsage.swift */,
 			);
 			path = Budgets;
 			sourceTree = "<group>";
@@ -940,6 +943,7 @@
 				D61A0000000000000000005A /* AppTabRouter.swift in Sources */,
 				7BF792AC7D7D3592A3FCF511 /* ReconcileSheet.swift in Sources */,
 				B5AE8BA43A7CA34FED7B0502 /* BudgetSuggestions.swift in Sources */,
+				33BFCCD36A0B49E69CAC250D /* BudgetUsage.swift in Sources */,
 				A05F85A6E19E88E64241B67F /* FrequentTransactionSuggestions.swift in Sources */,
 				02DA7EB80FB842EDA7E5DE93 /* LedgerDate.swift in Sources */,
 				34204710BB5A99BB20D7A343 /* SystemCategory.swift in Sources */,

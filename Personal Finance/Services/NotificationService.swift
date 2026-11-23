@@ -10,114 +10,130 @@ final class NotificationService {
     // MARK: - Fetch
 
     func fetchNotifications() async throws -> [AppNotification] {
-        let userId = try await client.auth.session.user.id
-
-        let cal = Calendar.current
+        guard let session = LocalDataStore.session else { throw CancellationError() }
+        let dataClient = try await LocalDataStore.authenticatedClient(for: session)
+        let userId = session.userId
+        let today = LedgerDate.string(from: Date())
+        let calendar = LedgerDate.calendar
         let now = Date()
-        let today = LedgerDate.dayFormatter.string(from: now)
-        let monthComps = cal.dateComponents([.year, .month], from: now)
-        let monthStart = LedgerDate.dayFormatter.string(from: cal.date(from: monthComps)!)
-        let monthEnd   = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .month, value: 1, to: cal.date(from: monthComps)!)!)
-        let debtHorizon      = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 7,  to: now)!)
-        let recurringHorizon = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 3,  to: now)!)
-        let goalHorizon      = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 14, to: now)!)
+        guard let month = LedgerDate.startOfMonth(for: now),
+              let nextMonth = calendar.date(byAdding: .month, value: 1, to: month) else { return [] }
+        let monthStart = LedgerDate.string(from: month)
+        let monthEnd = LedgerDate.string(from: nextMonth)
+        let debtHorizon = LedgerDate.string(from: calendar.date(byAdding: .day, value: 7, to: now) ?? now)
+        let recurringHorizon = LedgerDate.string(from: calendar.date(byAdding: .day, value: 3, to: now) ?? now)
+        let goalHorizon = LedgerDate.string(from: calendar.date(byAdding: .day, value: 14, to: now) ?? now)
 
-        async let budgetsTask: [BRow]    = client.from("budgets")
-            .select("id, amount, user_category_id, \(CategoryProjection.joined)")
-            .eq("user_id", value: userId).eq("month", value: monthStart)
-            .execute().value
-        async let txTask: [TRow]         = client.from("transactions")
-            .select("user_category_id, amount")
-            .eq("user_id", value: userId).eq("type", value: "expense")
-            .gte("transaction_date", value: monthStart).lt("transaction_date", value: monthEnd)
-            .execute().value
-        async let debtsTask: [DRow]      = client.from("debts")
-            .select("id, type, person_name, remaining_amount, due_date")
-            .eq("user_id", value: userId).eq("status", value: "active")
-            .execute().value
-        async let recurringTask: [RRow]  = client.from("recurring_transactions")
-            .select("id, type, amount, note, next_run_date, end_date, \(CategoryProjection.joined)")
-            .eq("user_id", value: userId)
-            .eq("active", value: true)
-            .lte("next_run_date", value: recurringHorizon)
-            .execute().value
-        async let goalsTask: [GRow]      = client.from("saving_goals")
-            .select("id, name, icon, target_amount, current_amount, deadline")
-            .eq("user_id", value: userId).eq("status", value: "active")
-            .execute().value
-        async let walletsTask: [WRow]    = client.from("wallets")
-            .select("id, name, balance, credit_limit")
-            .eq("user_id", value: userId).eq("type", value: "credit")
-            .execute().value
-        async let statesTask: [SRow]     = client.from("notification_states")
-            .select("notification_id, read_at, dismissed_at")
-            .eq("user_id", value: userId)
-            .execute().value
+        async let budgetsTask: [RemoteBudget] = dataClient.readOwnedRows(
+            "budgets", columns: CategoryProjection.withCategory, userId: userId)
+        async let debtsTask: [RemoteDebt] = dataClient.readOwnedRows("debts", userId: userId)
+        async let recurringTask: [RemoteRecurringTransaction] = dataClient.readOwnedRows(
+            "recurring_transactions", columns: CategoryProjection.withCategory, userId: userId)
+        async let goalsTask: [RemoteSavingGoal] = dataClient.readOwnedRows("saving_goals", userId: userId)
+        async let walletsTask: [RemoteWallet] = dataClient.readOwnedRows("wallets", userId: userId)
+        async let statesTask: [NotificationState] = dataClient.readOwnedRows(
+            "notification_states", columns: "notification_id,read_at,dismissed_at", userId: userId,
+            idColumn: "notification_id"
+        )
 
-        let (budgets, txs, debts, recurring, goals, wallets, states) =
-            try await (budgetsTask, txTask, debtsTask, recurringTask, goalsTask, walletsTask, statesTask)
+        let budgets = try await budgetsTask
+        let currentBudgets = budgets.filter { $0.active && $0.month == monthStart }
+        let spending = currentBudgets.isEmpty ? [:] : try await budgetSpending(
+            from: budgets.map(\.month).min() ?? monthStart, to: monthEnd, using: dataClient
+        )
+        let usage = BudgetUsageCalculator.calculate(budgets: budgets, spending: spending)
+        let (debts, recurring, goals, wallets, states) = try await (
+            debtsTask, recurringTask, goalsTask, walletsTask, statesTask
+        )
+        try LocalDataStore.validate(session)
 
         return process(
-            budgets: budgets, transactions: txs, debts: debts,
-            recurring: recurring, goals: goals, wallets: wallets, states: states,
-            userId: userId, today: today, monthEnd: monthEnd,
-            debtHorizon: debtHorizon, recurringHorizon: recurringHorizon, goalHorizon: goalHorizon
+            budgets: currentBudgets, usage: usage, debts: debts.filter { $0.status == "active" },
+            recurring: recurring.filter(\.active), goals: goals.filter { $0.status == "active" },
+            wallets: wallets.filter { $0.type == "credit" }, states: states,
+            client: dataClient, session: session, today: today, debtHorizon: debtHorizon,
+            recurringHorizon: recurringHorizon, goalHorizon: goalHorizon
         )
+    }
+
+    private func budgetSpending(
+        from start: String, to end: String, using client: PostgrestClient
+    ) async throws -> BudgetUsageCalculator.MonthlySpending {
+        struct Total: Decodable {
+            let date: String
+            let type: String
+            let amount: Double
+            let categoryId: UUID?
+            let categories: CategoryReference?
+
+            enum CodingKeys: String, CodingKey {
+                case type, amount, categories
+                case date = "transaction_date"
+                case categoryId = "user_category_id"
+            }
+        }
+        let params: [String: AnyJSON] = ["p_start": .string(start), "p_end": .string(end), "p_monthly": true]
+        let totals: [Total] = try await client.rpc("report_totals", params: params).execute().value
+        var spending: BudgetUsageCalculator.MonthlySpending = [:]
+        for row in totals where row.type == "expense" {
+            guard let id = row.categoryId,
+                  SystemCategory.group(transferPairId: nil, systemKey: row.categories?.systemKey) == .operating
+            else { continue }
+            spending[id, default: [:]][row.date, default: 0] += row.amount
+        }
+        return spending
     }
 
     // MARK: - Generate + filter
 
     private func process(
-        budgets: [BRow], transactions: [TRow], debts: [DRow],
-        recurring: [RRow], goals: [GRow], wallets: [WRow], states: [SRow],
-        userId: UUID, today: String, monthEnd: String,
-        debtHorizon: String, recurringHorizon: String, goalHorizon: String
+        budgets: [RemoteBudget], usage: [UUID: BudgetUsage], debts: [RemoteDebt],
+        recurring: [RemoteRecurringTransaction], goals: [RemoteSavingGoal], wallets: [RemoteWallet],
+        states: [NotificationState], client: PostgrestClient, session: LocalDataStore.Session,
+        today: String, debtHorizon: String, recurringHorizon: String, goalHorizon: String
     ) -> [AppNotification] {
-        var spending: [UUID: Double] = [:]
-        for tx in transactions {
-            if let id = tx.user_category_id { spending[id, default: 0] += tx.amount }
-        }
-
         var notifs: [AppNotification] = []
 
         // Budget
         for b in budgets {
-            let spent = b.user_category_id.map { spending[$0, default: 0] } ?? 0
+            guard let budget = usage[b.id] else { continue }
+            let spent = budget.spent
+            let limit = budget.effectiveAmount
             let name = b.categories?.displayName ?? "Budget"
             let icon = b.categories?.icon ?? "💰"
-            if spent > b.amount {
+            if spent > limit {
                 notifs.append(AppNotification(id: "budget_over:\(b.id)", type: "budget_over",
                     severity: .alert, title: "Budget exceeded",
-                    message: "\(icon) \(name): \(fmt(spent)) / \(fmt(b.amount))",
+                    message: "\(icon) \(name): \(fmt(spent)) / \(fmt(limit))",
                     destination: .budgets, isRead: false))
-            } else if b.amount > 0, spent / b.amount >= 0.8 {
+            } else if limit > 0, spent / limit >= 0.8 {
                 notifs.append(AppNotification(id: "budget_near:\(b.id)", type: "budget_near",
                     severity: .warning, title: "Budget almost used",
-                    message: "\(icon) \(name): \(Int(spent / b.amount * 100))% used",
+                    message: "\(icon) \(name): \(Int(spent / limit * 100))% used",
                     destination: .budgets, isRead: false))
             }
         }
 
         // Debt
         for d in debts {
-            guard d.remaining_amount > 0, let due = d.due_date else { continue }
+            guard d.remainingAmount > 0, let due = d.dueDate else { continue }
             if due < today {
                 notifs.append(AppNotification(id: "debt_overdue:\(d.id):\(due)", type: "debt_overdue",
                     severity: .alert, title: "Debt overdue",
-                    message: "\(d.person_name) · \(fmt(d.remaining_amount))",
+                    message: "\(d.personName) · \(fmt(d.remainingAmount))",
                     destination: .debts, isRead: false))
             } else if due <= debtHorizon {
                 notifs.append(AppNotification(id: "debt_due:\(d.id):\(due)", type: "debt_due",
                     severity: .warning, title: "Debt due soon",
-                    message: "\(d.person_name) · \(fmt(d.remaining_amount)) · due \(due)",
+                    message: "\(d.personName) · \(fmt(d.remainingAmount)) · due \(due)",
                     destination: .debts, isRead: false))
             }
         }
 
         // Recurring
         for r in recurring {
-            guard let nextRun = r.next_run_date, nextRun <= recurringHorizon else { continue }
-            if let end = r.end_date, end < nextRun { continue }
+            guard let nextRun = r.nextRunDate, nextRun <= recurringHorizon else { continue }
+            if let end = r.endDate, end < nextRun { continue }
             let icon  = r.categories?.icon ?? "🔄"
             let label = (r.note?.isEmpty == false ? r.note : nil) ?? r.categories?.displayName ?? "Recurring"
             notifs.append(AppNotification(id: "recurring:\(r.id):\(nextRun)", type: "recurring_upcoming",
@@ -128,7 +144,7 @@ final class NotificationService {
 
         // Goals
         for g in goals {
-            if g.target_amount > 0, g.current_amount >= g.target_amount {
+            if g.targetAmount > 0, g.currentAmount >= g.targetAmount {
                 notifs.append(AppNotification(id: "goal_reached:\(g.id)", type: "goal_reached",
                     severity: .success, title: "Goal reached! 🎉",
                     message: "\(g.icon ?? "🎯") \(g.name)",
@@ -142,14 +158,14 @@ final class NotificationService {
                     type: "goal_deadline",
                     severity: overdue ? .alert : .warning,
                     title: overdue ? "Goal deadline passed" : "Goal deadline soon",
-                    message: "\(g.icon ?? "🎯") \(g.name) · \(fmt(g.current_amount)) / \(fmt(g.target_amount))",
+                    message: "\(g.icon ?? "🎯") \(g.name) · \(fmt(g.currentAmount)) / \(fmt(g.targetAmount))",
                     destination: .savingGoals, isRead: false))
             }
         }
 
         // Credit
         for w in wallets {
-            guard let limit = w.credit_limit, limit > 0 else { continue }
+            guard let limit = w.creditLimit, limit > 0 else { continue }
             let used = limit - w.balance
             guard used / limit >= 0.8 else { continue }
             notifs.append(AppNotification(id: "credit:\(w.id)", type: "credit_high",
@@ -160,16 +176,22 @@ final class NotificationService {
 
         // Apply states
         let stateById  = Dictionary(uniqueKeysWithValues: states.map { ($0.notification_id, $0) })
-        let currentIds = Set(notifs.map { $0.id })
+        let currentIds = Set(notifs.map { $0.id.lowercased() })
 
-        // Fire-and-forget stale cleanup
-        let staleIds = states.map { $0.notification_id }.filter { !currentIds.contains($0) }
+        let staleIds = states.map(\.notification_id).filter { !currentIds.contains($0.lowercased()) }
         if !staleIds.isEmpty {
             Task {
-                try? await client.from("notification_states")
-                    .delete().eq("user_id", value: userId)
-                    .in("notification_id", values: staleIds)
-                    .execute()
+                do {
+                    try LocalDataStore.validate(session)
+                    try await client.from("notification_states")
+                        .delete().eq("user_id", value: session.userId)
+                        .in("notification_id", values: staleIds)
+                        .execute()
+                } catch is CancellationError {
+                    return
+                } catch {
+                    NSLog("Unable to clean up stale notification states.")
+                }
             }
         }
 
@@ -222,24 +244,10 @@ final class NotificationService {
     }
 }
 
-// MARK: - Private Decodable row types
+private struct NotificationState: Decodable, Identifiable {
+    let notification_id: String
+    let read_at: String?
+    let dismissed_at: String?
 
-private struct BRow: Decodable {
-    let id: UUID; let amount: Double; let user_category_id: UUID?; let categories: CategoryReference?
+    var id: String { notification_id }
 }
-private struct TRow: Decodable { let user_category_id: UUID?; let amount: Double }
-private struct DRow: Decodable {
-    let id: UUID; let type: String; let person_name: String
-    let remaining_amount: Double; let due_date: String?
-}
-private struct RRow: Decodable {
-    let id: UUID; let type: String; let amount: Double
-    let note: String?; let next_run_date: String?; let end_date: String?
-    let categories: CategoryReference?
-}
-private struct GRow: Decodable {
-    let id: UUID; let name: String; let icon: String?
-    let target_amount: Double; let current_amount: Double; let deadline: String?
-}
-private struct WRow: Decodable { let id: UUID; let name: String; let balance: Double; let credit_limit: Double? }
-private struct SRow: Decodable { let notification_id: String; let read_at: String?; let dismissed_at: String? }
