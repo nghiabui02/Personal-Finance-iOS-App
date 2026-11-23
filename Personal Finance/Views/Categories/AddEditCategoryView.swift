@@ -6,6 +6,7 @@ struct AddEditCategoryView: View {
     @Environment(\.dismiss) private var dismiss
     let category: LocalCategory?
 
+    @State private var initialName = ""
     @State private var name = ""
     @State private var type = "expense"
     @State private var icon = "📦"
@@ -55,7 +56,8 @@ struct AddEditCategoryView: View {
         }
         .onAppear {
             if let cat = category {
-                name = cat.name
+                initialName = cat.displayName
+                name = initialName
                 type = cat.type
                 icon = cat.icon ?? "📦"
                 if let c = cat.color {
@@ -72,11 +74,13 @@ struct AddEditCategoryView: View {
         do {
             let color = "#\(colorHex)"
             if let cat = category {
-                try await CategoryService.shared.update(cat, name: trimmed, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
+                let membership = CategoryDirectory.shared.memberships[cat.serverId]
+                let storedName = trimmed == initialName && membership != nil ? membership?.name : trimmed
+                try await CategoryService.shared.update(cat, name: storedName, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             } else {
                 try await CategoryService.shared.create(name: trimmed, type: type, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             }
             dismiss()
-        } catch { errorMsg = error.localizedDescription }
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }

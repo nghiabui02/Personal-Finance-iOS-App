@@ -35,6 +35,7 @@ struct TransactionFilterState: Equatable {
     }
 }
 
+@MainActor
 enum TransactionFilterEngine {
     static func apply(
         _ filter: TransactionFilterState,
@@ -126,7 +127,7 @@ enum TransactionFilterEngine {
         keyword: String
     ) -> Bool {
         guard !keyword.isEmpty else { return true }
-        return [transaction.note, transaction.categoryName, transaction.walletName]
+        return [transaction.note, transaction.categoryLabel, transaction.walletName]
             .compactMap { $0 }
             .contains { normalized($0).contains(keyword) }
     }

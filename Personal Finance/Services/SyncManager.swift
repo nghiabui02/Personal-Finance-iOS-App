@@ -84,6 +84,7 @@ final class SyncManager: ObservableObject {
             }
 
             try ledger.apply(in: modelContext)
+            CategoryDirectory.shared.replace(with: ledger.categories)
             netWorthSnapshots = ledger.snapshots
             lastSyncDate = Date()
             do {
@@ -101,7 +102,7 @@ final class SyncManager: ObservableObject {
             syncError =
                 isOnline
                 ? error.asDisplayableError().localizedDescription
-                : "No internet connection. Data may be outdated."
+                : AppLocalization.shared.language.text("No internet connection. Data may be outdated.")
             logger.error("Unable to sync the ledger: \(String(describing: type(of: error)))")
         }
     }
@@ -160,7 +161,7 @@ private struct Ledger {
     func apply(in context: ModelContext) throws {
         do {
             try reconcile(LocalWallet.self, with: wallets, in: context)
-            try reconcile(LocalCategory.self, with: categories.filter(\.isActive), in: context)
+            try reconcile(LocalCategory.self, with: categories, in: context)
             try reconcile(LocalTransaction.self, with: transactions, in: context)
             try reconcile(LocalBudget.self, with: budgets, in: context)
             try reconcile(LocalDebt.self, with: debts, in: context)
@@ -201,12 +202,20 @@ extension PostgrestClient {
     func readOwnedRows<Row: Decodable & Identifiable>(
         _ table: String, columns: String = "*", userId: UUID, idColumn: String = "id"
     ) async throws -> [Row] where Row.ID: PostgrestFilterValue {
+        try await readRows(idColumn: idColumn) {
+            from(table).select(columns).eq("user_id", value: userId)
+        }
+    }
+
+    func readRows<Row: Decodable & Identifiable>(
+        idColumn: String = "id", matching query: () -> PostgrestFilterBuilder
+    ) async throws -> [Row] where Row.ID: PostgrestFilterValue {
         let pageSize = 500
         var rows: [Row] = []
         while true {
             try Task.checkCancellation()
-            let query = from(table).select(columns).eq("user_id", value: userId)
-            let pageQuery = rows.last.map { query.gt(idColumn, value: $0.id) } ?? query
+            let base = query()
+            let pageQuery = rows.last.map { base.gt(idColumn, value: $0.id) } ?? base
             let page: [Row] = try await pageQuery.order(idColumn, ascending: true).limit(pageSize).execute().value
             // An empty page, even after a short page, is the end regardless of the server's row cap.
             guard !page.isEmpty else { return rows }

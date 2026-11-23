@@ -31,7 +31,7 @@ struct TransactionDetailsSection: View {
             return AnyView(
                 HStack(spacing: 4) {
                     Text(selectedCategory.icon ?? "📦")
-                    Text(selectedCategory.name)
+                    Text(selectedCategory.displayName)
                         .foregroundColor(.secondary)
                 }
             )
@@ -50,7 +50,7 @@ struct TransactionDetailsSection: View {
 }
 
 private struct TransactionSelectionRow<Value: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: Value
     let onTap: () -> Void
 

@@ -62,6 +62,7 @@ struct ReportCategoryBreakdown: Identifiable {
     let percentage: Double
 }
 
+@MainActor
 enum ReportMetricsCalculator {
     /// Takes *all* transactions plus the category list — it needs the full set to
     /// report debt and adjustment flow alongside the operating totals.
@@ -181,10 +182,10 @@ enum ReportMetricsCalculator {
         _ tx: LocalTransaction,
         categoryTotals: inout [String: CategoryTotal]
     ) {
-        let key = tx.categoryId?.uuidString ?? tx.categoryName ?? "other"
+        let key = tx.categoryId?.uuidString ?? tx.categoryLabel ?? "other"
         let existing = categoryTotals[key]
         categoryTotals[key] = (
-            name: existing?.name ?? tx.categoryName ?? "Other",
+            name: existing?.name ?? tx.categoryLabel ?? AppLocalization.shared.language.text("Other"),
             icon: existing?.icon ?? tx.categoryIcon ?? "💸",
             color: existing?.color ?? tx.categoryColor,
             total: (existing?.total ?? 0) + tx.amount
@@ -213,7 +214,7 @@ enum ReportMetricsCalculator {
         case .week:
             return makeDailyBars(
                 count: 7,
-                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map { AppLocalization.shared.language.text($0) },
                 buckets: buckets,
                 context: context
             )
@@ -258,7 +259,7 @@ enum ReportMetricsCalculator {
             let bucket = buckets[key] ?? (0, 0)
             return ReportChartBar(
                 id: "\(i)",
-                label: date.formatted(LedgerDate.format(.dateTime.month(.abbreviated))),
+                label: date.formatted(LedgerDate.display(.dateTime.month(.abbreviated))),
                 income: bucket.income,
                 expense: bucket.expense
             )

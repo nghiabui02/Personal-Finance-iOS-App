@@ -24,7 +24,7 @@ struct RecentTransactionRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(transaction.note ?? transaction.categoryName ?? "Transaction")
+                Text(transaction.note ?? transaction.categoryLabel ?? AppLocalization.shared.language.text("Transaction"))
                     .font(.subheadline).fontWeight(.medium)
                     .lineLimit(1)
                 HStack(spacing: 4) {

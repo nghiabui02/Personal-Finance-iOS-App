@@ -30,20 +30,18 @@ struct AddEditTransactionView: View {
     @State private var bankFeeText = ""
     @State private var linkedDebtId: UUID? = nil
     @State private var showDebtPicker = false
-    @State private var frequentSuggestions: [FrequentTransactionSuggestion] = []
-
     private var isEditing: Bool { transaction != nil }
 
-    // Chips only help on a blank form — once the user has started filling it
-    // in, they just take up space.
-    private var showFrequentChips: Bool {
-        !isEditing && amount == 0 && selectedCategoryId == nil && !frequentSuggestions.isEmpty
+    private var frequentSuggestions: [FrequentTransactionSuggestion] {
+        guard !isEditing, amount == 0, selectedCategoryId == nil else { return [] }
+        return FrequentTransactionSuggestionCalculator.calculate(transactions: allTx, categories: allCategories)
     }
 
     private var filteredCategories: [LocalCategory] {
         allCategories.filter { category in
             guard category.type == type else { return false }
             if category.serverId == transaction?.categoryId { return true }
+            guard category.isActiveMembership else { return false }
             guard let key = category.systemKey else { return true }
             return !isEditing && (key == SystemCategory.collectDebt || key == SystemCategory.repayDebt)
         }
@@ -81,9 +79,10 @@ struct AddEditTransactionView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if showFrequentChips {
+                let suggestions = frequentSuggestions
+                if !suggestions.isEmpty {
                     Section {
-                        FrequentChipsRow(suggestions: frequentSuggestions, onSelect: applySuggestion)
+                        FrequentChipsRow(suggestions: suggestions, onSelect: applySuggestion)
                     }
                     .listRowInsets(EdgeInsets())
                 }
@@ -218,9 +217,6 @@ struct AddEditTransactionView: View {
             date = defaultDate ?? Date()
             selectedWalletId = wallets.first(where: { $0.isDefault })?.serverId
                 ?? wallets.first?.serverId
-            frequentSuggestions = FrequentTransactionSuggestionCalculator.calculate(
-                transactions: allTx, categories: allCategories
-            )
         }
     }
 
@@ -232,8 +228,11 @@ struct AddEditTransactionView: View {
 
     private func applySuggestion(_ suggestion: FrequentTransactionSuggestion) {
         type = suggestion.type
-        amount = suggestion.amount
-        amountText = suggestion.amount.formattedDecimal()
+        bankFee = suggestion.bankFee
+        hasBankFee = bankFee > 0
+        bankFeeText = bankFee.formattedDecimal()
+        amount = suggestion.amount - bankFee
+        amountText = amount.formattedDecimal()
         selectedCategoryId = suggestion.categoryId
         if let walletId = suggestion.walletId { selectedWalletId = walletId }
         note = suggestion.note ?? ""
@@ -303,6 +302,7 @@ private struct FrequentChipsRow: View {
                     ) {
                         onSelect(suggestion)
                     }
+                    .accessibilityLabel(Text("\(suggestion.categoryName), \(suggestion.amount.formatted(currency: "VND"))"))
                 }
             }
             .padding(.horizontal)

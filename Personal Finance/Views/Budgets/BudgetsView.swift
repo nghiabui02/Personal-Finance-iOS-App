@@ -223,7 +223,7 @@ private struct BudgetRow: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
-                        Text(budget.categoryName).fontWeight(.medium)
+                        Text(budget.categoryLabel).fontWeight(.medium)
                         if budget.rollover {
                             Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.blue).font(.caption)
                         }
@@ -238,7 +238,7 @@ private struct BudgetRow: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(overBudget ? "Over!" : remaining.formatted(currency: "VND"))
+                    Text(overBudget ? AppLocalization.shared.language.text("Over!") : remaining.formatted(currency: "VND"))
                         .font(.caption).fontWeight(.semibold)
                         .foregroundColor(overBudget ? .red : .green)
                     Text("left").font(.caption2).foregroundColor(.secondary)

@@ -16,7 +16,7 @@ struct TransactionFilterSection: View {
             VStack(alignment: .leading, spacing: 12) {
                 Picker("Transaction type", selection: $filter.type) {
                     ForEach(TransactionTypeFilter.allCases) { type in
-                        Text(type.rawValue).tag(type)
+                        Text(LocalizedStringKey(type.rawValue)).tag(type)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -40,7 +40,7 @@ struct TransactionFilterSection: View {
 
                 ForEach(availableCategories, id: \.serverId) { category in
                     categoryChip(
-                        title: category.name,
+                        title: category.displayName,
                         icon: category.icon,
                         categoryId: category.serverId
                     )

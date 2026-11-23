@@ -55,7 +55,7 @@ private struct BudgetRowView: View {
             HStack {
                 Text(budget.categoryIcon ?? "📦")
                     .font(.subheadline)
-                Text(budget.categoryName)
+                Text(budget.categoryLabel)
                     .font(.subheadline)
                     .fontWeight(.medium)
                 Spacer()

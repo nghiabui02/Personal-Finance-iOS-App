@@ -24,7 +24,7 @@ struct AddEditBudgetView: View {
         _month = State(initialValue: defaultMonth)
     }
 
-    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" && $0.systemKey == nil } }
+    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" && $0.systemKey == nil && $0.isActiveMembership } }
 
     var body: some View {
         NavigationStack {
@@ -32,18 +32,17 @@ struct AddEditBudgetView: View {
                 Section {
                     if budget == nil {
                         DatePicker("Month", selection: $month, displayedComponents: [.date])
-                            .environment(\.locale, Locale(identifier: "en_US"))
                         Picker("Category", selection: $selectedCategoryId) {
                             Text("None").tag(UUID?.none)
                             ForEach(expenseCategories, id: \.serverId) { cat in
-                                Text("\(cat.icon ?? "📦") \(cat.name)").tag(Optional(cat.serverId))
+                                Text("\(cat.icon ?? "📦") \(cat.displayName)").tag(Optional(cat.serverId))
                             }
                         }
                     } else {
                         HStack {
                             Text("Category")
                             Spacer()
-                            Text(budget?.categoryName ?? "").foregroundColor(.secondary)
+                            Text(budget?.categoryLabel ?? "").foregroundColor(.secondary)
                         }
                     }
                     CurrencyAmountField(

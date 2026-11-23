@@ -10,7 +10,7 @@ struct TransactionCategoryPickerSheet: View {
     private var displayedCategories: [LocalCategory] {
         search.isEmpty
             ? categories
-            : categories.filter { $0.name.localizedCaseInsensitiveContains(search) }
+            : categories.filter { $0.displayName.localizedCaseInsensitiveContains(search) }
     }
 
     var body: some View {
@@ -45,7 +45,7 @@ struct TransactionCategoryPickerSheet: View {
         HStack(spacing: 12) {
             Text(category.icon ?? "📦")
                 .font(.title3)
-            Text(category.name)
+            Text(category.displayName)
                 .foregroundColor(.primary)
             Spacer()
             if selected == category.serverId {

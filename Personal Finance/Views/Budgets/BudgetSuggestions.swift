@@ -11,6 +11,7 @@ struct BudgetSuggestion: Identifiable {
 
 // Median (not mean) of the last 3 calendar months' spending per category —
 // a single big purchase shouldn't drag the suggested cap up.
+@MainActor
 enum BudgetSuggestionCalculator {
     static func calculate(
         transactions: [LocalTransaction],
@@ -25,7 +26,7 @@ enum BudgetSuggestionCalculator {
             let startWindow = calendar.date(byAdding: .month, value: -3, to: startOfTarget)
         else { return [] }
 
-        let categoryLookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.serverId, $0) })
+        let categoryLookup = Dictionary(categories.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         let operating = transactions.operatingOnly(using: categories)
 
         var monthlyTotals: [UUID: [String: Double]] = [:]
@@ -38,10 +39,10 @@ enum BudgetSuggestionCalculator {
         }
 
         let suggestions = monthlyTotals.compactMap { catId, monthTotals -> BudgetSuggestion? in
-            guard let cat = categoryLookup[catId] else { return nil }
+            guard let cat = categoryLookup[catId], cat.isActiveMembership else { return nil }
             let amount = max(50_000, (median(Array(monthTotals.values)) / 50_000).rounded() * 50_000)
             return BudgetSuggestion(
-                id: catId, categoryId: catId, categoryName: cat.name,
+                id: catId, categoryId: catId, categoryName: cat.displayName,
                 categoryIcon: cat.icon ?? "📦", categoryColor: cat.color, amount: amount
             )
         }

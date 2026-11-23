@@ -87,13 +87,13 @@ struct RecurringView: View {
 private struct RecurringRow: View {
     let rec: LocalRecurringTransaction
 
-    private var freqLabel: String {
+    private var freqLabel: LocalizedStringKey {
         switch rec.frequency {
         case "daily": return "Daily"
         case "weekly": return "Weekly"
         case "monthly": return "Monthly"
         case "yearly": return "Yearly"
-        default: return rec.frequency.capitalized
+        default: return LocalizedStringKey(rec.frequency.capitalized)
         }
     }
 
@@ -106,13 +106,13 @@ private struct RecurringRow: View {
                 Text(rec.categoryIcon ?? (rec.type == "income" ? "💰" : "💸")).font(.system(size: 22))
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text(rec.categoryName ?? (rec.type == "income" ? "Income" : "Expense"))
+                Text(rec.categoryLabel ?? AppLocalization.shared.language.text(rec.type == "income" ? "Income" : "Expense"))
                     .fontWeight(.medium)
                 HStack(spacing: 4) {
                     Text(freqLabel)
                     if let next = rec.nextRunDate {
                         Text("·")
-                        Text("Next: \(next.formatted(.dateTime.month(.abbreviated).day()))")
+                        Text("Next: \(next.formatted(LedgerDate.display(.dateTime.month(.abbreviated).day())))")
                     }
                     if rec.bankFee > 0 {
                         Text("·")

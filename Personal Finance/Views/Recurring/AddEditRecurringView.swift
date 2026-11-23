@@ -29,7 +29,7 @@ struct AddEditRecurringView: View {
     private var filteredCategories: [LocalCategory] { allCategories.filter { category in
         guard category.type == type else { return false }
         if category.serverId == recurring?.categoryId { return true }
-        return category.systemKey.map { !SystemCategory.debtKeys.contains($0) } != false
+        return category.isActiveMembership && category.systemKey.map { !SystemCategory.debtKeys.contains($0) } != false
     } }
 
     let frequencies = ["daily", "weekly", "monthly", "yearly"]
@@ -69,7 +69,7 @@ struct AddEditRecurringView: View {
                     Picker("Category", selection: $selectedCategoryId) {
                         Text("None").tag(UUID?.none)
                         ForEach(filteredCategories, id: \.serverId) { cat in
-                            Text("\(cat.icon ?? "📦") \(cat.name)").tag(Optional(cat.serverId))
+                            Text("\(cat.icon ?? "📦") \(cat.displayName)").tag(Optional(cat.serverId))
                         }
                     }
                     Picker("Wallet", selection: $selectedWalletId) {

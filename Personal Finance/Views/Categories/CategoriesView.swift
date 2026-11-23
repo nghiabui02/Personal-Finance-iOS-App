@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Supabase
 
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
@@ -8,14 +9,18 @@ struct CategoriesView: View {
 
     @State private var selectedType = "expense"
     @State private var showAdd = false
+    @State private var showStore = false
+    @State private var isSaving = false
+    @State private var dependencies: CategoryDependencies?
     @State private var editing: LocalCategory?
     @State private var pendingDeletion: LocalCategory?
     @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
 
-    private var filtered: [LocalCategory] { categories.filter { $0.type == selectedType } }
-    private var customCategories: [LocalCategory] { filtered.filter { !$0.isDefault } }
-    private var defaultCategories: [LocalCategory] { filtered.filter { $0.isDefault } }
+    private var filtered: [LocalCategory] {
+        categories.filter { $0.type == selectedType }
+            .sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
+    }
 
     var body: some View {
         ScrollView {
@@ -29,32 +34,15 @@ struct CategoriesView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
 
-                if !customCategories.isEmpty {
-                    CategorySection(title: "CUSTOM") {
-                        ForEach(customCategories, id: \.serverId) { cat in
-                            CategoryCard(category: cat, isDefault: false) {
-                                editing = cat
-                            } onDelete: {
-                                pendingDeletion = cat
-                                showDeleteConfirmation = true
-                            }
-                        }
-                    }
-                }
-
-                if !defaultCategories.isEmpty {
-                    CategorySection(title: "DEFAULT") {
-                        ForEach(defaultCategories, id: \.serverId) { cat in
-                            CategoryCard(category: cat, isDefault: true, onEdit: {}, onDelete: {})
-                        }
-                    }
-                }
+                categorySection("My categories", rows: filtered.filter { $0.systemKey == nil && $0.isActiveMembership })
+                categorySection("System categories", rows: filtered.filter { $0.systemKey != nil })
+                categorySection("Removed categories", rows: filtered.filter { !$0.isActiveMembership })
 
                 if filtered.isEmpty && !sync.isSyncing {
                     ContentUnavailableView(
                         "No Categories",
                         systemImage: "tag",
-                        description: Text("Tap + to add a category")
+                        description: Text("Add a category from the Store or create your own.")
                     )
                     .padding(.top, 40)
                 }
@@ -64,14 +52,13 @@ struct CategoriesView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Categories")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if sync.isSyncing {
-                    ProgressView().scaleEffect(0.8)
-                } else {
-                    Button { showAdd = true } label: { Image(systemName: "plus") }
-                }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { showStore = true } label: { Label("Category Store", systemImage: "storefront") }
+                Button { showAdd = true } label: { Label("New Category", systemImage: "plus") }
             }
         }
+        .sheet(isPresented: $showStore) { CategoryStoreView() }
+        .sheet(item: $dependencies) { CategoryDependencySheet(dependencies: $0) }
         .refreshable { await sync.syncAll(modelContext: modelContext) }
         .onAppear { Task { @MainActor in await sync.syncAll(modelContext: modelContext) } }
         .sheet(isPresented: $showAdd) { AddEditCategoryView(category: nil) }
@@ -82,16 +69,97 @@ struct CategoriesView: View {
             title: "Remove Category?",
             message: "Past records will keep this category."
         ) { category in
-            Task { await delete(category) }
+            Task { await setActive(category, false) }
         }
         .errorAlert($errorMsg)
     }
 
-    private func delete(_ cat: LocalCategory) async {
+    @ViewBuilder
+    private func categorySection(_ title: LocalizedStringKey, rows: [LocalCategory]) -> some View {
+        if !rows.isEmpty {
+            CategorySection(title: title) {
+                ForEach(rows, id: \.serverId) { category in
+                    CategoryCard(category: category, onEdit: {
+                        editing = category
+                    }, onRemove: {
+                        pendingDeletion = category
+                        showDeleteConfirmation = true
+                    }, onRestore: {
+                        Task { await setActive(category, true) }
+                    })
+                    .disabled(isSaving)
+                }
+            }
+        }
+    }
+
+    private func setActive(_ category: LocalCategory, _ active: Bool) async {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
         do {
-            try await CategoryService.shared.delete(cat, in: modelContext)
+            if !active, try await showDependenciesIfNeeded(for: category) { return }
+            try await CategoryService.shared.setActive(category, active, in: modelContext)
+        } catch is CancellationError {
+            return
         } catch {
+            let removalBlocked = (error as? PostgrestError)?.code == "UC003"
+            if !active && removalBlocked {
+                do {
+                    if try await showDependenciesIfNeeded(for: category) { return }
+                } catch is CancellationError {
+                    return
+                } catch {
+                    errorMsg = error.asDisplayableError().localizedDescription
+                    return
+                }
+            }
             errorMsg = error.asDisplayableError().localizedDescription
+        }
+    }
+
+    private func showDependenciesIfNeeded(for category: LocalCategory) async throws -> Bool {
+        let result = try await CategoryService.shared.dependencies(for: category)
+        guard !result.isEmpty else { return false }
+        dependencies = result
+        return true
+    }
+}
+
+private struct CategoryDependencySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let dependencies: CategoryDependencies
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Text("Pause or change these items before removing the category.")
+                if !dependencies.budgets.isEmpty {
+                    Section("Budgets") {
+                        ForEach(dependencies.budgets) { budget in
+                            LabeledContent("Current month", value: budget.amount.formatted(currency: "VND"))
+                        }
+                    }
+                }
+                if !dependencies.recurring.isEmpty {
+                    Section("Recurring") {
+                        ForEach(dependencies.recurring) { entry in
+                            let note = entry.note ?? ""
+                            let amount = entry.amount.formatted(currency: "VND")
+                            let scheduled = entry.nextRunDate ?? ""
+                            VStack(alignment: .leading) {
+                                Text(note.isEmpty ? amount : note)
+                                if !scheduled.isEmpty {
+                                    Text("Next run: \(scheduled)").foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Category in use")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
     }
 }
@@ -99,7 +167,7 @@ struct CategoriesView: View {
 // MARK: - Section container
 
 private struct CategorySection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -123,9 +191,9 @@ private struct CategorySection<Content: View>: View {
 
 private struct CategoryCard: View {
     let category: LocalCategory
-    let isDefault: Bool
     let onEdit: () -> Void
-    let onDelete: () -> Void
+    let onRemove: () -> Void
+    let onRestore: () -> Void
 
     private var accentColor: Color {
         category.color.map { Color(hex: $0) } ?? .blue
@@ -142,11 +210,11 @@ private struct CategoryCard: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(category.name)
+                Text(category.displayName)
                     .font(.body)
                     .foregroundColor(.primary)
-                if isDefault {
-                    Text("Default")
+                if category.isDefault && category.systemKey == nil {
+                    Text("From Store")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -158,7 +226,9 @@ private struct CategoryCard: View {
                 .fill(accentColor)
                 .frame(width: 10, height: 10)
 
-            if !isDefault {
+            if !category.isActiveMembership {
+                Button("Restore", action: onRestore).buttonStyle(.bordered)
+            } else if category.systemKey == nil {
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
                         .font(.system(size: 14))
@@ -166,14 +236,16 @@ private struct CategoryCard: View {
                         .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Edit Category")
 
-                Button(action: onDelete) {
+                Button(action: onRemove) {
                     Image(systemName: "trash")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                         .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Remove Category")
             }
         }
         .padding(.horizontal, 14)

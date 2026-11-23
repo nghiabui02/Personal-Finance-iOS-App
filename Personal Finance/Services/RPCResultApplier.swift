@@ -13,12 +13,13 @@ enum RPCResultApplier {
     static func apply(_ envelope: RPC.Envelope, for session: LocalDataStore.Session, in ctx: ModelContext) throws {
         try LocalDataStore.validate(session)
         do {
-            try upsertTransactions(envelope.transactions, in: ctx)
+            let memberships = try upsertTransactions(envelope.transactions, in: ctx)
             try deleteTransactions(ids: envelope.deletedTransactionIds, in: ctx)
             try deleteWallets(ids: envelope.deletedWalletIds, in: ctx)
             try applyBalances(envelope.wallets, in: ctx)
             try upsertDebt(envelope.debt, in: ctx)
             try ctx.save()
+            CategoryDirectory.shared.merge(memberships)
         } catch {
             ctx.rollback()
             SyncManager.shared.requestSync(modelContext: ctx)
@@ -28,8 +29,8 @@ enum RPCResultApplier {
 
     // MARK: - Pieces
 
-    private static func upsertTransactions(_ remotes: [RemoteTransaction], in ctx: ModelContext) throws {
-        guard !remotes.isEmpty else { return }
+    private static func upsertTransactions(_ remotes: [RemoteTransaction], in ctx: ModelContext) throws -> [RemoteCategory] {
+        guard !remotes.isEmpty else { return [] }
         let ids = remotes.map(\.id)
         let existing = try ctx.fetch(FetchDescriptor<LocalTransaction>(
             predicate: #Predicate { ids.contains($0.serverId) }
@@ -55,14 +56,15 @@ enum RPCResultApplier {
             }
         }
         var knownIds = Set(categories.map(\.serverId))
-        for row in remotes {
+        return remotes.compactMap { row in
             guard let category = row.categories, let key = category.systemKey, category.isActive,
-                  knownIds.insert(category.id).inserted else { continue }
-            ctx.insert(LocalCategory(from: RemoteCategory(
-                id: category.id, name: category.name, type: row.type,
-                icon: category.icon, color: category.color, templateId: nil, systemKey: key,
-                isActive: true, template: nil
-            )))
+                  knownIds.insert(category.id).inserted else { return nil }
+            let membership = RemoteCategory(
+                id: category.id, name: category.name, type: row.type, icon: category.icon, color: category.color,
+                templateId: nil, systemKey: key, isActive: true, template: nil
+            )
+            ctx.insert(LocalCategory(from: membership))
+            return membership
         }
     }
 

@@ -20,10 +20,11 @@ struct TransactionRow: View {
                     Text(icon).font(.system(size: 22))
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(isTransfer ? "Transfer" : (transaction.note ?? (transaction.type == "income" ? "Income" : "Expense")))
+                    Text(isTransfer ? AppLocalization.shared.language.text("Transfer")
+                         : transaction.note ?? AppLocalization.shared.language.text(transaction.type == "income" ? "Income" : "Expense"))
                         .font(.subheadline).fontWeight(.medium).lineLimit(1)
                     HStack(spacing: 4) {
-                        if !isTransfer, let catName = transaction.categoryName, !catName.isEmpty {
+                        if !isTransfer, let catName = transaction.categoryLabel, !catName.isEmpty {
                             Text(catName).lineLimit(1)
                             Text("·")
                         }

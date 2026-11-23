@@ -39,6 +39,7 @@ enum LocalDataStore {
             }
             defaults.set(owner, forKey: ownerKey)
         }
+        CategoryDirectory.shared.prepare(for: userId)
         session = userId.map { Session(userId: $0) }
     }
 

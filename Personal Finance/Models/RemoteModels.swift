@@ -31,7 +31,7 @@ enum CategoryProjection {
     static let withCategory = "*,\(joined)"
 }
 
-struct CategoryTemplate: Codable {
+struct CategoryTemplate: Codable, Equatable {
     let defaultKey: String
     let nameEN: String?
     let nameVI: String?
@@ -58,12 +58,14 @@ struct CategoryReference: Codable {
         case isActive = "is_active"
     }
 
-    var displayName: String {
-        categoryLabel(name: name, systemKey: systemKey, template: template)
+    var displayName: String { label(in: .english) }
+
+    func label(in language: AppLanguage) -> String {
+        categoryLabel(name: name, systemKey: systemKey, template: template, language: language)
     }
 }
 
-struct RemoteCategory: Codable, Identifiable {
+struct RemoteCategory: Codable, Identifiable, Equatable {
     let id: UUID
     let name: String?
     let type: String
@@ -83,23 +85,28 @@ struct RemoteCategory: Codable, Identifiable {
 
     var isDefault: Bool { templateId != nil || systemKey != nil }
 
-    var displayName: String {
-        categoryLabel(name: name, systemKey: systemKey, template: template)
+    var displayName: String { label(in: .english) }
+
+    func label(in language: AppLanguage) -> String {
+        categoryLabel(name: name, systemKey: systemKey, template: template, language: language)
     }
 }
 
-private func categoryLabel(name: String?, systemKey: String?, template: CategoryTemplate?) -> String {
+func categoryLabel(
+    name: String?, systemKey: String?, template: CategoryTemplate?, language: AppLanguage
+) -> String {
     if let name { return name }
     switch systemKey {
-    case SystemCategory.lendOut: return "Money Lent"
-    case SystemCategory.borrowIn: return "Money Borrowed"
-    case SystemCategory.collectDebt: return "Debt Collection"
-    case SystemCategory.repayDebt: return "Debt Repayment"
-    case SystemCategory.adjustUp, SystemCategory.adjustDown: return "Balance Adjustment"
+    case SystemCategory.lendOut: return language.text("Money Lent")
+    case SystemCategory.borrowIn: return language.text("Money Borrowed")
+    case SystemCategory.collectDebt: return language.text("Debt Collection")
+    case SystemCategory.repayDebt: return language.text("Debt Repayment")
+    case SystemCategory.adjustUp, SystemCategory.adjustDown: return language.text("Balance Adjustment")
     default:
-        return template?.nameEN ?? template?.nameVI
+        return (language == .vietnamese ? template?.nameVI : template?.nameEN)
+            ?? template?.nameEN ?? template?.nameVI
             ?? template?.defaultKey.replacingOccurrences(of: "_", with: " ").capitalized
-            ?? "Category"
+            ?? language.text("Category")
     }
 }
 

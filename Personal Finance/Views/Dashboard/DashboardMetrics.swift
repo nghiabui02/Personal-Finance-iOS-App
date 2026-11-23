@@ -17,6 +17,7 @@ struct DashboardMetrics {
     var netBalance: Double { income - expense }
 }
 
+@MainActor
 enum DashboardMetricsCalculator {
     static func calculate(
         transactions: [LocalTransaction],
@@ -154,11 +155,11 @@ enum DashboardMetricsCalculator {
         categoryTotals: inout [String: CategoryTotal]
     ) {
         let key = transaction.categoryId?.uuidString
-            ?? transaction.categoryName
+            ?? transaction.categoryLabel
             ?? "other"
         let existing = categoryTotals[key]
         categoryTotals[key] = (
-            name: existing?.name ?? transaction.categoryName ?? "Other",
+            name: existing?.name ?? transaction.categoryLabel ?? AppLocalization.shared.language.text("Other"),
             icon: existing?.icon ?? transaction.categoryIcon ?? "💸",
             color: existing?.color ?? transaction.categoryColor,
             total: (existing?.total ?? 0) + transaction.amount
@@ -218,7 +219,7 @@ enum DashboardMetricsCalculator {
             return DashboardAlert(
                 id: "budget-\(budget.serverId)",
                 title: exceeded ? "Budget exceeded" : "Budget almost used",
-                message: "\(budget.categoryName): \(spent.formatted(currency: currency)) of \(limit.formatted(currency: currency))",
+                message: AppLocalization.shared.language.text("%@: %@ of %@", budget.categoryLabel, spent.formatted(currency: currency), limit.formatted(currency: currency)),
                 symbol: exceeded ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill",
                 color: exceeded ? .red : .orange,
                 priority: exceeded ? 0 : 2
