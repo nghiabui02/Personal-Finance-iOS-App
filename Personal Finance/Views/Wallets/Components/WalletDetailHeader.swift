@@ -77,7 +77,7 @@ struct WalletDetailHeader: View {
     }
 
     private func valueColumn(
-        title: String,
+        title: LocalizedStringKey,
         value: String,
         color: Color,
         alignment: HorizontalAlignment = .leading

@@ -12,7 +12,7 @@ struct DebtInformationSection: View {
             )
             DetailInfoRow(
                 title: "Status",
-                value: debt.status.capitalized,
+                value: AppLocalization.shared.language.text(debt.status.capitalized),
                 valueColor: statusColor
             )
             if let dueDate = debt.dueDate {

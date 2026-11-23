@@ -108,7 +108,7 @@ struct ReportCashFlowCard: View {
 }
 
 private struct ReportAmountSummaryColumn: View {
-    let title: String
+    let title: LocalizedStringKey
     let amount: Double
     let color: Color
 

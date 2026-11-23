@@ -123,7 +123,7 @@ struct ReportNetWorthCard: View {
                 AxisMarks(values: .automatic(desiredCount: 5)) { value in
                     if let date = value.as(Date.self) {
                         AxisValueLabel {
-                            Text(date, format: LedgerDate.format(.dateTime.day().month()))
+                            Text(date, format: LedgerDate.display(.dateTime.day().month()))
                                 .font(.caption2)
                         }
                     }
@@ -180,13 +180,13 @@ struct ReportNetWorthCard: View {
 }
 
 private struct NWPill: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: Double
     var prefix: String = ""
     let color: Color
 
     var body: some View {
-        Text("\(label) \(prefix)\(value.formatted(currency: "VND"))")
+        Text("\(Text(label)) \(prefix)\(value.formatted(currency: "VND"))")
             .font(.caption.weight(.medium))
             .foregroundStyle(color == .primary ? .primary : color)
             .padding(.horizontal, 12)

@@ -24,6 +24,7 @@ struct SettingsView: View {
                 accountSection
                 avatarSection
                 appearanceSection
+                languageSection
                 signOutSection
             }
             .listStyle(.insetGrouped)
@@ -103,7 +104,7 @@ struct SettingsView: View {
                 icon: "phone.fill",
                 color: .green,
                 title: "Phone",
-                value: authVM.userPhone.isEmpty ? "Not set" : authVM.userPhone
+                value: authVM.userPhone.isEmpty ? AppLocalization.shared.language.text("Not set") : authVM.userPhone
             ) {
                 showEditPhone = true
             }
@@ -147,6 +148,26 @@ struct SettingsView: View {
                 Label("Theme", systemImage: "paintbrush.fill")
             }
         }
+    }
+
+    private var languageSection: some View {
+        Section {
+            Picker("Language", selection: Binding(
+                get: { AppLocalization.shared.language },
+                set: { language in Task { await saveLanguage(language) } }
+            )) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(verbatim: language.autonym).tag(language)
+                }
+            }
+            .disabled(authVM.isUpdating)
+        }
+    }
+
+    private func saveLanguage(_ language: AppLanguage) async {
+        do { try await authVM.updateLanguage(language) }
+        catch is CancellationError { return }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 
     private var signOutSection: some View {
@@ -203,17 +224,17 @@ struct SettingsView: View {
 
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else {
-                errorMsg = "Could not load the selected image."
+                errorMsg = AppLocalization.shared.language.text("Could not load the selected image.")
                 return
             }
             guard let uiImage = UIImage(data: data),
                   let compressed = uiImage.jpegData(compressionQuality: 0.75) else {
-                errorMsg = "Could not process the image."
+                errorMsg = AppLocalization.shared.language.text("Could not process the image.")
                 return
             }
             try await authVM.uploadAvatar(compressed)
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 
@@ -221,7 +242,7 @@ struct SettingsView: View {
         do {
             try await authVM.deleteAvatar()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

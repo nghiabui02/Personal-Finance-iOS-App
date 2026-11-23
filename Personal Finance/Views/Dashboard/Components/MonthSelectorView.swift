@@ -18,7 +18,7 @@ struct MonthSelectorView: View {
             }
 
             Button { showPicker = true } label: {
-                Text(selectedMonth, format: LedgerDate.format(.dateTime.month(.wide).year()))
+                Text(selectedMonth, format: LedgerDate.display(.dateTime.month(.wide).year()))
                     .font(.title.weight(.bold))
                     .foregroundColor(.primary)
             }
@@ -52,7 +52,11 @@ private struct MonthYearPickerSheet: View {
     @State private var pickerMonth: Int
     @State private var pickerYear: Int
 
-    private let months = LedgerDate.calendar.monthSymbols
+    private var months: [String] {
+        var calendar = LedgerDate.calendar
+        calendar.locale = AppLocalization.shared.language.locale
+        return calendar.standaloneMonthSymbols
+    }
     private let years: [Int] = Array(2015...2035)
 
     init(selectedMonth: Binding<Date>, isPresented: Binding<Bool>) {

@@ -45,7 +45,7 @@ struct ReportDebtFlowCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private func entry(_ label: String, _ amount: Double, _ color: Color) -> some View {
+    private func entry(_ label: LocalizedStringKey, _ amount: Double, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.caption2)

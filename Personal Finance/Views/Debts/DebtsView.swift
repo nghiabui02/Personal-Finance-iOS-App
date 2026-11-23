@@ -75,7 +75,7 @@ struct DebtsView: View {
         do {
             try await DebtService.shared.delete(debt, in: modelContext)
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

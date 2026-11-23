@@ -42,14 +42,14 @@ struct DashboardNetWorthCard: View {
 }
 
 private struct NetWorthPill: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: Double
     let prefix: String
     let color: Color
     let currency: String
 
     var body: some View {
-        Text("\(label) \(prefix)\(value.formatted(currency: currency))")
+        Text("\(Text(label)) \(prefix)\(value.formatted(currency: currency))")
             .font(.subheadline.weight(.medium))
             .foregroundStyle(color)
             .padding(.horizontal, 14)

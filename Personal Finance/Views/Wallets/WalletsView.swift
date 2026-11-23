@@ -81,7 +81,7 @@ struct WalletsView: View {
         do {
             try await WalletService.shared.delete(wallet, in: modelContext)
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

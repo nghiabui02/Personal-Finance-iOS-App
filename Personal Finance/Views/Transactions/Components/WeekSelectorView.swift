@@ -12,7 +12,7 @@ struct WeekSelectorView: View {
 
     private var label: String {
         let s = weekStart.formatted(.dateTime.day().month(.abbreviated))
-        let e = weekEnd.formatted(.dateTime.day().month(.abbreviated).year())
+        let e = weekEnd.formatted(LedgerDate.display(.dateTime.day().month(.abbreviated).year()))
         return "\(s) – \(e)"
     }
 

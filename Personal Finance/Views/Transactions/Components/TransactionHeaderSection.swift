@@ -25,7 +25,7 @@ struct TransactionHeaderSection: View {
                 HStack(spacing: 10) {
                     Picker("Period", selection: $period) {
                         ForEach(TransactionPeriodFilter.allCases) { value in
-                            Text(value.rawValue).tag(value)
+                            Text(LocalizedStringKey(value.rawValue)).tag(value)
                         }
                     }
                     .pickerStyle(.segmented)

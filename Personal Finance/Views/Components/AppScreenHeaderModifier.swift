@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AppScreenHeaderModifier: ViewModifier {
     @EnvironmentObject private var authViewModel: AuthViewModel
-    let title: String
+    let title: LocalizedStringKey
 
     @StateObject private var notifVM = NotificationViewModel()
     @State private var showsProfile = false
@@ -33,7 +33,7 @@ struct AppScreenHeaderModifier: ViewModifier {
 }
 
 extension View {
-    func appScreenHeader(_ title: String) -> some View {
+    func appScreenHeader(_ title: LocalizedStringKey) -> some View {
         modifier(AppScreenHeaderModifier(title: title))
     }
 }

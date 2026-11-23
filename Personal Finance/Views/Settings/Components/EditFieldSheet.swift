@@ -3,11 +3,11 @@ import SwiftUI
 struct EditFieldSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let title: String
-    let placeholder: String
+    let title: LocalizedStringKey
+    let placeholder: LocalizedStringKey
     let currentValue: String
     let keyboardType: TextFieldKeyboardType
-    var note: String?
+    var note: LocalizedStringKey?
     let onSave: (String) async throws -> Void
 
     @State private var value = ""
@@ -33,7 +33,7 @@ struct EditFieldSheet: View {
                 }
             }
             .formKeyboardHandling()
-            .navigationTitle("Edit \(title)")
+            .navigationTitle(Text("Edit \(Text(title))"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -72,7 +72,7 @@ struct EditFieldSheet: View {
             try await onSave(trimmed)
             dismiss()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

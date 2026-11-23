@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsRow: View {
     let icon: String
     let color: Color
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let action: () -> Void
 

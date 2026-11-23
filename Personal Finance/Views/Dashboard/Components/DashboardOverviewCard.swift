@@ -33,7 +33,7 @@ struct DashboardOverviewCard: View {
     }
 
     private func amountColumn(
-        title: String,
+        title: LocalizedStringKey,
         amount: Double,
         color: Color,
         prefix: String = ""

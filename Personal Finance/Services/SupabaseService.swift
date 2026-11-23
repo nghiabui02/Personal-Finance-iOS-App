@@ -34,7 +34,15 @@ extension Error {
     /// Two cases get rewritten: a rule the database enforced, which already reads
     /// as a sentence, and losing the connection — every write goes to the server,
     /// so "offline" is the useful explanation rather than the URLError text.
+    @MainActor
     func asDisplayableError() -> Error {
+        let language = AppLocalization.shared.language
+        if let error = self as? FinanceValidationError {
+            return BusinessRuleError(message: language.text(error.localizedDescription))
+        }
+        if let error = self as? BusinessRuleError {
+            return BusinessRuleError(message: language.text(error.message))
+        }
         if let postgrest = self as? PostgrestError {
             let message: String? = switch postgrest.code {
             case "P0001": postgrest.message
@@ -46,11 +54,13 @@ extension Error {
             case "DC001": "Select a debt for this category."
             default: nil
             }
-            if let message { return BusinessRuleError(message: message) }
+            if let message {
+                return BusinessRuleError(message: postgrest.code == "P0001" ? message : language.text(message))
+            }
         }
         if isOfflineError {
             return BusinessRuleError(
-                message: "No internet connection. This app needs to be online to record changes."
+                message: language.text("No internet connection. This app needs to be online to record changes.")
             )
         }
         return self

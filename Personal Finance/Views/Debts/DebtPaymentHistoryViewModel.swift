@@ -29,7 +29,7 @@ final class DebtPaymentHistoryViewModel: ObservableObject {
                 .execute()
                 .value
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.asDisplayableError().localizedDescription
         }
     }
 }

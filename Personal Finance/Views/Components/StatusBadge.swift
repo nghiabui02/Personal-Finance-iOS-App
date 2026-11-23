@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct StatusBadge: View {
-    let label: String
+    let label: LocalizedStringKey
     let color: Color
 
     var body: some View {

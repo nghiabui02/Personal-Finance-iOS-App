@@ -16,7 +16,7 @@ struct WalletCashFlowSection: View {
     }
 
     private func valueColumn(
-        title: String,
+        title: LocalizedStringKey,
         amount: Double,
         color: Color
     ) -> some View {

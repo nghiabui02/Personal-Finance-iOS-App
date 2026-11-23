@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct TxStatBox: View {
-    let label: String
+    let label: LocalizedStringKey
     let amount: Double
     let color: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label.uppercased())
+            Text(label)
+                .textCase(.uppercase)
                 .font(.caption2.weight(.semibold))
                 .tracking(1.1)
                 .foregroundStyle(.secondary)

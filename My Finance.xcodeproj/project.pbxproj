@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1042DD5A26E843CA826630A5 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E15602BA485047928E98250A /* Localizable.xcstrings */; };
 		02DA7EB80FB842EDA7E5DE93 /* LedgerDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3591D6E5612D0430605AC9 /* LedgerDate.swift */; };
 		09D131ED937E71857B4EBA22 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66976D0D1557A6ADFDEF5959 /* SettingsView.swift */; };
 		0E7AE0CB35BB4C2FAC9729F0 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2150573043CA45CB8F2F1630 /* StatusBadge.swift */; };
@@ -27,6 +28,7 @@
 		3C4C2EA20AD02C9F5194698B /* RecurringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6249E108B6EAFEB4AD2C8D /* RecurringView.swift */; };
 		3F50FD06C4F53C1DBA294013 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67F0370DE9C96BA9783379F /* TransactionRow.swift */; };
 		402701E7763CD1241602A7F5 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62514F436416338A82625D20 /* AppConfig.swift */; };
+		FDCF7E6C54F646A89C88DCBC /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B9581C8DA0442D9994EE8B /* AppLanguage.swift */; };
 		41A37F21F6B2CA268F53BA83 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB1D06BFC5D226A7083DB0E7 /* CategoriesView.swift */; };
 		486E1CF41EDB00C99AAB6115 /* AddEditCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BF435250E4FBEE93C8039E /* AddEditCategoryView.swift */; };
 		4CD605F9FA9CAA07A33E7F35 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884780EA4AE35DC8EB47FA06 /* SkeletonView.swift */; };
@@ -165,6 +167,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E15602BA485047928E98250A /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0121FE993DAE0AD28005418E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		08B37E0E85CFB83303D5157A /* TxStatBox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TxStatBox.swift; sourceTree = "<group>"; };
 		09C0B6954D1DEB10216CAFCB /* TransactionCategoryPickerSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionCategoryPickerSheet.swift; sourceTree = "<group>"; };
@@ -197,6 +200,7 @@
 		5DECE608EB80E21A40E7431C /* MonthSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthSelectorView.swift; sourceTree = "<group>"; };
 		5EDE77DAD013F9FF642A9C26 /* AddEditRecurringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditRecurringView.swift; sourceTree = "<group>"; };
 		62514F436416338A82625D20 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		D1B9581C8DA0442D9994EE8B /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		666D2A4AB32A151A3F676DFF /* Personal_FinanceUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Personal_FinanceUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		6695B669916D888022707AB4 /* BudgetSuggestions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BudgetSuggestions.swift; sourceTree = "<group>"; };
 		7BB676A7EFFB44BA9FC69B54 /* BudgetUsage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BudgetUsage.swift; sourceTree = "<group>"; };
@@ -510,6 +514,7 @@
 			isa = PBXGroup;
 			children = (
 				62514F436416338A82625D20 /* AppConfig.swift */,
+				D1B9581C8DA0442D9994EE8B /* AppLanguage.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -613,6 +618,7 @@
 			isa = PBXGroup;
 			children = (
 				47DB579F2EC9BFB1F8445486 /* Assets.xcassets */,
+				E15602BA485047928E98250A /* Localizable.xcstrings */,
 				CFF8F30A5B38C1F278683ED9 /* Info.plist */,
 				AB43EDEAB7559804CA8B7BEA /* Personal_FinanceApp.swift */,
 				91479600EFFC961ADAD6D0F8 /* Config */,
@@ -791,6 +797,7 @@
 			knownRegions = (
 				Base,
 				en,
+				vi,
 			);
 			mainGroup = 073718F8627DF8080EDD24CA;
 			minimizedProjectReferenceProxies = 1;
@@ -815,6 +822,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				297C2EAF4759093B247031DA /* Assets.xcassets in Resources */,
+				1042DD5A26E843CA826630A5 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -842,6 +850,7 @@
 				11BE23FD160D549CBC22AC97 /* AddEditTransactionView.swift in Sources */,
 				A0930DDD42F16BEF22B53F2E /* AddEditWalletView.swift in Sources */,
 				402701E7763CD1241602A7F5 /* AppConfig.swift in Sources */,
+				FDCF7E6C54F646A89C88DCBC /* AppLanguage.swift in Sources */,
 				8D3FA27F135130DF9FF24E65 /* AuthViewModel.swift in Sources */,
 				E70000000000000000000003 /* AvatarView.swift in Sources */,
 				BB036A2778F844F392B439CB /* BalanceCardView.swift in Sources */,
@@ -1167,7 +1176,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1246,7 +1255,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

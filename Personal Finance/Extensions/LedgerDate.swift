@@ -38,6 +38,11 @@ enum LedgerDate {
         return style
     }
 
+    @MainActor
+    static func display(_ style: Date.FormatStyle) -> Date.FormatStyle {
+        format(style).locale(AppLocalization.shared.language.locale)
+    }
+
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format

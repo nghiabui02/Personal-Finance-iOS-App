@@ -139,6 +139,6 @@ struct AddEditDebtView: View {
                 )
             }
             dismiss()
-        } catch { errorMsg = error.localizedDescription }
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }

@@ -44,6 +44,7 @@ struct RootView: View {
                     .environmentObject(authVM)
             }
         }
+        .environment(\.locale, AppLocalization.shared.language.locale)
         .preferredColorScheme(
             colorScheme == "light" ? .light :
             colorScheme == "dark" ? .dark : nil

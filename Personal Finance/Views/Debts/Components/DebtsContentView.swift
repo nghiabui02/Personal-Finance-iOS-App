@@ -80,7 +80,7 @@ private struct DebtFilterPicker: View {
     var body: some View {
         Picker("Filter", selection: $filterType) {
             ForEach(DebtFilterType.allCases) { filter in
-                Text(filter.rawValue)
+                Text(LocalizedStringKey(filter.rawValue))
                     .tag(filter)
             }
         }

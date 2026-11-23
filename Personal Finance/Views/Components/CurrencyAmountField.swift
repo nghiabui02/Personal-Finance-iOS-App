@@ -1,17 +1,17 @@
 import SwiftUI
 
 struct CurrencyAmountField: View {
-    let title: String
+    let title: LocalizedStringKey
     let currencySymbol: String
-    let placeholder: String
+    let placeholder: LocalizedStringKey
 
     @Binding var amount: Double
     @Binding var amountText: String
 
     init(
-        title: String = "Amount",
+        title: LocalizedStringKey = "Amount",
         currencySymbol: String = "₫",
-        placeholder: String = "0",
+        placeholder: LocalizedStringKey = "0",
         amount: Binding<Double>,
         amountText: Binding<String>
     ) {

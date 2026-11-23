@@ -14,8 +14,8 @@ struct ReconcileSheet: View {
     @State private var errorMsg: String?
 
     private var delta: Double { actualBalance - wallet.balance }
-    private var trackedLabel: String { wallet.type == "credit" ? "Tracked Available Credit" : "Tracked Balance" }
-    private var actualLabel: String { wallet.type == "credit" ? "Actual Available Credit" : "Actual Balance" }
+    private var trackedLabel: LocalizedStringKey { wallet.type == "credit" ? "Tracked Available Credit" : "Tracked Balance" }
+    private var actualLabel: LocalizedStringKey { wallet.type == "credit" ? "Actual Available Credit" : "Actual Balance" }
 
     var body: some View {
         NavigationStack {
@@ -79,7 +79,7 @@ struct ReconcileSheet: View {
             )
             dismiss()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

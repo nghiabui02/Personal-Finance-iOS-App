@@ -110,7 +110,7 @@ struct WalletRow: View {
         }
     }
 
-    private func cardButton(_ icon: String, title: String, action: @escaping () -> Void) -> some View {
+    private func cardButton(_ icon: String, title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: icon)

@@ -47,14 +47,14 @@ final class LocalWallet {
         }
     }
 
-    var typeLabel: String {
+    @MainActor var typeLabel: String {
         switch type {
-        case "cash": return "Cash"
-        case "bank": return "Bank"
-        case "e_wallet": return "E-Wallet"
-        case "investment": return "Investment"
-        case "credit": return "Credit"
-        default: return "Other"
+        case "cash": return AppLocalization.shared.language.text("Cash")
+        case "bank": return AppLocalization.shared.language.text("Bank")
+        case "e_wallet": return AppLocalization.shared.language.text("E-Wallet")
+        case "investment": return AppLocalization.shared.language.text("Investment")
+        case "credit": return AppLocalization.shared.language.text("Credit")
+        default: return AppLocalization.shared.language.text("Other")
         }
     }
 }

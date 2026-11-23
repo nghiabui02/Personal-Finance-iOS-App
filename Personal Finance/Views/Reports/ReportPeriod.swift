@@ -69,17 +69,17 @@ struct ReportPeriodContext {
         }
     }
 
-    var rangeLabel: String {
+    @MainActor var rangeLabel: String {
         switch period {
         case .week:
             let range = range
-            let style = LedgerDate.format(.dateTime.month(.abbreviated).day())
+            let style = LedgerDate.display(.dateTime.month(.abbreviated).day())
             return "\(range.start.formatted(style)) – \(range.end.formatted(style)), \(calendar.component(.year, from: range.end))"
         case .month:
-            return referenceDate.formatted(LedgerDate.format(.dateTime.month(.wide).year()))
+            return referenceDate.formatted(LedgerDate.display(.dateTime.month(.wide).year()))
         case .quarter:
             let quarter = (calendar.component(.month, from: range.start) - 1) / 3 + 1
-            return "Q\(quarter) \(calendar.component(.year, from: referenceDate))"
+            return AppLocalization.shared.language.text("Q%lld %lld", quarter, calendar.component(.year, from: referenceDate))
         case .year:
             return String(calendar.component(.year, from: referenceDate))
         }

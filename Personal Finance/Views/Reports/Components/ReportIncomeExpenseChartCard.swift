@@ -99,7 +99,7 @@ private struct ReportChartLegend: View {
         }
     }
 
-    private func legendItem(_ title: String, color: Color) -> some View {
+    private func legendItem(_ title: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 4) {
             Circle()
                 .fill(color)

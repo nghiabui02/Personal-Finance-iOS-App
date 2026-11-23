@@ -9,7 +9,12 @@ enum AuthState: Equatable {
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var authState: AuthState = .loading
-    @Published var currentUser: User?
+    @Published var currentUser: User? {
+        didSet {
+            let language = metaString("locale").flatMap(AppLanguage.init(rawValue:))
+            AppLocalization.shared.language = currentUser == nil ? .deviceLanguage : language ?? .vietnamese
+        }
+    }
     @Published var isLoading = false
     @Published var isUpdating = false
     @Published var errorMessage: String?
@@ -26,7 +31,7 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Computed profile info
 
     var displayName: String {
-        metaString("full_name") ?? currentUser?.email?.components(separatedBy: "@").first ?? "User"
+        metaString("full_name") ?? currentUser?.email?.components(separatedBy: "@").first ?? AppLocalization.shared.language.text("User")
     }
 
     var avatarURL: URL? {
@@ -52,6 +57,8 @@ final class AuthViewModel: ObservableObject {
                 currentUser = session?.user
                 authState = session != nil ? .authenticated : .unauthenticated
                 if session != nil { Task { await fetchUser() } }
+            case .userUpdated, .tokenRefreshed:
+                if let user = session?.user, user.id == currentUser?.id { currentUser = user }
             case .signedOut, .userDeleted:
                 authState = .unauthenticated
                 currentUser = nil
@@ -62,7 +69,9 @@ final class AuthViewModel: ObservableObject {
     }
 
     func fetchUser() async {
-        guard let user = try? await auth.user(), auth.currentSession?.user.id == user.id else { return }
+        let previousLocale = metaString("locale")
+        guard !isUpdating, let user = try? await auth.user(), auth.currentSession?.user.id == user.id,
+              !isUpdating, metaString("locale") == previousLocale else { return }
         currentUser = user
     }
 
@@ -78,7 +87,7 @@ final class AuthViewModel: ObservableObject {
 
     func signUp(email: String, password: String) async {
         guard password.count >= 6 else {
-            errorMessage = "Password must contain at least 6 characters."
+            errorMessage = AppLocalization.shared.language.text("Password must contain at least 6 characters.")
             return
         }
         isLoading = true; errorMessage = nil; authNotice = nil
@@ -86,7 +95,7 @@ final class AuthViewModel: ObservableObject {
         do {
             let response = try await auth.signUp(email: email, password: password)
             if response.session == nil {
-                authNotice = "Check your email to confirm your account."
+                authNotice = AppLocalization.shared.language.text("Check your email to confirm your account.")
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -95,17 +104,17 @@ final class AuthViewModel: ObservableObject {
 
     func sendPasswordReset(email: String) async {
         guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Enter your email address first."
+            errorMessage = AppLocalization.shared.language.text("Enter your email address first.")
             return
         }
         isLoading = true; errorMessage = nil; authNotice = nil
         defer { isLoading = false }
         do {
             try await auth.resetPasswordForEmail(email)
-            authNotice = "If an account exists, password reset instructions have been sent."
+            authNotice = AppLocalization.shared.language.text("If an account exists, password reset instructions have been sent.")
         } catch {
             // Do not reveal whether the address is registered.
-            authNotice = "If an account exists, password reset instructions have been sent."
+            authNotice = AppLocalization.shared.language.text("If an account exists, password reset instructions have been sent.")
         }
     }
 
@@ -115,6 +124,15 @@ final class AuthViewModel: ObservableObject {
     }
 
     // MARK: - Profile updates
+
+    func updateLanguage(_ language: AppLanguage) async throws {
+        guard let session = LocalDataStore.session, currentUser?.id == session.userId, !isUpdating else { return }
+        isUpdating = true
+        defer { isUpdating = false }
+        let user = try await auth.update(user: UserAttributes(data: ["locale": .string(language.rawValue)]))
+        try LocalDataStore.validate(session)
+        currentUser = user
+    }
 
     func updateName(_ name: String) async throws {
         isUpdating = true; defer { isUpdating = false }

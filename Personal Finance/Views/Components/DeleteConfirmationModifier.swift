@@ -4,8 +4,8 @@ private struct DeleteConfirmationModifier<Item>: ViewModifier {
     @Binding var item: Item?
     @Binding var isPresented: Bool
 
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
     let onConfirm: (Item) -> Void
 
     func body(content: Content) -> some View {
@@ -34,8 +34,8 @@ extension View {
     func deleteConfirmation<Item>(
         item: Binding<Item?>,
         isPresented: Binding<Bool>,
-        title: String,
-        message: String = "This action cannot be undone.",
+        title: LocalizedStringKey,
+        message: LocalizedStringKey = "This action cannot be undone.",
         onConfirm: @escaping (Item) -> Void
     ) -> some View {
         modifier(

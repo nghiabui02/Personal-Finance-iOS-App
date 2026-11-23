@@ -162,7 +162,7 @@ struct TransferSheet: View {
     }
 
     @ViewBuilder
-    private func balanceRow(label: String, amount: Double, highlight: Bool = false) -> some View {
+    private func balanceRow(label: LocalizedStringKey, amount: Double, highlight: Bool = false) -> some View {
         HStack {
             Text(label).foregroundColor(.secondary)
             Spacer()
@@ -187,7 +187,7 @@ struct TransferSheet: View {
             )
             dismiss()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

@@ -22,7 +22,7 @@ struct MainTabView: View {
         }
     }
 
-    private func banner(_ text: String, symbol: String) -> some View {
+    private func banner(_ text: LocalizedStringKey, symbol: String) -> some View {
         Label(text, systemImage: symbol)
             .font(.caption)
             .foregroundStyle(.white)

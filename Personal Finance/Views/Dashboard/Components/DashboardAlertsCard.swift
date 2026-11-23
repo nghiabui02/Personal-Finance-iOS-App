@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardAlert: Identifiable {
     let id: String
-    let title: String
+    let title: LocalizedStringKey
     let message: String
     let symbol: String
     let color: Color
