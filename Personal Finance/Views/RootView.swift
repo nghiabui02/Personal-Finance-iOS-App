@@ -6,6 +6,20 @@ struct RootView: View {
     @StateObject private var authVM = AuthViewModel()
     @AppStorage("pf_colorScheme") private var colorScheme = "system"
     @Environment(\.scenePhase) private var scenePhase
+    @State private var preparedUser: UUID?
+    @State private var cacheError: String?
+
+    private enum CacheIdentity: Equatable {
+        case waiting, signedOut, signedIn(UUID)
+    }
+
+    private var cacheIdentity: CacheIdentity {
+        switch authVM.authState {
+        case .loading: .waiting
+        case .unauthenticated: .signedOut
+        case .authenticated: authVM.currentUser.map { .signedIn($0.id) } ?? .waiting
+        }
+    }
 
     var body: some View {
         Group {
@@ -13,11 +27,17 @@ struct RootView: View {
             case .loading:
                 loadingView
             case .authenticated:
-                if authVM.currentUser == nil {
-                    loadingView
-                } else {
+                if let cacheError {
+                    ContentUnavailableView("Unable to load saved data", systemImage: "exclamationmark.triangle",
+                                           description: Text(cacheError))
+                } else if let preparedUser, cacheIdentity == .signedIn(preparedUser) {
                     MainTabView()
+                        .id(preparedUser)
+                        .environment(\.timeZone, LedgerDate.timeZone)
+                        .environment(\.calendar, LedgerDate.calendar)
                         .environmentObject(authVM)
+                } else {
+                    loadingView
                 }
             case .unauthenticated:
                 LoginView()
@@ -28,13 +48,11 @@ struct RootView: View {
             colorScheme == "light" ? .light :
             colorScheme == "dark" ? .dark : nil
         )
-        .onChange(of: authVM.currentUser?.id) { _, userId in
-            guard let userId else { return }
-            LocalDataStore.prepareForAuthenticatedUser(userId, in: modelContext)
-        }
-        .onChange(of: authVM.authState) { _, state in
-            if case .unauthenticated = state {
-                LocalDataStore.clearForSignedOutUser(in: modelContext)
+        .onChange(of: cacheIdentity, initial: true) { _, identity in
+            switch identity {
+            case .waiting: break
+            case .signedOut: prepareCache(for: nil)
+            case .signedIn(let userId): prepareCache(for: userId)
             }
         }
         .overlay {
@@ -44,6 +62,17 @@ struct RootView: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
             }
+        }
+    }
+
+    private func prepareCache(for userId: UUID?) {
+        preparedUser = nil
+        cacheError = nil
+        do {
+            try LocalDataStore.prepare(for: userId, in: modelContext)
+            preparedUser = userId
+        } catch {
+            cacheError = error.localizedDescription
         }
     }
 

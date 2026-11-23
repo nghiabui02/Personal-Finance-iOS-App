@@ -70,12 +70,12 @@ final class LocalCategory {
     var systemKey: String?
 
     init(from r: RemoteCategory) {
-        serverId = r.id; name = r.name; type = r.type
+        serverId = r.id; name = r.displayName; type = r.type
         icon = r.icon; color = r.color; isDefault = r.isDefault
         systemKey = r.systemKey
     }
     func update(from r: RemoteCategory) {
-        name = r.name; type = r.type; icon = r.icon; color = r.color; isDefault = r.isDefault
+        name = r.displayName; type = r.type; icon = r.icon; color = r.color; isDefault = r.isDefault
         systemKey = r.systemKey
     }
 }
@@ -106,7 +106,7 @@ final class LocalTransaction {
         walletId = r.walletId
         walletName = r.wallets?.name ?? "Unknown Wallet"
         categoryId = r.categoryId
-        categoryName = r.categories?.name
+        categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         type = r.type.lowercased(); amount = r.amount; note = r.note
@@ -121,7 +121,7 @@ final class LocalTransaction {
         walletId = r.walletId
         walletName = r.wallets?.name ?? "Unknown Wallet"
         categoryId = r.categoryId
-        categoryName = r.categories?.name
+        categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         type = r.type.lowercased(); amount = r.amount; note = r.note
@@ -148,7 +148,7 @@ final class LocalBudget {
     init(from r: RemoteBudget) {
         serverId = r.id
         categoryId = r.categoryId
-        categoryName = r.categories?.name ?? "Unknown"
+        categoryName = r.categories?.displayName ?? "Unknown"
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         amount = r.amount
@@ -159,7 +159,7 @@ final class LocalBudget {
 
     func update(from r: RemoteBudget) {
         categoryId = r.categoryId
-        categoryName = r.categories?.name ?? "Unknown"
+        categoryName = r.categories?.displayName ?? "Unknown"
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         amount = r.amount
@@ -249,7 +249,7 @@ final class LocalRecurringTransaction {
 
     init(from r: RemoteRecurringTransaction) {
         serverId = r.id; walletId = r.walletId; walletName = r.wallets?.name
-        categoryId = r.categoryId; categoryName = r.categories?.name
+        categoryId = r.categoryId; categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
         startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()
@@ -261,7 +261,7 @@ final class LocalRecurringTransaction {
     }
     func update(from r: RemoteRecurringTransaction) {
         walletId = r.walletId; walletName = r.wallets?.name
-        categoryId = r.categoryId; categoryName = r.categories?.name
+        categoryId = r.categoryId; categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
         type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
         startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()

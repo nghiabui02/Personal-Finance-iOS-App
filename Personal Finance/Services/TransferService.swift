@@ -4,7 +4,6 @@ import SwiftData
 @MainActor
 final class TransferService {
     static let shared = TransferService()
-    private let client = SupabaseService.shared.client
     private init() {}
 
     /// Both wallets are locked in id order inside the database function — two
@@ -18,6 +17,9 @@ final class TransferService {
         note: String?,
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_from_wallet_id: String
             let p_to_wallet_id: String
@@ -35,7 +37,7 @@ final class TransferService {
                     p_note: note?.isEmpty == true ? nil : note
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }

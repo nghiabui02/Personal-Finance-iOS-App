@@ -79,8 +79,8 @@ struct CategoriesView: View {
         .deleteConfirmation(
             item: $pendingDeletion,
             isPresented: $showDeleteConfirmation,
-            title: "Delete Category?",
-            message: "The category will be permanently deleted."
+            title: "Remove Category?",
+            message: "Past records will keep this category."
         ) { category in
             Task { await delete(category) }
         }
@@ -91,7 +91,7 @@ struct CategoriesView: View {
         do {
             try await CategoryService.shared.delete(cat, in: modelContext)
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

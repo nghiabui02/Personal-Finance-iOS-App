@@ -4,14 +4,15 @@ import SwiftData
 @MainActor
 final class SavingGoalService {
     static let shared = SavingGoalService()
-    private let client = SupabaseService.shared.client
     private init() {}
 
     func create(
         name: String, icon: String?, targetAmount: Double,
         deadline: Date?, note: String?, in ctx: ModelContext
     ) async throws {
-        let userId = try await client.auth.session.user.id
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Body: Encodable {
             let user_id: String, name: String, icon: String?
             let target_amount: Double, current_amount: Double
@@ -20,15 +21,16 @@ final class SavingGoalService {
         let remote: RemoteSavingGoal = try await client
             .from("saving_goals")
             .insert(Body(
-                user_id: userId.uuidString, name: name, icon: icon,
+                user_id: mutation.userId.uuidString, name: name, icon: icon,
                 target_amount: targetAmount, current_amount: 0,
                 deadline: deadline.map { LedgerDate.dayFormatter.string(from: $0) },
                 note: note?.isEmpty == true ? nil : note,
                 status: "active"
             ))
             .select().single().execute().value
+        try LocalDataStore.validate(mutation.session)
         ctx.insert(LocalSavingGoal(from: remote))
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     func update(
@@ -36,7 +38,9 @@ final class SavingGoalService {
         targetAmount: Double, deadline: Date?, note: String?,
         in ctx: ModelContext
     ) async throws {
-        let userId = try await client.auth.session.user.id
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Body: Encodable {
             let name: String, icon: String?, target_amount: Double, deadline: String?, note: String?
         }
@@ -46,34 +50,42 @@ final class SavingGoalService {
                         deadline: deadline.map { LedgerDate.dayFormatter.string(from: $0) },
                         note: note?.isEmpty == true ? nil : note))
             .eq("id", value: goal.serverId)
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: mutation.userId.uuidString)
             .select().single().execute().value
+        try LocalDataStore.validate(mutation.session)
         goal.update(from: remote)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     func addContribution(_ goal: LocalSavingGoal, amount: Double, in ctx: ModelContext) async throws {
-        let userId = try await client.auth.session.user.id
-        let newAmount = goal.currentAmount + amount
-        let newStatus = newAmount >= goal.targetAmount ? "completed" : goal.status
-        struct Body: Encodable { let current_amount: Double, status: String }
-        let remote: RemoteSavingGoal = try await client
-            .from("saving_goals")
-            .update(Body(current_amount: newAmount, status: newStatus))
-            .eq("id", value: goal.serverId)
-            .eq("user_id", value: userId.uuidString)
-            .select().single().execute().value
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
+        guard amount.isFinite, amount > 0 else {
+            throw BusinessRuleError(message: "Enter a positive contribution.")
+        }
+        struct Params: Encodable { let p_goal_id: UUID; let p_amount: Double }
+        let remote: RemoteSavingGoal? = try await client
+            .rpc("contribute_to_saving_goal", params: Params(p_goal_id: goal.serverId, p_amount: amount))
+            .execute().value
+        guard let remote else {
+            throw BusinessRuleError(message: "This goal is no longer active. Refresh and try again.")
+        }
+        try LocalDataStore.validate(mutation.session)
         goal.update(from: remote)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     func delete(_ goal: LocalSavingGoal, in ctx: ModelContext) async throws {
-        let userId = try await client.auth.session.user.id
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         try await client.from("saving_goals").delete()
             .eq("id", value: goal.serverId)
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: mutation.userId.uuidString)
             .execute()
+        try LocalDataStore.validate(mutation.session)
         ctx.delete(goal)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 }

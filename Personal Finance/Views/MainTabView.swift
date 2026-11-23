@@ -3,27 +3,32 @@ import SwiftData
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var tabRouter = AppTabRouter()
     @StateObject private var sync = SyncManager.shared
 
     var body: some View {
         tabs
-            .safeAreaInset(edge: .top) { offlineBanner }
+            .safeAreaInset(edge: .top) { syncBanner }
             .animation(.easeInOut(duration: 0.2), value: sync.isOnline)
     }
 
-    /// Recording anything needs the server, so the whole app is read-only while
-    /// offline. Saying so up front beats letting each save fail on its own.
     @ViewBuilder
-    private var offlineBanner: some View {
+    private var syncBanner: some View {
         if !sync.isOnline {
-            Label("Offline — showing saved data. You can't record changes.", systemImage: "wifi.slash")
-                .font(.caption)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(Color.expense)
+            banner("Offline — showing saved data.", symbol: "wifi.slash")
+        } else if sync.syncError != nil {
+            banner("Sync failed — saved data may be outdated.", symbol: "exclamationmark.arrow.trianglehead.clockwise.rotate.90")
         }
+    }
+
+    private func banner(_ text: String, symbol: String) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.caption)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(Color.expense)
     }
 
     private var tabs: some View {
@@ -49,8 +54,12 @@ struct MainTabView: View {
                 .tag(AppTab.more)
         }
         .environmentObject(tabRouter)
+        .task { await sync.syncAll(modelContext: modelContext) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { sync.requestSync(modelContext: modelContext) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
-            Task { await SyncManager.shared.syncAll(modelContext: modelContext) }
+            sync.requestSync(modelContext: modelContext)
         }
     }
 }

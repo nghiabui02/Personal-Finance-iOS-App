@@ -80,7 +80,7 @@ struct SavingGoalsView: View {
 
     private func delete(_ goal: LocalSavingGoal) async {
         do { try await SavingGoalService.shared.delete(goal, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }
 
@@ -180,6 +180,6 @@ struct ContributionSheet: View {
         do {
             try await SavingGoalService.shared.addContribution(goal, amount: amount, in: modelContext)
             dismiss()
-        } catch { errorMsg = error.localizedDescription }
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }

@@ -35,8 +35,18 @@ extension Error {
     /// as a sentence, and losing the connection — every write goes to the server,
     /// so "offline" is the useful explanation rather than the URLError text.
     func asDisplayableError() -> Error {
-        if let postgrest = self as? PostgrestError, postgrest.code == "P0001" {
-            return BusinessRuleError(message: postgrest.message)
+        if let postgrest = self as? PostgrestError {
+            let message: String? = switch postgrest.code {
+            case "P0001": postgrest.message
+            case "UC001": "Choose a valid category for this operation."
+            case "UC002": "This category was removed."
+            case "UC003": "Pause the active budget or recurring rule before removing this category."
+            case "UC004": "This change is not allowed for this category."
+            case "UC005": "This category is no longer available."
+            case "DC001": "Select a debt for this category."
+            default: nil
+            }
+            if let message { return BusinessRuleError(message: message) }
         }
         if isOfflineError {
             return BusinessRuleError(
@@ -63,11 +73,13 @@ final class SupabaseService {
     static let shared = SupabaseService()
 
     let client: SupabaseClient
+    let databaseURL: URL
 
     private init() {
         guard let supabaseURL = URL(string: AppConfig.supabaseURL), supabaseURL.host != nil else {
             fatalError("Supabase URL is missing or invalid. Check Config/Secrets.xcconfig.")
         }
+        databaseURL = supabaseURL.appendingPathComponent("rest/v1")
         client = SupabaseClient(
             supabaseURL: supabaseURL,
             supabaseKey: AppConfig.supabaseAnonKey,

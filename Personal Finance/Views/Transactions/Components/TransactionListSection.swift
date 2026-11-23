@@ -89,7 +89,7 @@ struct TransactionListSection: View {
     }()
 
     private func sectionTitle(for date: Date) -> String {
-        let cal = Calendar.current
+        let cal = LedgerDate.calendar
         if cal.isDateInToday(date)     { return "TODAY" }
         if cal.isDateInYesterday(date) { return "YESTERDAY" }
         return Self.headerDateFormatter.string(from: date).uppercased()

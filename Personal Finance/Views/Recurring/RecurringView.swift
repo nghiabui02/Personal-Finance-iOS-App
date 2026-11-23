@@ -70,17 +70,17 @@ struct RecurringView: View {
 
     private func delete(_ rec: LocalRecurringTransaction) async {
         do { try await RecurringService.shared.delete(rec, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 
     private func toggleActive(_ rec: LocalRecurringTransaction) async {
         do { try await RecurringService.shared.toggleActive(rec, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 
     private func skip(_ rec: LocalRecurringTransaction) async {
         do { try await RecurringService.shared.skip(rec, in: modelContext) }
-        catch { errorMsg = error.localizedDescription }
+        catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }
 

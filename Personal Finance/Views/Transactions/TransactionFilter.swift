@@ -41,7 +41,7 @@ enum TransactionFilterEngine {
         to transactions: [LocalTransaction],
         selectedMonth: Date,
         selectedDate: Date?,
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) -> [LocalTransaction] {
         guard let interval = dateInterval(
             for: filter.period,
@@ -66,7 +66,7 @@ enum TransactionFilterEngine {
         for period: TransactionPeriodFilter,
         selectedMonth: Date,
         selectedDate: Date?,
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) -> DateInterval? {
         switch period {
         case .month:
@@ -95,7 +95,7 @@ enum TransactionFilterEngine {
         }
     }
 
-    static func defaultAnchor(for selectedMonth: Date, calendar: Calendar = .current) -> Date {
+    static func defaultAnchor(for selectedMonth: Date, calendar: Calendar = LedgerDate.calendar) -> Date {
         calendar.isDate(selectedMonth, equalTo: Date(), toGranularity: .month)
             ? Date()
             : TransactionDateRange.monthStart(for: selectedMonth, calendar: calendar)

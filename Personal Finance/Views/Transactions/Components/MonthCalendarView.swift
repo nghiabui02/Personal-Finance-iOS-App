@@ -5,7 +5,7 @@ struct MonthCalendarView: View {
     @Binding var selectedDate: Date?
     let dailyData: [Date: (income: Double, expense: Double)]
 
-    private let cal = Calendar.current
+    private let cal = LedgerDate.calendar
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
     private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 

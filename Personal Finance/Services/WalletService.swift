@@ -1,10 +1,10 @@
 import Foundation
 import SwiftData
+import Supabase
 
 @MainActor
 final class WalletService {
     static let shared = WalletService()
-    private let client = SupabaseService.shared.client
     private init() {}
 
     func create(
@@ -13,35 +13,43 @@ final class WalletService {
         creditLimit: Double? = nil, statementDay: Int? = nil, paymentDueDay: Int? = nil,
         in ctx: ModelContext
     ) async throws {
-        let userId = try await client.auth.session.user.id
-        let remote: RemoteWallet
-        if type == "credit" {
-            struct CreditBody: Encodable {
-                let user_id: String, name: String, type: String, balance: Double
-                let icon: String?, color: String?, is_default: Bool
-                let credit_limit: Double, statement_day: Int?, payment_due_day: Int?
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
+        let limit = type == "credit" ? creditLimit : nil
+        let params: [String: AnyJSON] = [
+            "p_name": .string(name), "p_type": .string(type),
+            "p_balance": .double(type == "credit" ? limit ?? 0 : initialBalance),
+            "p_icon": icon.map(AnyJSON.string) ?? .null,
+            "p_color": color.map(AnyJSON.string) ?? .null,
+            "p_is_default": .bool(isDefault),
+            "p_credit_limit": limit.map(AnyJSON.double) ?? .null,
+            "p_statement_day": statementDay.map(AnyJSON.integer) ?? .null,
+            "p_payment_due_day": paymentDueDay.map(AnyJSON.integer) ?? .null
+        ]
+        let remote: RemoteWallet = try await client.rpc("create_wallet", params: params).execute().value
+        let local = LocalWallet(from: remote)
+        if isDefault {
+            do {
+                let defaults: [RemoteWallet] = try await client.from("wallets").select()
+                    .eq("user_id", value: mutation.userId).eq("is_default", value: true)
+                    .limit(1).execute().value
+                try LocalDataStore.validate(mutation.session)
+                let defaultId = defaults.first?.id
+                for wallet in try ctx.fetch(FetchDescriptor<LocalWallet>()) {
+                    wallet.isDefault = wallet.serverId == defaultId
+                }
+                local.isDefault = local.serverId == defaultId
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                SyncManager.shared.requestSync(modelContext: ctx)
+                throw BusinessRuleError(message: "The wallet was created. The app will refresh your wallets.")
             }
-            let limit = creditLimit ?? 0
-            remote = try await client
-                .from("wallets")
-                .insert(CreditBody(user_id: userId.uuidString, name: name, type: type,
-                                   balance: limit, icon: icon, color: color, is_default: isDefault,
-                                   credit_limit: limit, statement_day: statementDay,
-                                   payment_due_day: paymentDueDay))
-                .select().single().execute().value
-        } else {
-            struct Body: Encodable {
-                let user_id: String, name: String, type: String, balance: Double
-                let icon: String?, color: String?, is_default: Bool
-            }
-            remote = try await client
-                .from("wallets")
-                .insert(Body(user_id: userId.uuidString, name: name, type: type,
-                             balance: initialBalance, icon: icon, color: color, is_default: isDefault))
-                .select().single().execute().value
         }
-        ctx.insert(LocalWallet(from: remote))
-        try ctx.save()
+        try LocalDataStore.validate(mutation.session)
+        ctx.insert(local)
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     /// Only `name` and `color` are editable.
@@ -54,25 +62,31 @@ final class WalletService {
         _ wallet: LocalWallet, name: String, color: String?,
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { throw FinanceValidationError.invalidWalletName }
 
-        let userId = try await client.auth.session.user.id
         struct Body: Encodable { let name: String, color: String? }
         let remote: RemoteWallet = try await client
             .from("wallets")
             .update(Body(name: trimmedName, color: color))
             .eq("id", value: wallet.serverId)
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: mutation.userId.uuidString)
             .select().single().execute().value
+        try LocalDataStore.validate(mutation.session)
         wallet.update(from: remote)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     /// Moving a leftover balance to the default wallet and removing the wallet
     /// happen together. Past transactions keep their history — the foreign key
     /// clears `wallet_id` rather than deleting them.
     func delete(_ wallet: LocalWallet, in ctx: ModelContext) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_wallet_id: String
             let p_date: String
@@ -84,7 +98,7 @@ final class WalletService {
                     p_date: LedgerDate.string(from: Date())
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }
@@ -100,22 +114,11 @@ final class WalletService {
         _ wallet: LocalWallet, actualBalance: Double, note: String?,
         date: Date = Date(), in ctx: ModelContext
     ) async throws {
-        // Created on demand: an account that has never reconciled has neither
-        // category yet, and the first attempt would otherwise fail.
-        let up = try await CategoryService.shared.ensureSystemCategory(
-            SystemCategory.adjustUp, type: "income",
-            name: SystemCategory.Adjustment.name,
-            icon: SystemCategory.Adjustment.icon,
-            color: SystemCategory.Adjustment.color,
-            in: ctx
-        )
-        let down = try await CategoryService.shared.ensureSystemCategory(
-            SystemCategory.adjustDown, type: "expense",
-            name: SystemCategory.Adjustment.name,
-            icon: SystemCategory.Adjustment.icon,
-            color: SystemCategory.Adjustment.color,
-            in: ctx
-        )
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
+        let up = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustUp, using: client)
+        let down = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustDown, using: client)
 
         struct Params: Encodable {
             let p_wallet_id: String
@@ -131,12 +134,12 @@ final class WalletService {
                     p_wallet_id: wallet.serverId.uuidString,
                     p_actual_balance: actualBalance,
                     p_date: LedgerDate.string(from: date),
-                    p_category_up: up.serverId.uuidString,
-                    p_category_down: down.serverId.uuidString,
+                    p_category_up: up.uuidString,
+                    p_category_down: down.uuidString,
                     p_note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }
@@ -149,6 +152,9 @@ final class WalletService {
         amount: Double, date: Date, note: String?,
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_card_wallet_id: String
             let p_from_wallet_id: String
@@ -166,7 +172,7 @@ final class WalletService {
                     p_note: note?.isEmpty == true ? nil : note
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }

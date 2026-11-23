@@ -26,7 +26,11 @@ struct AddEditRecurringView: View {
     @State private var errorMsg: String?
 
     private var isEditing: Bool { recurring != nil }
-    private var filteredCategories: [LocalCategory] { allCategories.filter { $0.type == type } }
+    private var filteredCategories: [LocalCategory] { allCategories.filter { category in
+        guard category.type == type else { return false }
+        if category.serverId == recurring?.categoryId { return true }
+        return category.systemKey.map { !SystemCategory.debtKeys.contains($0) } != false
+    } }
 
     let frequencies = ["daily", "weekly", "monthly", "yearly"]
 
@@ -136,6 +140,6 @@ struct AddEditRecurringView: View {
                 )
             }
             dismiss()
-        } catch { errorMsg = error.localizedDescription }
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }

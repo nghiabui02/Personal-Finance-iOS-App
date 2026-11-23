@@ -83,18 +83,6 @@ struct DashboardView: View {
     private func handleAppear() {
         recompute()
         syncData()
-        Task { await writeNetWorthSnapshot(metrics.netWorth) }
-    }
-
-    private func writeNetWorthSnapshot(_ netWorth: Double) async {
-        guard let userId = try? await SupabaseService.shared.client.auth.session.user.id else { return }
-        let today = LedgerDate.string(from: Date())
-        struct Body: Encodable { let user_id: String; let net_worth: Double; let recorded_date: String }
-        _ = try? await SupabaseService.shared.client
-            .from("net_worth_snapshots")
-            .upsert(Body(user_id: userId.uuidString.lowercased(), net_worth: netWorth, recorded_date: today),
-                    onConflict: "user_id,recorded_date")
-            .execute()
     }
 
     private func handleScenePhaseChange(

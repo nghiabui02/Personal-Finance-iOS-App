@@ -48,12 +48,10 @@ final class AuthViewModel: ObservableObject {
     private func observeAuthState() async {
         for await (event, session) in auth.authStateChanges {
             switch event {
-            case .initialSession:
+            case .initialSession, .signedIn:
+                currentUser = session?.user
                 authState = session != nil ? .authenticated : .unauthenticated
-                if session != nil { await fetchUser() }
-            case .signedIn:
-                authState = .authenticated
-                await fetchUser()
+                if session != nil { Task { await fetchUser() } }
             case .signedOut, .userDeleted:
                 authState = .unauthenticated
                 currentUser = nil
@@ -64,7 +62,8 @@ final class AuthViewModel: ObservableObject {
     }
 
     func fetchUser() async {
-        currentUser = try? await auth.user()
+        guard let user = try? await auth.user(), auth.currentSession?.user.id == user.id else { return }
+        currentUser = user
     }
 
     func signIn(email: String, password: String) async {

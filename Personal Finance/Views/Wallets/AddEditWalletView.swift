@@ -155,7 +155,7 @@ struct AddEditWalletView: View {
             }
             dismiss()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

@@ -31,6 +31,13 @@ enum LedgerDate {
         calendar.date(from: calendar.dateComponents([.year, .month], from: date))
     }
 
+    static func format(_ style: Date.FormatStyle) -> Date.FormatStyle {
+        var style = style
+        style.calendar = calendar
+        style.timeZone = timeZone
+        return style
+    }
+
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format

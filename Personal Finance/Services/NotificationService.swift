@@ -23,11 +23,11 @@ final class NotificationService {
         let goalHorizon      = LedgerDate.dayFormatter.string(from: cal.date(byAdding: .day, value: 14, to: now)!)
 
         async let budgetsTask: [BRow]    = client.from("budgets")
-            .select("id, amount, category_id, categories(name, icon)")
+            .select("id, amount, user_category_id, \(CategoryProjection.joined)")
             .eq("user_id", value: userId).eq("month", value: monthStart)
             .execute().value
         async let txTask: [TRow]         = client.from("transactions")
-            .select("category_id, amount")
+            .select("user_category_id, amount")
             .eq("user_id", value: userId).eq("type", value: "expense")
             .gte("transaction_date", value: monthStart).lt("transaction_date", value: monthEnd)
             .execute().value
@@ -36,7 +36,7 @@ final class NotificationService {
             .eq("user_id", value: userId).eq("status", value: "active")
             .execute().value
         async let recurringTask: [RRow]  = client.from("recurring_transactions")
-            .select("id, type, amount, note, next_run_date, end_date, categories(name, icon)")
+            .select("id, type, amount, note, next_run_date, end_date, \(CategoryProjection.joined)")
             .eq("user_id", value: userId)
             .eq("active", value: true)
             .lte("next_run_date", value: recurringHorizon)
@@ -75,15 +75,15 @@ final class NotificationService {
     ) -> [AppNotification] {
         var spending: [UUID: Double] = [:]
         for tx in transactions {
-            if let id = tx.category_id { spending[id, default: 0] += tx.amount }
+            if let id = tx.user_category_id { spending[id, default: 0] += tx.amount }
         }
 
         var notifs: [AppNotification] = []
 
         // Budget
         for b in budgets {
-            let spent = b.category_id.map { spending[$0, default: 0] } ?? 0
-            let name = b.categories?.name ?? "Budget"
+            let spent = b.user_category_id.map { spending[$0, default: 0] } ?? 0
+            let name = b.categories?.displayName ?? "Budget"
             let icon = b.categories?.icon ?? "💰"
             if spent > b.amount {
                 notifs.append(AppNotification(id: "budget_over:\(b.id)", type: "budget_over",
@@ -119,7 +119,7 @@ final class NotificationService {
             guard let nextRun = r.next_run_date, nextRun <= recurringHorizon else { continue }
             if let end = r.end_date, end < nextRun { continue }
             let icon  = r.categories?.icon ?? "🔄"
-            let label = (r.note?.isEmpty == false ? r.note : nil) ?? r.categories?.name ?? "Recurring"
+            let label = (r.note?.isEmpty == false ? r.note : nil) ?? r.categories?.displayName ?? "Recurring"
             notifs.append(AppNotification(id: "recurring:\(r.id):\(nextRun)", type: "recurring_upcoming",
                 severity: .info, title: "Upcoming recurring",
                 message: "\(icon) \(label) · \(fmt(r.amount)) on \(nextRun)",
@@ -224,12 +224,10 @@ final class NotificationService {
 
 // MARK: - Private Decodable row types
 
-private struct CatInfo: Decodable { let name: String; let icon: String? }
-
 private struct BRow: Decodable {
-    let id: UUID; let amount: Double; let category_id: UUID?; let categories: CatInfo?
+    let id: UUID; let amount: Double; let user_category_id: UUID?; let categories: CategoryReference?
 }
-private struct TRow: Decodable { let category_id: UUID?; let amount: Double }
+private struct TRow: Decodable { let user_category_id: UUID?; let amount: Double }
 private struct DRow: Decodable {
     let id: UUID; let type: String; let person_name: String
     let remaining_amount: Double; let due_date: String?
@@ -237,7 +235,7 @@ private struct DRow: Decodable {
 private struct RRow: Decodable {
     let id: UUID; let type: String; let amount: Double
     let note: String?; let next_run_date: String?; let end_date: String?
-    let categories: CatInfo?
+    let categories: CategoryReference?
 }
 private struct GRow: Decodable {
     let id: UUID; let name: String; let icon: String?

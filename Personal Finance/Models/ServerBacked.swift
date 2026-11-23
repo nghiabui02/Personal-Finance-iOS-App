@@ -35,3 +35,11 @@ extension LocalSavingGoal: ServerBacked {
 extension LocalRecurringTransaction: ServerBacked {
     static func remoteId(_ remote: RemoteRecurringTransaction) -> UUID { remote.id }
 }
+
+extension LocalTransaction: ServerBacked {
+    static func remoteId(_ remote: RemoteTransaction) -> UUID { remote.id }
+}
+
+extension LocalBudget: ServerBacked {
+    static func remoteId(_ remote: RemoteBudget) -> UUID { remote.id }
+}

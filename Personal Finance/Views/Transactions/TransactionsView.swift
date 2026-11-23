@@ -4,8 +4,16 @@ import SwiftData
 struct TransactionsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
-    @StateObject private var vm   = TransactionViewModel()
-    @Environment(\.scenePhase) private var scenePhase
+    @Query(sort: [
+        SortDescriptor(\LocalTransaction.transactionDate, order: .reverse),
+        SortDescriptor(\LocalTransaction.updatedAt, order: .reverse)
+    ]) private var transactions: [LocalTransaction]
+    @StateObject private var sync = SyncManager.shared
+    @State private var selectedMonth = TransactionDateRange.monthStart(for: Date())
+    @State private var visibleCount = Self.pageSize
+    @State private var errorMessage: String?
+
+    private static let pageSize = 30
 
     // UI-only state — does not drive data fetching
     @State private var selectedDate: Date? = Date()
@@ -15,54 +23,42 @@ struct TransactionsView: View {
     @State private var pendingDeletion: LocalTransaction?
     @State private var showDeleteConfirmation = false
 
-    // MARK: - Derived display values (pure computation from vm state)
-
-    private var displayedIncome: Double {
-        displayedTotals.income
+    private var monthTransactions: [LocalTransaction] {
+        guard let range = TransactionDateRange.monthRange(for: selectedMonth) else { return [] }
+        return transactions.filter { $0.transactionDate >= range.start && $0.transactionDate < range.end }
     }
 
-    private var displayedExpense: Double {
-        displayedTotals.expense
+    private var filteredTransactions: [LocalTransaction] {
+        TransactionFilterEngine.apply(filter, to: monthTransactions, selectedMonth: selectedMonth,
+                                      selectedDate: selectedDate)
     }
+
+    private var usesPagination: Bool { filter.period == .month && !filter.hasContentFilter }
 
     private var displayedGroups: [(Date, [LocalTransaction])] {
-        let transactions = TransactionFilterEngine.apply(
-            filter,
-            to: vm.loadedTxs,
-            selectedMonth: vm.selectedMonth,
-            selectedDate: selectedDate
-        )
-        return TransactionGroupingCalculator.group(transactions).all
+        let rows = filteredTransactions
+        return TransactionGroupingCalculator.group(usesPagination ? Array(rows.prefix(visibleCount)) : rows).all
     }
 
-    private var displayedTotals: (income: Double, expense: Double) {
-        guard filter.period != .month,
-              let interval = TransactionFilterEngine.dateInterval(
-                for: filter.period,
-                selectedMonth: vm.selectedMonth,
-                selectedDate: selectedDate
-              ) else {
-            return (vm.periodIncome, vm.periodExpense)
-        }
-
-        return vm.dailyData.reduce(into: (income: 0.0, expense: 0.0)) { totals, entry in
-            guard entry.key >= interval.start, entry.key < interval.end else { return }
+    private var headerSection: some View {
+        let dailyTotals = TransactionPeriodTotalsCalculator.dailyTotals(
+            from: monthTransactions.operatingOnly(using: categories)
+        )
+        let interval = TransactionFilterEngine.dateInterval(for: filter.period, selectedMonth: selectedMonth,
+                                                            selectedDate: selectedDate)
+        let totals = dailyTotals.reduce(into: (income: 0.0, expense: 0.0)) { totals, entry in
+            guard let interval, interval.start <= entry.key, entry.key < interval.end else { return }
             totals.income += entry.value.income
             totals.expense += entry.value.expense
         }
-    }
-
-    // MARK: - Sub-views
-
-    @ViewBuilder private var headerSection: some View {
-        TransactionHeaderSection(
-            selectedMonth: $vm.selectedMonth,
+        return TransactionHeaderSection(
+            selectedMonth: $selectedMonth,
             selectedDate: calendarDateBinding,
             period: $filter.period,
             keyword: $filter.keyword,
-            dailyData: vm.dailyData,
-            income: displayedIncome,
-            expense: displayedExpense,
+            dailyData: dailyTotals,
+            income: totals.income,
+            expense: totals.expense,
             onAdd: { showAdd = true }
         )
     }
@@ -84,7 +80,7 @@ struct TransactionsView: View {
     @ViewBuilder private var listSection: some View {
         TransactionListSection(
             groups: displayedGroups,
-            isLoading: vm.loadedTxs.isEmpty && (vm.isLoadingMore || vm.isLoadingDateTxs),
+            isLoading: transactions.isEmpty && sync.isSyncing,
             isFiltered: filter.hasContentFilter || filter.period != .month,
             onTap: { editing = $0 },
             onDeleteRequest: {
@@ -95,13 +91,16 @@ struct TransactionsView: View {
     }
 
     @ViewBuilder private var paginationSection: some View {
-        TransactionPaginationSection(
-            selectedDate: filter.period == .month ? nil : selectedDate,
-            hasMore: vm.hasMore,
-            isLoadingMore: vm.isLoadingMore,
-            count: vm.loadedTxs.count,
-            onLoadMore: { await vm.loadMore(in: modelContext) }
-        )
+        if usesPagination {
+            let count = monthTransactions.count
+            TransactionPaginationSection(
+                selectedDate: nil,
+                hasMore: visibleCount < count,
+                isLoadingMore: false,
+                count: min(visibleCount, count),
+                onLoadMore: { visibleCount += Self.pageSize }
+            )
+        }
     }
 
     // MARK: - Body
@@ -119,48 +118,25 @@ struct TransactionsView: View {
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground))
             .appScreenHeader("Transactions")
-            .animation(.easeInOut(duration: 0.2), value: vm.isOnCurrentMonth)
-            .refreshable { vm.resetAndLoad(in: modelContext) }
-            .onChange(of: scenePhase)       { _, p in if p == .active { vm.resetAndLoad(in: modelContext) } }
-            .onChange(of: vm.selectedMonth) { _, month in
-                selectedDate = filter.period == .month
-                    ? nil
-                    : TransactionFilterEngine.defaultAnchor(for: month)
-                vm.resetAndLoad(in: modelContext)
+            .refreshable { await sync.syncAll(modelContext: modelContext) }
+            .onChange(of: selectedMonth) { _, month in
+                visibleCount = Self.pageSize
+                selectedDate = filter.period == .month ? nil : TransactionFilterEngine.defaultAnchor(for: month)
             }
             .onChange(of: filter.period) { _, period in
                 if period == .month {
                     selectedDate = nil
                 } else if selectedDate == nil {
-                    selectedDate = TransactionFilterEngine.defaultAnchor(for: vm.selectedMonth)
+                    selectedDate = TransactionFilterEngine.defaultAnchor(for: selectedMonth)
                 }
-                loadSelectedPeriodIfNeeded(period: period, date: selectedDate)
-            }
-            .onChange(of: filter) { _, updatedFilter in
-                guard updatedFilter.hasContentFilter else { return }
-                Task { await vm.ensureAllTransactionsLoadedForFiltering(in: modelContext) }
             }
             .onChange(of: selectedDate) { _, date in
-                guard let date else { return }
-                if filter.period == .month {
-                    filter.period = .day
-                }
-                loadSelectedPeriodIfNeeded(period: filter.period, date: date)
+                if date != nil && filter.period == .month { filter.period = .day }
             }
-            .onAppear {
-                if vm.selectedMonth != vm.currentMonthStart {
-                    vm.selectedMonth = vm.currentMonthStart
-                } else if vm.loadedTxs.isEmpty {
-                    vm.resetAndLoad(in: modelContext)
-                }
-                loadSelectedPeriodIfNeeded(period: filter.period, date: selectedDate)
-            }
-            // The list is driven by the view model's own array rather than a @Query,
-            // so a sheet writing to the store does not reach it on its own.
-            .sheet(isPresented: $showAdd, onDismiss: reloadAfterEdit) {
+            .sheet(isPresented: $showAdd) {
                 AddEditTransactionView(transaction: nil, defaultDate: selectedDate)
             }
-            .sheet(item: $editing, onDismiss: reloadAfterEdit) { tx in
+            .sheet(item: $editing) { tx in
                 AddEditTransactionView(transaction: tx)
             }
             .deleteConfirmation(
@@ -169,26 +145,17 @@ struct TransactionsView: View {
                 title: "Delete Transaction?",
                 message: "The transaction will be permanently deleted and its wallet balance will be adjusted."
             ) { transaction in
-                Task { await vm.deleteTx(transaction, in: modelContext) }
+                Task { await delete(transaction) }
             }
-            .errorAlert($vm.errorMsg)
+            .errorAlert($errorMessage)
         }
     }
 
-    private func reloadAfterEdit() {
-        vm.resetAndLoad(in: modelContext)
-        loadSelectedPeriodIfNeeded(period: filter.period, date: selectedDate)
-    }
-
-    private func loadSelectedPeriodIfNeeded(period: TransactionPeriodFilter, date: Date?) {
-        guard period != .month else { return }
-        Task {
-            await vm.ensurePeriodLoaded(
-                period,
-                selectedMonth: vm.selectedMonth,
-                selectedDate: date,
-                in: modelContext
-            )
+    private func delete(_ transaction: LocalTransaction) async {
+        do {
+            try await TransactionService.shared.delete(transaction, in: modelContext)
+        } catch {
+            errorMessage = error.asDisplayableError().localizedDescription
         }
     }
 }

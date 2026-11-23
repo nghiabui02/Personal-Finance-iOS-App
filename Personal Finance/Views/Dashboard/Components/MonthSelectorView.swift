@@ -6,7 +6,7 @@ struct MonthSelectorView: View {
     @State private var showPicker = false
 
     private var isCurrentMonth: Bool {
-        Calendar.current.isDate(selectedMonth, equalTo: Date(), toGranularity: .month)
+        LedgerDate.calendar.isDate(selectedMonth, equalTo: Date(), toGranularity: .month)
     }
 
     var body: some View {
@@ -18,7 +18,7 @@ struct MonthSelectorView: View {
             }
 
             Button { showPicker = true } label: {
-                Text(selectedMonth.formatted(.dateTime.month(.wide).year()))
+                Text(selectedMonth, format: LedgerDate.format(.dateTime.month(.wide).year()))
                     .font(.title.weight(.bold))
                     .foregroundColor(.primary)
             }
@@ -37,7 +37,7 @@ struct MonthSelectorView: View {
     }
 
     private func changeMonth(by value: Int) {
-        if let next = Calendar.current.date(byAdding: .month, value: value, to: selectedMonth) {
+        if let next = LedgerDate.calendar.date(byAdding: .month, value: value, to: selectedMonth) {
             withAnimation { selectedMonth = next }
         }
     }
@@ -52,15 +52,15 @@ private struct MonthYearPickerSheet: View {
     @State private var pickerMonth: Int
     @State private var pickerYear: Int
 
-    private let months = Calendar.current.monthSymbols
+    private let months = LedgerDate.calendar.monthSymbols
     private let years: [Int] = Array(2015...2035)
 
     init(selectedMonth: Binding<Date>, isPresented: Binding<Bool>) {
         self._selectedMonth = selectedMonth
         self._isPresented = isPresented
-        let comps = Calendar.current.dateComponents([.year, .month], from: selectedMonth.wrappedValue)
+        let comps = LedgerDate.calendar.dateComponents([.year, .month], from: selectedMonth.wrappedValue)
         _pickerMonth = State(initialValue: (comps.month ?? 1) - 1)
-        _pickerYear  = State(initialValue: comps.year ?? Calendar.current.component(.year, from: Date()))
+        _pickerYear  = State(initialValue: comps.year ?? LedgerDate.calendar.component(.year, from: Date()))
     }
 
     var body: some View {
@@ -94,7 +94,7 @@ private struct MonthYearPickerSheet: View {
                         comps.year = pickerYear
                         comps.month = pickerMonth + 1
                         comps.day = 1
-                        if let date = Calendar.current.date(from: comps) {
+                        if let date = LedgerDate.calendar.date(from: comps) {
                             withAnimation { selectedMonth = date }
                         }
                         isPresented = false

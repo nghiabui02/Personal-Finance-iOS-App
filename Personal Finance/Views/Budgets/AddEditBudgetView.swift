@@ -24,7 +24,7 @@ struct AddEditBudgetView: View {
         _month = State(initialValue: defaultMonth)
     }
 
-    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" } }
+    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" && $0.systemKey == nil } }
 
     var body: some View {
         NavigationStack {
@@ -93,6 +93,6 @@ struct AddEditBudgetView: View {
                 try await BudgetService.shared.create(categoryId: selectedCategoryId, amount: amount, month: month, rollover: rollover, in: modelContext)
             }
             dismiss()
-        } catch { errorMsg = error.localizedDescription }
+        } catch { errorMsg = error.asDisplayableError().localizedDescription }
     }
 }

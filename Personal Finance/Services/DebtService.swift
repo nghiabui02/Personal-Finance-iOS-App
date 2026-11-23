@@ -4,7 +4,6 @@ import SwiftData
 @MainActor
 final class DebtService {
     static let shared = DebtService()
-    private let client = SupabaseService.shared.client
     private init() {}
 
     /// The debt row, its opening transaction and the wallet movement are written
@@ -16,6 +15,9 @@ final class DebtService {
         dueDate: Date?, note: String?, date: Date = Date(),
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_type: String
             let p_person_name: String
@@ -25,7 +27,7 @@ final class DebtService {
             let p_due_date: String?
             let p_note: String?
             let p_wallet_id: String?
-            let p_category_id: String?
+            let p_user_category_id: String?
         }
         do {
             let result: RPC.Envelope = try await client
@@ -38,10 +40,10 @@ final class DebtService {
                     p_due_date: dueDate.map { LedgerDate.string(from: $0) },
                     p_note: note?.isEmpty == true ? nil : note,
                     p_wallet_id: walletId?.uuidString,
-                    p_category_id: categoryId?.uuidString
+                    p_user_category_id: categoryId?.uuidString
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }
@@ -52,7 +54,9 @@ final class DebtService {
         _ debt: LocalDebt, personName: String, personContact: String?,
         dueDate: Date?, note: String?, status: String? = nil, in ctx: ModelContext
     ) async throws {
-        let userId = try await client.auth.session.user.id
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Body: Encodable {
             let person_name: String, person_contact: String?, due_date: String?, note: String?
             let status: String
@@ -67,20 +71,24 @@ final class DebtService {
                 status: status ?? debt.status
             ))
             .eq("id", value: debt.serverId)
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: mutation.userId.uuidString)
             .select().single().execute().value
+        try LocalDataStore.validate(mutation.session)
         debt.update(from: remote)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     func delete(_ debt: LocalDebt, in ctx: ModelContext) async throws {
-        let userId = try await client.auth.session.user.id
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         try await client.from("debts").delete()
             .eq("id", value: debt.serverId)
-            .eq("user_id", value: userId.uuidString)
+            .eq("user_id", value: mutation.userId.uuidString)
             .execute()
+        try LocalDataStore.validate(mutation.session)
         ctx.delete(debt)
-        try ctx.save()
+        try LocalDataStore.saveMutation(in: ctx)
     }
 
     /// Collecting on a loan is income; repaying what you borrowed is an expense —
@@ -90,12 +98,15 @@ final class DebtService {
         date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_debt_id: String
             let p_amount: Double
             let p_date: String
             let p_wallet_id: String?
-            let p_category_id: String?
+            let p_user_category_id: String?
             let p_note: String?
         }
         do {
@@ -105,11 +116,11 @@ final class DebtService {
                     p_amount: amount,
                     p_date: LedgerDate.string(from: date),
                     p_wallet_id: walletId?.uuidString,
-                    p_category_id: categoryId?.uuidString,
+                    p_user_category_id: categoryId?.uuidString,
                     p_note: note?.isEmpty == true ? nil : note
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }
@@ -122,12 +133,15 @@ final class DebtService {
         date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
         in ctx: ModelContext
     ) async throws {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        let client = mutation.client
         struct Params: Encodable {
             let p_debt_id: String
             let p_amount: Double
             let p_date: String
             let p_wallet_id: String?
-            let p_category_id: String?
+            let p_user_category_id: String?
             let p_note: String?
         }
         do {
@@ -137,11 +151,11 @@ final class DebtService {
                     p_amount: amount,
                     p_date: LedgerDate.string(from: date),
                     p_wallet_id: walletId?.uuidString,
-                    p_category_id: categoryId?.uuidString,
+                    p_user_category_id: categoryId?.uuidString,
                     p_note: note?.isEmpty == true ? nil : note
                 ))
                 .execute().value
-            try RPCResultApplier.apply(result, in: ctx)
+            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
         } catch {
             throw error.asDisplayableError()
         }

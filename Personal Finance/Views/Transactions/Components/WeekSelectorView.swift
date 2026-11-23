@@ -3,7 +3,7 @@ import SwiftUI
 struct WeekSelectorView: View {
     @Binding var weekStart: Date
 
-    private var cal: Calendar { var c = Calendar.current; c.firstWeekday = 2; return c }
+    private var cal: Calendar { var c = LedgerDate.calendar; c.firstWeekday = 2; return c }
     private var weekEnd: Date { cal.date(byAdding: .day, value: 6, to: weekStart)! }
 
     private var isCurrentWeek: Bool {
@@ -23,7 +23,7 @@ struct WeekSelectorView: View {
             }
             Text(label).font(.headline).frame(minWidth: 180)
                 .onTapGesture {
-                    var c = Calendar.current; c.firstWeekday = 2
+                    var c = LedgerDate.calendar; c.firstWeekday = 2
                     let comps = c.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
                     withAnimation { weekStart = c.date(from: comps) ?? Date() }
                 }
