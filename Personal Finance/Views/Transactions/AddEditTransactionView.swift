@@ -41,7 +41,12 @@ struct AddEditTransactionView: View {
     }
 
     private var filteredCategories: [LocalCategory] {
-        allCategories.filter { $0.type == type }
+        allCategories.filter { category in
+            guard category.type == type else { return false }
+            if category.serverId == transaction?.categoryId { return true }
+            guard let key = category.systemKey else { return true }
+            return !isEditing && (key == SystemCategory.collectDebt || key == SystemCategory.repayDebt)
+        }
     }
 
     private var selectedCategory: LocalCategory? {
@@ -52,23 +57,25 @@ struct AddEditTransactionView: View {
         wallets.first { $0.serverId == selectedWalletId }
     }
 
-    private var isDebtCategory: Bool {
-        guard let cat = selectedCategory else { return false }
-        return (cat.name == "Thu nợ" && cat.type == "income") ||
-               (cat.name == "Trả nợ" && cat.type == "expense")
-    }
-
-    private var debtTypeFilter: String {
-        // "Thu nợ" = collecting from lend debt; "Trả nợ" = repaying borrow debt
-        selectedCategory?.name == "Thu nợ" ? "lend" : "borrow"
+    private var debtTypeFilter: String? {
+        switch selectedCategory?.systemKey {
+        case SystemCategory.collectDebt: "lend"
+        case SystemCategory.repayDebt: "borrow"
+        default: nil
+        }
     }
 
     private var activeDebtsForCategory: [LocalDebt] {
-        allDebts.filter { $0.type == debtTypeFilter && $0.status != "completed" }
+        allDebts.filter { $0.type == debtTypeFilter && $0.status == "active" && $0.remainingAmount > 0 }
     }
 
     private var linkedDebt: LocalDebt? {
-        allDebts.first { $0.serverId == linkedDebtId }
+        activeDebtsForCategory.first { $0.serverId == linkedDebtId }
+    }
+
+    private var isDebtPayment: Bool { transaction?.debtPaymentId != nil }
+    private var allowsBankFee: Bool {
+        type == "expense" && selectedWalletId != nil && debtTypeFilter == nil && !isDebtPayment
     }
 
     var body: some View {
@@ -85,6 +92,7 @@ struct AddEditTransactionView: View {
                     type: $type,
                     amount: $amount,
                     amountText: $amountText,
+                    allowsTypeChange: !isDebtPayment,
                     onTypeChanged: resetCategoryIfNeeded
                 )
 
@@ -92,11 +100,11 @@ struct AddEditTransactionView: View {
                     date: $date,
                     selectedCategory: selectedCategory,
                     selectedWallet: selectedWallet,
-                    onSelectCategory: { showCategoryPicker = true },
+                    onSelectCategory: { if !isDebtPayment { showCategoryPicker = true } },
                     onSelectWallet: { showWalletPicker = true }
                 )
 
-                if isDebtCategory && !isEditing {
+                if debtTypeFilter != nil && !isEditing {
                     Section("Debt") {
                         Button {
                             showDebtPicker = true
@@ -115,7 +123,7 @@ struct AddEditTransactionView: View {
                     }
                 }
 
-                if !isEditing {
+                if allowsBankFee {
                     Section {
                         Toggle("Bank Fee", isOn: $hasBankFee)
                         if hasBankFee {
@@ -141,7 +149,7 @@ struct AddEditTransactionView: View {
                         ProgressView().scaleEffect(0.8)
                     } else {
                         Button("Save") { Task { await save() } }
-                            .disabled(amount <= 0)
+                            .disabled(amount <= 0 || (!isEditing && debtTypeFilter != nil && linkedDebt == nil))
                     }
                 }
             }
@@ -197,8 +205,11 @@ struct AddEditTransactionView: View {
     private func prefill() {
         if let tx = transaction {
             type = tx.type
-            amount = tx.amount
-            amountText = tx.amount.formattedDecimal()
+            bankFee = tx.bankFee ?? 0
+            hasBankFee = bankFee > 0
+            bankFeeText = hasBankFee ? bankFee.formattedDecimal() : ""
+            amount = tx.amount - bankFee
+            amountText = amount.formattedDecimal()
             date = tx.transactionDate
             selectedCategoryId = tx.categoryId
             selectedWalletId = tx.walletId
@@ -228,22 +239,33 @@ struct AddEditTransactionView: View {
         note = suggestion.note ?? ""
     }
 
+    private func feeForUpdate(_ transaction: LocalTransaction) -> Double {
+        if allowsBankFee { return hasBankFee ? bankFee : 0 }
+        // Preserve fees on legacy rows when their original wallet and type remain unchanged.
+        if !isDebtPayment && transaction.type == type && transaction.walletId == selectedWalletId {
+            return transaction.bankFee ?? 0
+        }
+        return 0
+    }
+
     private func save() async {
-        guard amount > 0 else { return }
+        guard amount.isFinite, amount > 0, !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
 
         do {
             if let tx = transaction {
-                _ = wallets.first { $0.serverId == tx.walletId }
-                _ = wallets.first { $0.serverId == selectedWalletId }
                 try await TransactionService.shared.update(
                     tx, type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
                     note: note.isEmpty ? nil : note,
+                    bankFee: feeForUpdate(tx),
                     in: modelContext
                 )
-            } else if isDebtCategory, let debt = linkedDebt {
+            } else if debtTypeFilter != nil {
+                guard let debt = linkedDebt else {
+                    throw BusinessRuleError(message: "Select a debt for this category.")
+                }
                 try await DebtService.shared.recordPayment(
                     debt, amount: amount,
                     note: note.isEmpty ? nil : note,
@@ -256,13 +278,13 @@ struct AddEditTransactionView: View {
                     type: type, amount: amount, date: date,
                     walletId: selectedWalletId, categoryId: selectedCategoryId,
                     note: note.isEmpty ? nil : note,
-                    bankFee: hasBankFee ? bankFee : 0,
+                    bankFee: allowsBankFee && hasBankFee ? bankFee : 0,
                     in: modelContext
                 )
             }
             dismiss()
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 }

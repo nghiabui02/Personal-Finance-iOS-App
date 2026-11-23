@@ -5,6 +5,7 @@ struct TransactionTypeAmountSection: View {
     @Binding var amount: Double
     @Binding var amountText: String
 
+    let allowsTypeChange: Bool
     let onTypeChanged: (String) -> Void
 
     var body: some View {
@@ -14,6 +15,7 @@ struct TransactionTypeAmountSection: View {
                 Text("Income").tag("income")
             }
             .pickerStyle(.segmented)
+            .disabled(!allowsTypeChange)
             .tint(type == "income" ? .income : .expense)
             .onChange(of: type) { _, newType in
                 onTypeChanged(newType)
