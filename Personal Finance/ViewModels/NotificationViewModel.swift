@@ -2,37 +2,52 @@ import Foundation
 
 @MainActor
 final class NotificationViewModel: ObservableObject {
-    @Published var notifications: [AppNotification] = []
-    @Published var isLoading = false
+    @Published private(set) var notifications: [AppNotification] = []
+    @Published private(set) var isLoading = false
     @Published var errorMsg: String?
+
+    private var isMarkingRead = false
 
     var unreadCount: Int { notifications.filter { !$0.isRead }.count }
 
     func load() async {
-        guard !isLoading else { return }
+        guard !isLoading, let session = LocalDataStore.session else { return }
         isLoading = true
         defer { isLoading = false }
         do {
-            notifications = try await NotificationService.shared.fetchNotifications()
+            notifications = try await NotificationService.shared.fetchNotifications(for: session)
+        } catch is CancellationError {
+            return
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = error.asDisplayableError().localizedDescription
         }
     }
 
-    // Call when sheet opens — marks all as read on server but keeps visual state for this session
-    func markAllReadRemote() {
-        let unreadIds = notifications.filter { !$0.isRead }.map { $0.id }
-        guard !unreadIds.isEmpty else { return }
-        Task { try? await NotificationService.shared.markRead(ids: unreadIds) }
+    func markAllRead() async {
+        let ids = Set(notifications.filter { !$0.isRead }.map(\.id))
+        guard let session = LocalDataStore.session, !ids.isEmpty, !isMarkingRead else { return }
+        isMarkingRead = true
+        defer { isMarkingRead = false }
+        do {
+            try await NotificationService.shared.mark(Array(ids), as: .read, for: session)
+            for index in notifications.indices where ids.contains(notifications[index].id) {
+                notifications[index].isRead = true
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 
-    // Call when sheet closes — update local read state so badge clears
-    func applyLocalRead() {
-        for i in notifications.indices { notifications[i].isRead = true }
-    }
-
-    func dismiss(_ notif: AppNotification) {
-        notifications.removeAll { $0.id == notif.id }
-        Task { try? await NotificationService.shared.dismiss(ids: [notif.id]) }
+    func dismiss(_ notice: AppNotification, for session: LocalDataStore.Session) async {
+        do {
+            try await NotificationService.shared.mark([notice.id], as: .dismissed, for: session)
+            notifications.removeAll { $0.id == notice.id }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 }

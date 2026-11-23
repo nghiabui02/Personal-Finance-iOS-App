@@ -4,20 +4,19 @@ import Supabase
 @MainActor
 final class NotificationService {
     static let shared = NotificationService()
-    private let client = SupabaseService.shared.client
     private init() {}
 
     // MARK: - Fetch
 
-    func fetchNotifications() async throws -> [AppNotification] {
-        guard let session = LocalDataStore.session else { throw CancellationError() }
+    func fetchNotifications(for session: LocalDataStore.Session) async throws -> [AppNotification] {
         let dataClient = try await LocalDataStore.authenticatedClient(for: session)
         let userId = session.userId
         let today = LedgerDate.string(from: Date())
         let calendar = LedgerDate.calendar
         let now = Date()
         guard let month = LedgerDate.startOfMonth(for: now),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: month) else { return [] }
+            let nextMonth = calendar.date(byAdding: .month, value: 1, to: month)
+        else { return [] }
         let monthStart = LedgerDate.string(from: month)
         let monthEnd = LedgerDate.string(from: nextMonth)
         let debtHorizon = LedgerDate.string(from: calendar.date(byAdding: .day, value: 7, to: now) ?? now)
@@ -38,22 +37,38 @@ final class NotificationService {
 
         let budgets = try await budgetsTask
         let currentBudgets = budgets.filter { $0.active && $0.month == monthStart }
-        let spending = currentBudgets.isEmpty ? [:] : try await budgetSpending(
-            from: budgets.map(\.month).min() ?? monthStart, to: monthEnd, using: dataClient
-        )
+        let spending =
+            currentBudgets.isEmpty
+            ? [:]
+            : try await budgetSpending(
+                from: budgets.map(\.month).min() ?? monthStart, to: monthEnd, using: dataClient
+            )
         let usage = BudgetUsageCalculator.calculate(budgets: budgets, spending: spending)
         let (debts, recurring, goals, wallets, states) = try await (
             debtsTask, recurringTask, goalsTask, walletsTask, statesTask
         )
         try LocalDataStore.validate(session)
 
-        return process(
-            budgets: currentBudgets, usage: usage, debts: debts.filter { $0.status == "active" },
-            recurring: recurring.filter(\.active), goals: goals.filter { $0.status == "active" },
-            wallets: wallets.filter { $0.type == "credit" }, states: states,
-            client: dataClient, session: session, today: today, debtHorizon: debtHorizon,
-            recurringHorizon: recurringHorizon, goalHorizon: goalHorizon
-        )
+        let notifications =
+            budgetNotifications(currentBudgets, usage: usage)
+            + debtNotifications(debts.filter { $0.status == "active" }, today: today, horizon: debtHorizon)
+            + recurringNotifications(recurring.filter(\.active), horizon: recurringHorizon)
+            + goalNotifications(goals.filter { $0.status == "active" }, today: today, horizon: goalHorizon)
+            + creditNotifications(wallets.filter { $0.type == "credit" })
+
+        await clearExpiredStates(states, currentIds: Set(notifications.map(\.id)), session: session, using: dataClient)
+        try LocalDataStore.validate(session)
+        let grouped = Dictionary(grouping: states) { $0.id.lowercased() }
+        return notifications.compactMap { notice in
+            let marks = grouped[notice.id, default: []]
+            guard !marks.contains(where: { $0.dismissedAt != nil }) else { return nil }
+            var result = notice
+            result.isRead = marks.contains { $0.readAt != nil }
+            return result
+        }.sorted {
+            if $0.isRead != $1.isRead { return !$0.isRead }
+            return $0.severity.rawValue < $1.severity.rawValue
+        }
     }
 
     private func budgetSpending(
@@ -77,177 +92,173 @@ final class NotificationService {
         var spending: BudgetUsageCalculator.MonthlySpending = [:]
         for row in totals where row.type == "expense" {
             guard let id = row.categoryId,
-                  SystemCategory.group(transferPairId: nil, systemKey: row.categories?.systemKey) == .operating
+                SystemCategory.group(transferPairId: nil, systemKey: row.categories?.systemKey) == .operating
             else { continue }
             spending[id, default: [:]][row.date, default: 0] += row.amount
         }
         return spending
     }
 
-    // MARK: - Generate + filter
-
-    private func process(
-        budgets: [RemoteBudget], usage: [UUID: BudgetUsage], debts: [RemoteDebt],
-        recurring: [RemoteRecurringTransaction], goals: [RemoteSavingGoal], wallets: [RemoteWallet],
-        states: [NotificationState], client: PostgrestClient, session: LocalDataStore.Session,
-        today: String, debtHorizon: String, recurringHorizon: String, goalHorizon: String
-    ) -> [AppNotification] {
-        var notifs: [AppNotification] = []
-
-        // Budget
-        for b in budgets {
-            guard let budget = usage[b.id] else { continue }
-            let spent = budget.spent
-            let limit = budget.effectiveAmount
-            let name = b.categories?.displayName ?? "Budget"
-            let icon = b.categories?.icon ?? "💰"
-            if spent > limit {
-                notifs.append(AppNotification(id: "budget_over:\(b.id)", type: "budget_over",
-                    severity: .alert, title: "Budget exceeded",
-                    message: "\(icon) \(name): \(fmt(spent)) / \(fmt(limit))",
-                    destination: .budgets, isRead: false))
-            } else if limit > 0, spent / limit >= 0.8 {
-                notifs.append(AppNotification(id: "budget_near:\(b.id)", type: "budget_near",
-                    severity: .warning, title: "Budget almost used",
-                    message: "\(icon) \(name): \(Int(spent / limit * 100))% used",
-                    destination: .budgets, isRead: false))
-            }
+    private func budgetNotifications(_ rows: [RemoteBudget], usage: [UUID: BudgetUsage]) -> [AppNotification] {
+        rows.compactMap { row in
+            guard let budget = usage[row.id] else { return nil }
+            let exceeded = budget.spent > budget.effectiveAmount
+            let ratio = budget.effectiveAmount > 0 ? budget.spent / budget.effectiveAmount : 0
+            guard exceeded || ratio >= 0.8 else { return nil }
+            return AppNotification(
+                id: notificationID(exceeded ? "budget_over" : "budget_near", row.id),
+                severity: exceeded ? .alert : .warning,
+                title: exceeded ? "Budget exceeded" : "Budget almost used",
+                message: { language in
+                    let name = row.categories?.label(in: language) ?? language.text("Budget")
+                    let icon = row.categories?.icon ?? "💰"
+                    let spent = budget.spent.formatted(currency: "VND")
+                    let limit = budget.effectiveAmount.formatted(currency: "VND")
+                    return "\(icon) \(name): \(spent) / \(limit)"
+                },
+                destination: .budgets
+            )
         }
-
-        // Debt
-        for d in debts {
-            guard d.remainingAmount > 0, let due = d.dueDate else { continue }
-            if due < today {
-                notifs.append(AppNotification(id: "debt_overdue:\(d.id):\(due)", type: "debt_overdue",
-                    severity: .alert, title: "Debt overdue",
-                    message: "\(d.personName) · \(fmt(d.remainingAmount))",
-                    destination: .debts, isRead: false))
-            } else if due <= debtHorizon {
-                notifs.append(AppNotification(id: "debt_due:\(d.id):\(due)", type: "debt_due",
-                    severity: .warning, title: "Debt due soon",
-                    message: "\(d.personName) · \(fmt(d.remainingAmount)) · due \(due)",
-                    destination: .debts, isRead: false))
-            }
-        }
-
-        // Recurring
-        for r in recurring {
-            guard let nextRun = r.nextRunDate, nextRun <= recurringHorizon else { continue }
-            if let end = r.endDate, end < nextRun { continue }
-            let icon  = r.categories?.icon ?? "🔄"
-            let label = (r.note?.isEmpty == false ? r.note : nil) ?? r.categories?.displayName ?? "Recurring"
-            notifs.append(AppNotification(id: "recurring:\(r.id):\(nextRun)", type: "recurring_upcoming",
-                severity: .info, title: "Upcoming recurring",
-                message: "\(icon) \(label) · \(fmt(r.amount)) on \(nextRun)",
-                destination: .recurring, isRead: false))
-        }
-
-        // Goals
-        for g in goals {
-            if g.targetAmount > 0, g.currentAmount >= g.targetAmount {
-                notifs.append(AppNotification(id: "goal_reached:\(g.id)", type: "goal_reached",
-                    severity: .success, title: "Goal reached! 🎉",
-                    message: "\(g.icon ?? "🎯") \(g.name)",
-                    destination: .savingGoals, isRead: false))
-                continue
-            }
-            if let deadline = g.deadline, deadline <= goalHorizon {
-                let overdue = deadline < today
-                notifs.append(AppNotification(
-                    id: "goal_deadline:\(g.id):\(deadline):\(overdue ? "overdue" : "soon")",
-                    type: "goal_deadline",
-                    severity: overdue ? .alert : .warning,
-                    title: overdue ? "Goal deadline passed" : "Goal deadline soon",
-                    message: "\(g.icon ?? "🎯") \(g.name) · \(fmt(g.currentAmount)) / \(fmt(g.targetAmount))",
-                    destination: .savingGoals, isRead: false))
-            }
-        }
-
-        // Credit
-        for w in wallets {
-            guard let limit = w.creditLimit, limit > 0 else { continue }
-            let used = limit - w.balance
-            guard used / limit >= 0.8 else { continue }
-            notifs.append(AppNotification(id: "credit:\(w.id)", type: "credit_high",
-                severity: .warning, title: "Credit limit high",
-                message: "\(w.name) · \(Int(used / limit * 100))% used",
-                destination: .wallets, isRead: false))
-        }
-
-        // Apply states
-        let stateById  = Dictionary(uniqueKeysWithValues: states.map { ($0.notification_id, $0) })
-        let currentIds = Set(notifs.map { $0.id.lowercased() })
-
-        let staleIds = states.map(\.notification_id).filter { !currentIds.contains($0.lowercased()) }
-        if !staleIds.isEmpty {
-            Task {
-                do {
-                    try LocalDataStore.validate(session)
-                    try await client.from("notification_states")
-                        .delete().eq("user_id", value: session.userId)
-                        .in("notification_id", values: staleIds)
-                        .execute()
-                } catch is CancellationError {
-                    return
-                } catch {
-                    NSLog("Unable to clean up stale notification states.")
-                }
-            }
-        }
-
-        var visible = notifs
-            .filter { stateById[$0.id]?.dismissed_at == nil }
-            .map { n -> AppNotification in
-                var copy = n
-                copy.isRead = stateById[n.id]?.read_at != nil
-                return copy
-            }
-        visible.sort {
-            if $0.isRead != $1.isRead { return !$0.isRead }
-            return $0.severity.rawValue < $1.severity.rawValue
-        }
-        return visible
     }
 
-    // MARK: - Mark read / dismiss
+    private func debtNotifications(_ rows: [RemoteDebt], today: String, horizon: String) -> [AppNotification] {
+        rows.compactMap { row in
+            guard row.remainingAmount > 0, let due = row.dueDate, due <= horizon else { return nil }
+            let overdue = due < today
+            return AppNotification(
+                id: notificationID(overdue ? "debt_overdue" : "debt_due", row.id, suffix: due),
+                severity: overdue ? .alert : .warning,
+                title: overdue ? "Debt overdue" : "Debt due soon",
+                message: { language in
+                    language.text(
+                        "%@ · %@ · due %@", row.personName,
+                        row.remainingAmount.formatted(currency: "VND"), Self.dateLabel(due, language))
+                },
+                destination: .debts
+            )
+        }
+    }
 
-    func markRead(ids: [String]) async throws {
+    private func recurringNotifications(_ rows: [RemoteRecurringTransaction], horizon: String) -> [AppNotification] {
+        rows.compactMap { row in
+            guard let next = row.nextRunDate, next <= horizon, row.endDate.map({ next <= $0 }) ?? true else {
+                return nil
+            }
+            return AppNotification(
+                id: notificationID("recurring", row.id, suffix: next),
+                severity: .info,
+                title: "Upcoming recurring",
+                message: { language in
+                    let name =
+                        (row.note?.isEmpty == false ? row.note : nil)
+                        ?? row.categories?.label(in: language)
+                        ?? language.text(row.type == "income" ? "Income" : "Expense")
+                    let amount = row.amount.formatted(currency: "VND")
+                    return language.text("%@ · %@ on %@", name, amount, Self.dateLabel(next, language))
+                },
+                destination: .recurring
+            )
+        }
+    }
+
+    private func goalNotifications(_ rows: [RemoteSavingGoal], today: String, horizon: String) -> [AppNotification] {
+        rows.compactMap { row in
+            if row.targetAmount > 0, row.currentAmount >= row.targetAmount {
+                return AppNotification(
+                    id: notificationID("goal_reached", row.id), severity: .success, title: "Goal reached!",
+                    message: { _ in "\(row.icon ?? "🎯") \(row.name)" }, destination: .savingGoals
+                )
+            }
+            guard let deadline = row.deadline, deadline <= horizon else { return nil }
+            let overdue = deadline < today
+            return AppNotification(
+                id: notificationID("goal_deadline", row.id, suffix: "\(deadline):\(overdue ? "overdue" : "soon")"),
+                severity: overdue ? .alert : .warning,
+                title: overdue ? "Goal deadline passed" : "Goal deadline soon",
+                message: { language in
+                    language.text(
+                        "%@ · %@ / %@ · due %@", row.name, row.currentAmount.formatted(currency: "VND"),
+                        row.targetAmount.formatted(currency: "VND"), Self.dateLabel(deadline, language))
+                },
+                destination: .savingGoals
+            )
+        }
+    }
+
+    private func creditNotifications(_ rows: [RemoteWallet]) -> [AppNotification] {
+        rows.compactMap { row in
+            guard let limit = row.creditLimit, limit > 0 else { return nil }
+            let usage = (limit - row.balance) / limit
+            guard usage >= 0.8 else { return nil }
+            return AppNotification(
+                id: notificationID("credit", row.id), severity: .warning, title: "Credit limit high",
+                message: { language in
+                    let percent = usage.formatted(.percent.precision(.fractionLength(0)).locale(language.locale))
+                    return language.text("%@ · %@ used", row.name, percent)
+                },
+                destination: .wallets
+            )
+        }
+    }
+
+    private func notificationID(_ prefix: String, _ id: UUID, suffix: String? = nil) -> String {
+        ([prefix, id.uuidString.lowercased()] + (suffix.map { [$0] } ?? [])).joined(separator: ":")
+    }
+
+    private nonisolated static func dateLabel(_ value: String, _ language: AppLanguage) -> String {
+        LedgerDate.date(from: value)?.formatted(LedgerDate.format(.dateTime.day().month()).locale(language.locale))
+            ?? value
+    }
+
+    private func clearExpiredStates(
+        _ states: [NotificationState], currentIds: Set<String>,
+        session: LocalDataStore.Session, using client: PostgrestClient
+    ) async {
+        let families: Set<Substring> = [
+            "budget_over", "budget_near", "debt_overdue", "debt_due", "recurring", "goal_reached", "goal_deadline",
+            "credit",
+        ]
+        let stale = states.map(\.id).filter { id in
+            guard let family = id.split(separator: ":", maxSplits: 1).first else { return false }
+            return families.contains(family) && !currentIds.contains(id.lowercased())
+        }
+        guard !stale.isEmpty else { return }
+        do {
+            try LocalDataStore.validate(session)
+            try await client.from("notification_states").delete().eq("user_id", value: session.userId)
+                .in("notification_id", values: stale).execute()
+        } catch is CancellationError {
+            return
+        } catch {
+            NSLog("Unable to clean up stale notification states.")
+        }
+    }
+
+    enum StateColumn: String {
+        case read = "read_at"
+        case dismissed = "dismissed_at"
+    }
+
+    func mark(_ ids: [String], as column: StateColumn, for session: LocalDataStore.Session) async throws {
         guard !ids.isEmpty else { return }
-        let userId = try await client.auth.session.user.id
-        let now = ISO8601DateFormatter().string(from: Date())
-        struct Body: Encodable { let user_id, notification_id, read_at: String }
-        try await client.from("notification_states")
-            .upsert(ids.map { Body(user_id: userId.uuidString, notification_id: $0, read_at: now) },
-                    onConflict: "user_id,notification_id")
-            .execute()
-    }
-
-    func dismiss(ids: [String]) async throws {
-        guard !ids.isEmpty else { return }
-        let userId = try await client.auth.session.user.id
-        let now = ISO8601DateFormatter().string(from: Date())
-        struct Body: Encodable { let user_id, notification_id, dismissed_at: String }
-        try await client.from("notification_states")
-            .upsert(ids.map { Body(user_id: userId.uuidString, notification_id: $0, dismissed_at: now) },
-                    onConflict: "user_id,notification_id")
-            .execute()
-    }
-
-    // MARK: - Helpers
-
-    private func fmt(_ v: Double) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.groupingSeparator = "."
-        f.maximumFractionDigits = 0
-        return (f.string(from: NSNumber(value: v)) ?? "\(Int(v))") + " đ"
+        let client = try await LocalDataStore.authenticatedClient(for: session)
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let rows = Set(ids.map { $0.lowercased() }).map {
+            ["user_id": session.userId.uuidString, "notification_id": $0, column.rawValue: timestamp]
+        }
+        try await client.from("notification_states").upsert(rows, onConflict: "user_id,notification_id").execute()
+        try LocalDataStore.validate(session)
     }
 }
 
 private struct NotificationState: Decodable, Identifiable {
-    let notification_id: String
-    let read_at: String?
-    let dismissed_at: String?
+    let id: String
+    let readAt: String?
+    let dismissedAt: String?
 
-    var id: String { notification_id }
+    enum CodingKeys: String, CodingKey {
+        case id = "notification_id"
+        case readAt = "read_at"
+        case dismissedAt = "dismissed_at"
+    }
 }

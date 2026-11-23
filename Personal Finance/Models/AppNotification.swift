@@ -25,7 +25,7 @@ enum NotifSeverity: Int {
 enum NotifDestination {
     case budgets, debts, recurring, savingGoals, wallets
 
-    var label: String {
+    var label: LocalizedStringKey {
         switch self {
         case .budgets:     return "Budgets"
         case .debts:       return "Debts"
@@ -38,10 +38,9 @@ enum NotifDestination {
 
 struct AppNotification: Identifiable {
     let id: String
-    let type: String
     let severity: NotifSeverity
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: (AppLanguage) -> String
     let destination: NotifDestination
-    var isRead: Bool
+    var isRead = false
 }

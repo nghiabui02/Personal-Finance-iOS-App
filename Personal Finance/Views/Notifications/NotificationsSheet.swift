@@ -25,13 +25,23 @@ struct NotificationsSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
-        .onAppear { vm.markAllReadRemote() }
+        .task {
+            if vm.notifications.isEmpty { await vm.load() }
+            await vm.markAllRead()
+        }
+        .onChange(of: vm.isLoading) { _, loading in
+            if !loading { Task { await vm.markAllRead() } }
+        }
+        .errorAlert($vm.errorMsg)
     }
 
     private var notificationList: some View {
         List {
             ForEach(vm.notifications) { notif in
-                NotificationRow(notif: notif) { vm.dismiss(notif) }
+                NotificationRow(notif: notif) {
+                    guard let session = LocalDataStore.session else { return }
+                    Task { await vm.dismiss(notif, for: session) }
+                }
                     .listRowBackground(
                         notif.isRead
                             ? Color(.secondarySystemGroupedBackground)
@@ -70,7 +80,7 @@ private struct NotificationRow: View {
                 Text(notif.title)
                     .font(.subheadline.weight(notif.isRead ? .regular : .semibold))
                     .foregroundStyle(notif.isRead ? .secondary : .primary)
-                Text(notif.message)
+                Text(notif.message(AppLocalization.shared.language))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -118,8 +128,8 @@ struct NotificationBellButton: View {
                 }
             }
         }
-        .accessibilityLabel("Notifications\(vm.unreadCount > 0 ? ", \(vm.unreadCount) unread" : "")")
-        .sheet(isPresented: $showSheet, onDismiss: { vm.applyLocalRead() }) {
+        .accessibilityLabel(vm.unreadCount == 0 ? Text("Notifications") : Text("\(vm.unreadCount) unread notifications"))
+        .sheet(isPresented: $showSheet) {
             NotificationsSheet(vm: vm)
         }
     }
