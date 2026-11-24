@@ -1,126 +1,66 @@
-# Personal Finance — iOS App
+# Personal Finance for iOS
 
-A native iOS app for tracking personal finances — wallets, transactions, budgets, debts, saving goals, and recurring payments. Built with SwiftUI and backed by Supabase. Companion to the [web app](https://github.com/nghiabui02/personal-finance-web).
+A SwiftUI app for tracking personal finances in Vietnamese đồng (VND). It shares a Supabase backend with the web app, so you can use the same account and ledger on both when they point to the same project. [Companion web app](https://github.com/nghiabui02/Personal-Finance)
 
 ## Features
 
-- **Dashboard** — Net worth overview, monthly income/expense summary, spending chart, budget progress, spending pace vs. your 3-month average, and recent transactions
-- **Transactions** — Add/edit expenses and income with category, wallet, and date filters; calendar view and pagination; bank fee on a single row; one-tap chips for frequent amounts and repeat transactions
-- **Wallets** — Multiple wallet types (cash, bank, e-wallet, credit card); transfer between wallets; credit card bill payment; reconcile a wallet against its real-world balance
-- **Budgets** — Monthly category budgets with progress tracking, month-to-month rollover, pause/resume, and suggested amounts from your spending history
-- **Debts** — Track money lent and borrowed; payment history; due date reminders
-- **Saving Goals** — Goal tracking with contributions and deadline alerts
-- **Recurring Transactions** — Scheduled income/expense automation with pause, resume, and skip
-- **Reports** — Period-based (week/month/quarter/year) cash flow, spending breakdown, net worth history chart
-- **Notifications** — Smart alerts for overdue debts, exceeded budgets, upcoming recurring payments, and goal deadlines
-- **Settings** — Profile, avatar upload, password change
+- **Overview and reports** — See monthly income, expenses, budget progress, and net worth. Explore cash flow and spending by week, month, quarter, or year.
+- **Transactions and wallets** — Log income and expenses with optional bank fees. Browse, filter, or reuse frequent transactions. Transfer between wallets, pay credit card bills, and reconcile balances.
+- **Categories** — Open **More → Categories → Category Store** to find templates in English or Vietnamese and add them individually or in batches. Create custom categories, or remove and restore categories while keeping their transaction history.
+- **Budgets, debts, and saving goals** — Set monthly budgets with optional rollover, track money lent and borrowed, record repayments, and contribute to saving goals.
+- **Recurring transactions and alerts** — Schedule income or expenses, pause a rule, or skip its next occurrence. Get in-app alerts for budgets, debts, recurring transactions, and saving goals.
+- **Account settings** — Edit your profile, upload an avatar, or change your password. Choose English or Vietnamese in **Settings → Language**. The preference is saved to your account, and Store category names follow it until you rename them.
 
-## Tech Stack
+## Getting started
 
-| Layer | Technology |
-|---|---|
-| UI | SwiftUI (Liquid Glass) |
-| Local persistence | SwiftData |
-| Backend / Auth | Supabase (PostgreSQL + Auth + Storage) |
-| Architecture | MVVM + Service Layer |
-| Charts | Swift Charts |
-| Build SDK | iOS 27 |
-| Min deployment | iOS 18 |
+### Requirements
 
-Navigation and tab bars use the system's default materials so they pick up Liquid Glass
-automatically — the app deliberately avoids `.toolbarBackground` overrides that would
-opt it back out.
+- Xcode 27 or later with the iOS SDK.
+- An iPhone or simulator with iOS 18 or later, or an iPad with iPadOS 18 or later.
+- A Supabase project configured with the Personal Finance schema, database functions, and email/password authentication. The Category Store also needs the shared template catalog. Avatar uploads use a configured Storage bucket. [Backend setup in the web repository](https://github.com/nghiabui02/Personal-Finance#3-database)
 
-## Architecture
+### Configure and run
 
-```
-Personal Finance/
-├── Config/               # AppConfig reads from Secrets.xcconfig
-├── Models/               # LocalModels (SwiftData), RemoteModels (Supabase DTOs)
-├── Services/             # One service per domain (WalletService, TransactionService…)
-│   └── SyncManager       # Orchestrates full sync from Supabase → SwiftData
-├── ViewModels/           # ObservableObject VMs (Auth, Notifications, Transactions)
-├── Views/
-│   ├── Components/       # Cross-feature UI (SuggestionChip, FlowLayout, CurrencyAmountField…)
-│   ├── Auth/
-│   ├── Dashboard/
-│   ├── Transactions/
-│   ├── Wallets/
-│   ├── Budgets/
-│   ├── Debts/
-│   ├── SavingGoals/
-│   ├── Reports/
-│   ├── Recurring/
-│   ├── Categories/
-│   ├── Notifications/
-│   ├── Settings/
-│   └── More/
-└── Extensions/           # LedgerDate, SystemCategory, Color+Hex, Double+Currency, View+Helpers
-```
+1. Clone the repository and copy the configuration template.
 
-Each feature folder keeps screens and calculators at its root, with view pieces under
-its own `Components/` subfolder.
+   ```sh
+   git clone https://github.com/nghiabui02/Personal-Finance-iOS-App.git
+   cd Personal-Finance-iOS-App
+   cp Config/Secrets.xcconfig.example Config/Secrets.xcconfig
+   ```
 
-**Key patterns:**
-- Supabase RLS enforces row-level ownership server-side; all mutating calls also include `.eq("user_id", ...)` client-side as defense-in-depth
-- Balance updates go through the `adjust_wallet_balance` Postgres RPC, which reads and writes in one statement — a client-side read-then-write would lose concurrent updates
-- Dates are *ledger* dates, not device-local ones: `LedgerDate` pins every date format and "today" calculation to `Asia/Ho_Chi_Minh` so the same data reads identically here, on the web client, and abroad
-- `transactions.amount` already includes `bank_fee`; the fee column is stored for display only and is never summed separately
-- Balance reconciliations (`adjust_up` / `adjust_down` categories) are excluded from spending totals via `SystemCategory` — they correct the books rather than record real spending. Debt categories stay in, since that money genuinely moves
-- Recurring transactions fire from a server-side `pg_cron` job, never from the app — a client-side runner would race the cron and double-post
-- `SyncManager` pulls all user data into SwiftData on login/pull-to-refresh; UI reads from local store
-- `notification_states` table tracks read/dismissed state; notification content is derived fresh on each fetch
+2. Fill in `Config/Secrets.xcconfig` with your project values.
 
-## Prerequisites
+   ```xcconfig
+   SUPABASE_HOST = your-project-ref.supabase.co
+   SUPABASE_ANON_KEY = your-supabase-publishable-or-anon-key
+   SUPABASE_AVATAR_BUCKET = Avatar
+   ```
 
-- Xcode 27+ (builds against the iOS 27 SDK)
-- iOS 18 simulator or device
-- A [Supabase](https://supabase.com) project
+   Enter the hostname without `https://`. Use a publishable key or legacy `anon` key. The app bundles this client key, so keep privileged keys on the server. Git ignores the local configuration file. [Supabase API keys](https://supabase.com/docs/guides/api/api-keys)
 
-## Setup
+3. Open `My Finance.xcodeproj`, select the **Personal Finance** scheme and a simulator, then run with **⌘R**. For a physical device, select your development team under **Signing & Capabilities**.
 
-**1. Clone the repo**
-```bash
-git clone https://github.com/nghiabui02/Personal-Finance-iOS-App.git
-cd Personal-Finance-iOS-App
-```
+## How the app works
 
-**2. Create your secrets file**
-```bash
-cp Config/Secrets.xcconfig.example Config/Secrets.xcconfig
-```
+- **Data and offline access** — Supabase stores the shared ledger. SwiftData keeps an on-device cache for offline reading. Writes require a connection. The app refreshes the cache on sign-in, when returning to the foreground, and when the connection returns. [SyncManager.swift](Personal%20Finance/Services/SyncManager.swift)
+- **Ledger calculations** — Ledger dates use `Asia/Ho_Chi_Minh`. VND keeps Vietnamese number formatting in either app language. Transaction amounts already include bank fees. Spending totals exclude wallet balance adjustments. [LedgerDate.swift](Personal%20Finance/Extensions/LedgerDate.swift)
+- **Category membership** — Supabase stores templates in `categories` and account categories in `user_categories`. Removing a category marks it inactive. An active budget for the current month or an active recurring rule can block removal. [CategoryService.swift](Personal%20Finance/Services/CategoryService.swift)
+- **Recurring schedules and notifications** — The backend generates scheduled transactions. iOS derives in-app alerts and saves read and dismissed states in Supabase. [NotificationService.swift](Personal%20Finance/Services/NotificationService.swift)
+- **Localization** — UI translations live in a single Xcode String Catalog. Category template names come from the shared catalog in Supabase. [Localizable.xcstrings](Personal%20Finance/Localizable.xcstrings)
 
-Edit `Config/Secrets.xcconfig` with your Supabase project values:
-```
-SUPABASE_HOST = your-project-ref.supabase.co
-SUPABASE_ANON_KEY = your-anon-key
-SUPABASE_AVATAR_BUCKET = Avatar
-```
+## Command-line build and tests
 
-> `Secrets.xcconfig` is git-ignored and never committed.
-
-**3. Open in Xcode and run**
-
-Open `My Finance.xcodeproj` and press ▶.
-
-## Tests
-
-```bash
-xcodebuild test -project "My Finance.xcodeproj" \
+```sh
+xcodebuild -project "My Finance.xcodeproj" \
   -scheme "Personal Finance" \
-  -destination "platform=iOS Simulator,OS=latest,name=iPhone 16 Pro"
+  -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO build
 ```
 
-Swap the device name for any simulator you have installed (`xcrun simctl list devices available`).
+To run the scheme's unit tests, use an installed simulator. Find its UDID with `xcrun simctl list devices available`.
 
-## Security Notes
-
-- `Secrets.xcconfig` is excluded from git via `.gitignore`
-- Supabase RLS policies enforce data isolation — users can only read/write their own rows
-- All mutating service calls include explicit `user_id` filters as a second layer
-- SwiftData store is encrypted with `FileProtectionType.completeUnlessOpen`
-- App content is blurred in the iOS app switcher via `scenePhase` overlay
-
-## Related
-
-- [Web app (Next.js + Supabase)](https://github.com/nghiabui02/personal-finance-web) — shares the same Supabase backend
+```sh
+xcodebuild -project "My Finance.xcodeproj" \
+  -scheme "Personal Finance" \
+  -destination "platform=iOS Simulator,id=<SIMULATOR_UDID>" test
+```
