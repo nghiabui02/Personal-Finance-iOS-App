@@ -64,8 +64,9 @@ struct ReportCategoryBreakdown: Identifiable {
 
 @MainActor
 enum ReportMetricsCalculator {
-    /// Takes *all* transactions plus the category list — it needs the full set to
-    /// report debt and adjustment flow alongside the operating totals.
+    /// Takes every kind of transaction in the period plus the category list — it needs
+    /// the full set to report debt and adjustment flow alongside the operating totals.
+    /// A monthly report also needs the earlier months its rollover budgets carry from.
     static func calculate(
         transactions: [LocalTransaction],
         categories: [LocalCategory],
@@ -192,17 +193,21 @@ enum ReportMetricsCalculator {
         )
     }
 
-    private static func historyPoints(from snapshots: [RemoteNetWorthSnapshot]) -> [NetWorthPoint] {
-        let calendar = LedgerDate.calendar
-        let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()).map(LedgerDate.string(from:))
+    private static let historyLabelFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "d/M"
         formatter.timeZone = LedgerDate.timeZone
+        return formatter
+    }()
+
+    private static func historyPoints(from snapshots: [RemoteNetWorthSnapshot]) -> [NetWorthPoint] {
+        let calendar = LedgerDate.calendar
+        let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()).map(LedgerDate.string(from:))
         return snapshots.sorted { $0.recordedDate < $1.recordedDate }.compactMap { row in
             guard cutoff.map({ row.recordedDate >= $0 }) ?? true,
                   let date = LedgerDate.date(from: row.recordedDate) else { return nil }
             return NetWorthPoint(id: row.recordedDate, date: date,
-                                 label: formatter.string(from: date), value: row.netWorth)
+                                 label: historyLabelFormatter.string(from: date), value: row.netWorth)
         }
     }
 

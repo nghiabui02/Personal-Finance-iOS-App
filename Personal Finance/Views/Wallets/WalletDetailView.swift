@@ -2,14 +2,23 @@ import SwiftData
 import SwiftUI
 
 struct WalletDetailView: View {
-    @Query(sort: \LocalTransaction.transactionDate, order: .reverse)
-    private var allTransactions: [LocalTransaction]
+    /// Only this wallet's history, not every transaction in the ledger.
+    @Query private var walletTransactions: [LocalTransaction]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
 
     let wallet: LocalWallet
 
     @State private var metrics = WalletDetailMetrics()
     @State private var activeSheet: WalletDetailSheet?
+
+    init(wallet: LocalWallet) {
+        self.wallet = wallet
+        let walletId: UUID? = wallet.serverId
+        _walletTransactions = Query(
+            filter: #Predicate { $0.walletId == walletId },
+            sort: \LocalTransaction.transactionDate, order: .reverse
+        )
+    }
 
     var body: some View {
         List {
@@ -29,7 +38,7 @@ struct WalletDetailView: View {
         .toolbar { detailToolbar }
         .sheet(item: $activeSheet, content: sheetContent)
         .onAppear(perform: recompute)
-        .onChange(of: allTransactions) { _, _ in recompute() }
+        .onChange(of: walletTransactions) { _, _ in recompute() }
     }
 
     @ToolbarContentBuilder
@@ -79,7 +88,7 @@ struct WalletDetailView: View {
 
     private func recompute() {
         metrics = WalletDetailMetricsCalculator.calculate(
-            transactions: allTransactions,
+            transactions: walletTransactions,
             walletId: wallet.serverId
         )
     }

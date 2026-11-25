@@ -4,11 +4,7 @@ import SwiftData
 struct TransactionsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
-    @Query(sort: [
-        SortDescriptor(\LocalTransaction.transactionDate, order: .reverse),
-        SortDescriptor(\LocalTransaction.updatedAt, order: .reverse)
-    ]) private var transactions: [LocalTransaction]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
     @State private var selectedMonth = TransactionDateRange.monthStart(for: Date())
     @State private var visibleCount = Self.pageSize
     @State private var errorMessage: String?
@@ -23,24 +19,19 @@ struct TransactionsView: View {
     @State private var pendingDeletion: LocalTransaction?
     @State private var showDeleteConfirmation = false
 
-    private var monthTransactions: [LocalTransaction] {
-        guard let range = TransactionDateRange.monthRange(for: selectedMonth) else { return [] }
-        return transactions.filter { $0.transactionDate >= range.start && $0.transactionDate < range.end }
-    }
-
-    private var filteredTransactions: [LocalTransaction] {
-        TransactionFilterEngine.apply(filter, to: monthTransactions, selectedMonth: selectedMonth,
-                                      selectedDate: selectedDate)
+    private var monthWindow: Range<Date> {
+        TransactionDateRange.window(endingWith: selectedMonth, monthsBefore: 0)
     }
 
     private var usesPagination: Bool { filter.period == .month && !filter.hasContentFilter }
 
-    private var displayedGroups: [(Date, [LocalTransaction])] {
-        let rows = filteredTransactions
+    private func displayedGroups(_ monthTransactions: [LocalTransaction]) -> [(Date, [LocalTransaction])] {
+        let rows = TransactionFilterEngine.apply(filter, to: monthTransactions, selectedMonth: selectedMonth,
+                                                 selectedDate: selectedDate)
         return TransactionGroupingCalculator.group(usesPagination ? Array(rows.prefix(visibleCount)) : rows).all
     }
 
-    private var headerSection: some View {
+    private func headerSection(_ monthTransactions: [LocalTransaction]) -> some View {
         let dailyTotals = TransactionPeriodTotalsCalculator.dailyTotals(
             from: monthTransactions.operatingOnly(using: categories)
         )
@@ -77,10 +68,10 @@ struct TransactionsView: View {
         TransactionFilterSection(filter: $filter, categories: categories)
     }
 
-    @ViewBuilder private var listSection: some View {
+    @ViewBuilder private func listSection(_ monthTransactions: [LocalTransaction]) -> some View {
         TransactionListSection(
-            groups: displayedGroups,
-            isLoading: transactions.isEmpty && sync.isSyncing,
+            groups: displayedGroups(monthTransactions),
+            isLoading: monthTransactions.isEmpty && sync.isSyncing,
             isFiltered: filter.hasContentFilter || filter.period != .month,
             onTap: { editing = $0 },
             onDeleteRequest: {
@@ -90,9 +81,8 @@ struct TransactionsView: View {
         )
     }
 
-    @ViewBuilder private var paginationSection: some View {
+    @ViewBuilder private func paginationSection(count: Int) -> some View {
         if usesPagination {
-            let count = monthTransactions.count
             TransactionPaginationSection(
                 selectedDate: nil,
                 hasMore: visibleCount < count,
@@ -107,16 +97,18 @@ struct TransactionsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                headerSection
-                filterSection
-                listSection
-                paginationSection
+            TransactionsInRange(monthWindow) { monthTransactions in
+                List {
+                    headerSection(monthTransactions)
+                    filterSection
+                    listSection(monthTransactions)
+                    paginationSection(count: monthTransactions.count)
+                }
+                .listStyle(.grouped)
+                .listSectionSpacing(8)
+                .scrollContentBackground(.hidden)
+                .background(Color(.systemGroupedBackground))
             }
-            .listStyle(.grouped)
-            .listSectionSpacing(8)
-            .scrollContentBackground(.hidden)
-            .background(Color(.systemGroupedBackground))
             .appScreenHeader("Transactions")
             .refreshable { await sync.syncAll(modelContext: modelContext) }
             .onChange(of: selectedMonth) { _, month in

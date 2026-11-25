@@ -10,7 +10,8 @@ struct AddEditTransactionView: View {
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
     @Query private var allDebts: [LocalDebt]
-    @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
+    /// Only the window frequent suggestions read from.
+    @Query private var recentTx: [LocalTransaction]
 
     @State private var type = "expense"
     @State private var amount: Double = 0
@@ -32,9 +33,16 @@ struct AddEditTransactionView: View {
     @State private var showDebtPicker = false
     private var isEditing: Bool { transaction != nil }
 
+    init(transaction: LocalTransaction?, defaultDate: Date? = nil) {
+        self.transaction = transaction
+        self.defaultDate = defaultDate
+        let start = FrequentTransactionSuggestionCalculator.windowStart()
+        _recentTx = Query(filter: #Predicate { $0.transactionDate >= start })
+    }
+
     private var frequentSuggestions: [FrequentTransactionSuggestion] {
         guard !isEditing, amount == 0, selectedCategoryId == nil else { return [] }
-        return FrequentTransactionSuggestionCalculator.calculate(transactions: allTx, categories: allCategories)
+        return FrequentTransactionSuggestionCalculator.calculate(transactions: recentTx, categories: allCategories)
     }
 
     private var filteredCategories: [LocalCategory] {

@@ -20,16 +20,24 @@ struct FrequentTransactionSuggestion: Identifiable {
 // a total that was never actually spent.
 @MainActor
 enum FrequentTransactionSuggestionCalculator {
+    nonisolated static let defaultWindowDays = 90
+
+    /// First day the suggestions look at, so callers can load no older transactions.
+    nonisolated static func windowStart(windowDays: Int = defaultWindowDays, now: Date = Date()) -> Date {
+        let calendar = LedgerDate.calendar
+        let today = calendar.startOfDay(for: now)
+        return calendar.date(byAdding: .day, value: -windowDays, to: today) ?? today
+    }
+
     static func calculate(
         transactions: [LocalTransaction],
         categories: [LocalCategory],
-        windowDays: Int = 90,
+        windowDays: Int = defaultWindowDays,
         limit: Int = 5,
         now: Date = Date()
     ) -> [FrequentTransactionSuggestion] {
-        let calendar = LedgerDate.calendar
-        let today = calendar.startOfDay(for: now)
-        let cutoff = calendar.date(byAdding: .day, value: -windowDays, to: today) ?? today
+        let today = LedgerDate.calendar.startOfDay(for: now)
+        let cutoff = windowStart(windowDays: windowDays, now: now)
         let categoryLookup = Dictionary(
             categories.filter(\.isActiveMembership).map { ($0.serverId, $0) },
             uniquingKeysWith: { first, _ in first }

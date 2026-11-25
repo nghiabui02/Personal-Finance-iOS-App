@@ -4,9 +4,8 @@ import SwiftData
 struct BudgetsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allBudgets: [LocalBudget]
-    @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
     @Query private var allCategories: [LocalCategory]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     @State private var selectedMonth = TransactionDateRange.monthStart(for: Date())
     @State private var showAdd = false
@@ -19,21 +18,35 @@ struct BudgetsView: View {
         allBudgets.filter { LedgerDate.calendar.isDate($0.month, equalTo: selectedMonth, toGranularity: .month) }
     }
 
-    private var suggestions: [BudgetSuggestion] {
+    /// The selected month plus the three before it that suggestions are drawn from.
+    private var transactionWindow: Range<Date> {
+        TransactionDateRange.including(
+            budgetHistoryOf: allBudgets, for: selectedMonth,
+            in: TransactionDateRange.window(endingWith: selectedMonth, monthsBefore: 3)
+        )
+    }
+
+    private func suggestions(from transactions: [LocalTransaction]) -> [BudgetSuggestion] {
         BudgetSuggestionCalculator.calculate(
-            transactions: allTx, categories: allCategories,
+            transactions: transactions, categories: allCategories,
             existingBudgetCategoryIds: Set(monthBudgets.compactMap(\.categoryId)),
             targetMonth: selectedMonth
         )
     }
 
     var body: some View {
+        TransactionsInRange(transactionWindow) { transactions in
+            budgetScreen(transactions)
+        }
+    }
+
+    private func budgetScreen(_ transactions: [LocalTransaction]) -> some View {
         let activeBudgets = monthBudgets.filter(\.active)
         let inactiveBudgets = monthBudgets.filter { !$0.active }
         let usage = BudgetUsageCalculator.calculate(
-            budgets: allBudgets, operatingTransactions: allTx.operatingOnly(using: allCategories)
+            budgets: allBudgets, operatingTransactions: transactions.operatingOnly(using: allCategories)
         )
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             MonthSelectorView(selectedMonth: $selectedMonth)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
@@ -41,7 +54,7 @@ struct BudgetsView: View {
                 .background(Color(.secondarySystemGroupedBackground))
 
             List {
-                suggestionsSection
+                suggestionsSection(suggestions(from: transactions))
                 activeSection(activeBudgets, usage: usage)
                 inactiveSection(inactiveBudgets, usage: usage)
             }
@@ -84,7 +97,7 @@ struct BudgetsView: View {
     }
 
     @ViewBuilder
-    private var suggestionsSection: some View {
+    private func suggestionsSection(_ suggestions: [BudgetSuggestion]) -> some View {
         if !suggestions.isEmpty {
             Section {
                 ForEach(suggestions) { suggestion in

@@ -5,7 +5,7 @@ struct DebtsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalDebt.personName) private var allDebts: [LocalDebt]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     @State private var showAdd = false
     @State private var payingDebt: LocalDebt?

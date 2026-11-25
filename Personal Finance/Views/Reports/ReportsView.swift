@@ -3,12 +3,11 @@ import SwiftData
 
 struct ReportsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \LocalTransaction.transactionDate, order: .reverse) private var allTx: [LocalTransaction]
     @Query private var wallets: [LocalWallet]
     @Query private var budgets: [LocalBudget]
     @Query private var debts: [LocalDebt]
     @Query private var categories: [LocalCategory]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     @State private var selectedPeriod: ReportPeriod = .week
     @State private var referenceDate = Date()
@@ -17,9 +16,35 @@ struct ReportsView: View {
         ReportPeriodContext(period: selectedPeriod, referenceDate: referenceDate)
     }
 
+    /// The reported period, plus the earlier months a monthly report's rollover budgets carry from.
+    private var transactionWindow: Range<Date> {
+        let range = periodContext.range
+        let dayAfterEnd = periodContext.calendar.date(byAdding: .day, value: 1, to: range.end) ?? .distantFuture
+        let window = range.start..<dayAfterEnd
+        guard selectedPeriod == .month else { return window }
+        return TransactionDateRange.including(budgetHistoryOf: budgets, for: referenceDate, in: window)
+    }
+
     var body: some View {
-        let metrics = ReportMetricsCalculator.calculate(
-            transactions: allTx,
+        NavigationStack {
+            TransactionsInRange(transactionWindow) { transactions in
+                ReportsContentView(
+                    selectedPeriod: $selectedPeriod,
+                    metrics: metrics(for: transactions),
+                    rangeLabel: periodContext.rangeLabel,
+                    isCurrentPeriod: periodContext.isCurrent,
+                    onNavigatePeriod: navigatePeriod
+                )
+            }
+            .appScreenHeader("Reports")
+            .refreshable { await sync.syncAll(modelContext: modelContext) }
+
+        }
+    }
+
+    private func metrics(for transactions: [LocalTransaction]) -> ReportMetrics {
+        ReportMetricsCalculator.calculate(
+            transactions: transactions,
             categories: categories,
             wallets: wallets,
             debts: debts,
@@ -27,18 +52,6 @@ struct ReportsView: View {
             snapshots: sync.netWorthSnapshots,
             context: periodContext
         )
-        NavigationStack {
-            ReportsContentView(
-                selectedPeriod: $selectedPeriod,
-                metrics: metrics,
-                rangeLabel: periodContext.rangeLabel,
-                isCurrentPeriod: periodContext.isCurrent,
-                onNavigatePeriod: navigatePeriod
-            )
-            .appScreenHeader("Reports")
-            .refreshable { await sync.syncAll(modelContext: modelContext) }
-
-        }
     }
 
     private func navigatePeriod(by delta: Int) {

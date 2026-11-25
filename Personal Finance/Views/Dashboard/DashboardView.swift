@@ -3,11 +3,9 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
     @EnvironmentObject private var tabRouter: AppTabRouter
 
-    @Query(sort: \LocalTransaction.transactionDate, order: .reverse)
-    private var transactions: [LocalTransaction]
     @Query private var wallets: [LocalWallet]
     @Query private var budgets: [LocalBudget]
     @Query private var debts: [LocalDebt]
@@ -24,7 +22,25 @@ struct DashboardView: View {
         }
     }
 
+    /// The selected month plus the three before it, which the spending pace compares against.
+    private var transactionWindow: Range<Date> {
+        TransactionDateRange.including(
+            budgetHistoryOf: budgets, for: selectedMonth,
+            in: TransactionDateRange.window(endingWith: selectedMonth, monthsBefore: 3)
+        )
+    }
+
     private var dashboardScreen: some View {
+        TransactionsInRange(transactionWindow) { transactions in
+            dashboardContent(metrics(for: transactions))
+        }
+            .background(Color(.systemGroupedBackground))
+            .appScreenHeader("Overview")
+            .sheet(item: $quickAction, content: quickActionSheet)
+            .refreshable { await sync.syncAll(modelContext: modelContext) }
+    }
+
+    private func dashboardContent(_ metrics: DashboardMetrics) -> some View {
         DashboardContentView(
             selectedMonth: $selectedMonth,
             metrics: metrics,
@@ -36,10 +52,6 @@ struct DashboardView: View {
             onAddDebt: { quickAction = .debtPayment },
             onViewAllTransactions: { tabRouter.selectedTab = .transactions }
         )
-            .background(Color(.systemGroupedBackground))
-            .appScreenHeader("Overview")
-            .sheet(item: $quickAction, content: quickActionSheet)
-            .refreshable { await sync.syncAll(modelContext: modelContext) }
     }
 
     @ViewBuilder
@@ -54,7 +66,7 @@ struct DashboardView: View {
         }
     }
 
-    private var metrics: DashboardMetrics {
+    private func metrics(for transactions: [LocalTransaction]) -> DashboardMetrics {
         DashboardMetricsCalculator.calculate(
             transactions: transactions,
             categories: categories,

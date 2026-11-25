@@ -23,11 +23,11 @@ final class LocalWallet {
         paymentDueDay = r.paymentDueDay
     }
     func update(from r: RemoteWallet) {
-        name = r.name; type = r.type; balance = r.balance
-        isDefault = r.isDefault; color = r.color; icon = r.icon
-        updatedAt = r.updatedAt
-        creditLimit = r.creditLimit; statementDay = r.statementDay
-        paymentDueDay = r.paymentDueDay
+        setIfChanged(\.name, r.name); setIfChanged(\.type, r.type); setIfChanged(\.balance, r.balance)
+        setIfChanged(\.isDefault, r.isDefault); setIfChanged(\.color, r.color); setIfChanged(\.icon, r.icon)
+        setIfChanged(\.updatedAt, r.updatedAt)
+        setIfChanged(\.creditLimit, r.creditLimit); setIfChanged(\.statementDay, r.statementDay)
+        setIfChanged(\.paymentDueDay, r.paymentDueDay)
     }
 
     var amountOwed: Double {
@@ -75,8 +75,9 @@ final class LocalCategory {
         systemKey = r.systemKey
     }
     func update(from r: RemoteCategory) {
-        name = r.displayName; type = r.type; icon = r.icon; color = r.color; isDefault = r.isDefault
-        systemKey = r.systemKey
+        setIfChanged(\.name, r.displayName); setIfChanged(\.type, r.type); setIfChanged(\.icon, r.icon)
+        setIfChanged(\.color, r.color); setIfChanged(\.isDefault, r.isDefault)
+        setIfChanged(\.systemKey, r.systemKey)
     }
 }
 
@@ -118,18 +119,18 @@ final class LocalTransaction {
     }
 
     func update(from r: RemoteTransaction) {
-        walletId = r.walletId
-        walletName = r.wallets?.name ?? "Unknown Wallet"
-        categoryId = r.categoryId
-        categoryName = r.categories?.displayName
-        categoryIcon = r.categories?.icon
-        categoryColor = r.categories?.color
-        type = r.type.lowercased(); amount = r.amount; note = r.note
-        transactionDate = LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date()
-        updatedAt = r.updatedAt; syncStatus = "synced"
-        transferPairId = r.transferPairId
-        debtPaymentId = r.debtPaymentId
-        bankFee = r.bankFee
+        setIfChanged(\.walletId, r.walletId)
+        setIfChanged(\.walletName, r.wallets?.name ?? "Unknown Wallet")
+        setIfChanged(\.categoryId, r.categoryId)
+        setIfChanged(\.categoryName, r.categories?.displayName)
+        setIfChanged(\.categoryIcon, r.categories?.icon)
+        setIfChanged(\.categoryColor, r.categories?.color)
+        setIfChanged(\.type, r.type.lowercased()); setIfChanged(\.amount, r.amount); setIfChanged(\.note, r.note)
+        setIfChanged(\.transactionDate, LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date())
+        setIfChanged(\.updatedAt, r.updatedAt); setIfChanged(\.syncStatus, "synced")
+        setIfChanged(\.transferPairId, r.transferPairId)
+        setIfChanged(\.debtPaymentId, r.debtPaymentId)
+        setIfChanged(\.bankFee, r.bankFee)
     }
 }
 
@@ -158,14 +159,14 @@ final class LocalBudget {
     }
 
     func update(from r: RemoteBudget) {
-        categoryId = r.categoryId
-        categoryName = r.categories?.displayName ?? "Unknown"
-        categoryIcon = r.categories?.icon
-        categoryColor = r.categories?.color
-        amount = r.amount
-        month = LedgerDate.dayFormatter.date(from: r.month) ?? Date()
-        rollover = r.rollover
-        active = r.active
+        setIfChanged(\.categoryId, r.categoryId)
+        setIfChanged(\.categoryName, r.categories?.displayName ?? "Unknown")
+        setIfChanged(\.categoryIcon, r.categories?.icon)
+        setIfChanged(\.categoryColor, r.categories?.color)
+        setIfChanged(\.amount, r.amount)
+        setIfChanged(\.month, LedgerDate.dayFormatter.date(from: r.month) ?? Date())
+        setIfChanged(\.rollover, r.rollover)
+        setIfChanged(\.active, r.active)
     }
 }
 
@@ -191,11 +192,11 @@ final class LocalDebt {
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteDebt) {
-        walletId = r.walletId; type = r.type
-        personName = r.personName; personContact = r.personContact
-        amount = r.amount; remainingAmount = r.remainingAmount
-        dueDate = r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        status = r.status; note = r.note; updatedAt = r.updatedAt
+        setIfChanged(\.walletId, r.walletId); setIfChanged(\.type, r.type)
+        setIfChanged(\.personName, r.personName); setIfChanged(\.personContact, r.personContact)
+        setIfChanged(\.amount, r.amount); setIfChanged(\.remainingAmount, r.remainingAmount)
+        setIfChanged(\.dueDate, r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.status, r.status); setIfChanged(\.note, r.note); setIfChanged(\.updatedAt, r.updatedAt)
     }
 }
 
@@ -220,10 +221,10 @@ final class LocalSavingGoal {
         status = r.status; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteSavingGoal) {
-        name = r.name; icon = r.icon
-        targetAmount = r.targetAmount; currentAmount = r.currentAmount
-        deadline = r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        status = r.status; note = r.note; updatedAt = r.updatedAt
+        setIfChanged(\.name, r.name); setIfChanged(\.icon, r.icon)
+        setIfChanged(\.targetAmount, r.targetAmount); setIfChanged(\.currentAmount, r.currentAmount)
+        setIfChanged(\.deadline, r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.status, r.status); setIfChanged(\.note, r.note); setIfChanged(\.updatedAt, r.updatedAt)
     }
 }
 
@@ -260,15 +261,16 @@ final class LocalRecurringTransaction {
         bankFee = r.bankFee ?? 0
     }
     func update(from r: RemoteRecurringTransaction) {
-        walletId = r.walletId; walletName = r.wallets?.name
-        categoryId = r.categoryId; categoryName = r.categories?.displayName
-        categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
-        type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
-        startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()
-        endDate = r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        updatedAt = r.updatedAt
-        active = r.active
-        bankFee = r.bankFee ?? 0
+        setIfChanged(\.walletId, r.walletId); setIfChanged(\.walletName, r.wallets?.name)
+        setIfChanged(\.categoryId, r.categoryId); setIfChanged(\.categoryName, r.categories?.displayName)
+        setIfChanged(\.categoryIcon, r.categories?.icon); setIfChanged(\.categoryColor, r.categories?.color)
+        setIfChanged(\.type, r.type); setIfChanged(\.amount, r.amount); setIfChanged(\.note, r.note)
+        setIfChanged(\.frequency, r.frequency)
+        setIfChanged(\.startDate, LedgerDate.dayFormatter.date(from: r.startDate) ?? Date())
+        setIfChanged(\.endDate, r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.nextRunDate, r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.updatedAt, r.updatedAt)
+        setIfChanged(\.active, r.active)
+        setIfChanged(\.bankFee, r.bankFee ?? 0)
     }
 }

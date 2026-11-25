@@ -1,24 +1,28 @@
 import Foundation
 import Network
+import Observation
 import OSLog
 import Supabase
 import SwiftData
 
+/// `@Observable` so a screen re-renders only for the sync fields it reads — with
+/// `ObservableObject`, every `isSyncing` flip rebuilt every tab's metrics.
 @MainActor
-final class SyncManager: ObservableObject {
+@Observable
+final class SyncManager {
     static let shared = SyncManager()
 
-    @Published private(set) var isOnline = true
-    @Published private(set) var isSyncing = false
-    @Published private(set) var lastSyncDate: Date?
-    @Published private(set) var syncError: String?
-    @Published private(set) var netWorthSnapshots: [RemoteNetWorthSnapshot] = []
+    private(set) var isOnline = true
+    private(set) var isSyncing = false
+    private(set) var lastSyncDate: Date?
+    private(set) var syncError: String?
+    private(set) var netWorthSnapshots: [RemoteNetWorthSnapshot] = []
 
     private let logger = Logger(subsystem: "dev.nghiabui.personalfinance", category: "LedgerSync")
     private let monitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.nghiabui.pf.network")
-    private var pendingContext: ModelContext?
-    private var runningSession: LocalDataStore.Session?
+    @ObservationIgnored private var pendingContext: ModelContext?
+    @ObservationIgnored private var runningSession: LocalDataStore.Session?
 
     private init() {
         monitor.pathUpdateHandler = { [weak self] path in

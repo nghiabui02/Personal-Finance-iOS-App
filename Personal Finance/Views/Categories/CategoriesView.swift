@@ -5,7 +5,7 @@ import Supabase
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     @State private var selectedType = "expense"
     @State private var showAdd = false

@@ -85,18 +85,24 @@ enum RPCResultApplier {
     private static func deleteWallets(ids: [UUID], in ctx: ModelContext) throws {
         guard !ids.isEmpty else { return }
 
-        for tx in try fetch(LocalTransaction.self, in: ctx, where: { $0.walletId.map(ids.contains) ?? false }) {
-            tx.walletId = nil
-            tx.walletName = "Deleted wallet"
+        // One fetch per wallet: optional equality is the form #Predicate reliably
+        // turns into SQL, and an operation removes one wallet at a time anyway.
+        for id in ids {
+            let walletId: UUID? = id
+            for tx in try ctx.fetch(FetchDescriptor<LocalTransaction>(predicate: #Predicate { $0.walletId == walletId })) {
+                tx.walletId = nil
+                tx.walletName = "Deleted wallet"
+            }
+            for debt in try ctx.fetch(FetchDescriptor<LocalDebt>(predicate: #Predicate { $0.walletId == walletId })) {
+                debt.walletId = nil
+            }
+            let recurring = FetchDescriptor<LocalRecurringTransaction>(predicate: #Predicate { $0.walletId == walletId })
+            for rec in try ctx.fetch(recurring) {
+                rec.walletId = nil
+                rec.walletName = nil
+            }
         }
-        for debt in try fetch(LocalDebt.self, in: ctx, where: { $0.walletId.map(ids.contains) ?? false }) {
-            debt.walletId = nil
-        }
-        for rec in try fetch(LocalRecurringTransaction.self, in: ctx, where: { $0.walletId.map(ids.contains) ?? false }) {
-            rec.walletId = nil
-            rec.walletName = nil
-        }
-        for wallet in try fetch(LocalWallet.self, in: ctx, where: { ids.contains($0.serverId) }) {
+        for wallet in try ctx.fetch(FetchDescriptor<LocalWallet>(predicate: #Predicate { ids.contains($0.serverId) })) {
             ctx.delete(wallet)
         }
     }
@@ -106,7 +112,9 @@ enum RPCResultApplier {
     private static func upsertDebt(_ remote: RemoteDebt?, in ctx: ModelContext) throws {
         guard let remote else { return }
         let id = remote.id
-        if let local = try fetch(LocalDebt.self, in: ctx, where: { $0.serverId == id }).first {
+        var descriptor = FetchDescriptor<LocalDebt>(predicate: #Predicate { $0.serverId == id })
+        descriptor.fetchLimit = 1
+        if let local = try ctx.fetch(descriptor).first {
             local.update(from: remote)
         } else {
             ctx.insert(LocalDebt(from: remote))
@@ -116,21 +124,10 @@ enum RPCResultApplier {
     private static func applyBalances(_ balances: [RPC.WalletBalance], in ctx: ModelContext) throws {
         guard !balances.isEmpty else { return }
         let ids = balances.map(\.id)
-        let wallets = try fetch(LocalWallet.self, in: ctx) { ids.contains($0.serverId) }
+        let wallets = try ctx.fetch(FetchDescriptor<LocalWallet>(predicate: #Predicate { ids.contains($0.serverId) }))
         let map = Dictionary(wallets.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         for balance in balances {
             map[balance.id]?.balance = balance.balance
         }
-    }
-
-    private static func fetch<T: PersistentModel>(
-        _ type: T.Type,
-        in ctx: ModelContext,
-        where predicate: (T) -> Bool
-    ) throws -> [T] {
-        // Fetched unfiltered then filtered in memory: #Predicate cannot capture a
-        // closure, and these sets are a handful of rows per call.
-        let all = try ctx.fetch(FetchDescriptor<T>())
-        return all.filter(predicate)
     }
 }

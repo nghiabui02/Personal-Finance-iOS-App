@@ -5,7 +5,7 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var tabRouter = AppTabRouter()
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     var body: some View {
         tabs

@@ -242,7 +242,7 @@ final class NotificationService {
     func mark(_ ids: [String], as column: StateColumn, for session: LocalDataStore.Session) async throws {
         guard !ids.isEmpty else { return }
         let client = try await LocalDataStore.authenticatedClient(for: session)
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = Date().ISO8601Format()
         let rows = Set(ids.map { $0.lowercased() }).map {
             ["user_id": session.userId.uuidString, "notification_id": $0, column.rawValue: timestamp]
         }

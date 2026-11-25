@@ -4,7 +4,7 @@ import SwiftData
 struct SavingGoalsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LocalSavingGoal.name) private var goals: [LocalSavingGoal]
-    @StateObject private var sync = SyncManager.shared
+    private var sync: SyncManager { .shared }
 
     @State private var showAdd = false
     @State private var editing: LocalSavingGoal?

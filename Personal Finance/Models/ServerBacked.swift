@@ -16,6 +16,19 @@ protocol ServerBacked: PersistentModel {
     func update(from remote: Remote)
 }
 
+extension ServerBacked {
+    /// Assigns only a value that differs.
+    ///
+    /// SwiftData marks a model changed on every assignment, even of the same value, so
+    /// re-applying unchanged server rows on each sync rewrote every row on save and
+    /// refreshed every `@Query` although nothing had moved.
+    func setIfChanged<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<Self, Value>, _ value: Value) {
+        if self[keyPath: keyPath] != value {
+            self[keyPath: keyPath] = value
+        }
+    }
+}
+
 extension LocalWallet: ServerBacked {
     static func remoteId(_ remote: RemoteWallet) -> UUID { remote.id }
 }

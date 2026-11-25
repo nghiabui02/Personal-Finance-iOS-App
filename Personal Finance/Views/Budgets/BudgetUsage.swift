@@ -55,13 +55,43 @@ enum BudgetUsageCalculator {
             let effective = budget.amount + carry
             result[budget.budgetId] = BudgetUsage(spent: spent, effectiveAmount: effective)
 
-            if budget.active, let date = LedgerDate.date(from: month),
-                let next = LedgerDate.calendar.date(byAdding: .month, value: 1, to: date)
-            {
-                previous[categoryId] = (LedgerDate.string(from: next), effective - spent)
+            if budget.active, let next = shiftedMonth(month, by: 1) {
+                previous[categoryId] = (next, effective - spent)
             }
         }
         return result
+    }
+
+    /// Earliest month whose spending feeds the usage of the budgets set for `month`.
+    ///
+    /// Mirrors the carry rule in `calculate`: a rollover budget takes the leftover of
+    /// an active budget in the month right before it, which may carry its own.
+    static func historyStart<Row: BudgetHistoryRow>(budgets: [Row], month: String) -> String {
+        var activeByCategory: [UUID: [String: Row]] = [:]
+        for row in budgets where row.active {
+            guard let categoryId = row.categoryId else { continue }
+            activeByCategory[categoryId, default: [:]][row.budgetMonth] = row
+        }
+        var earliest = month
+        for row in budgets where row.budgetMonth == month {
+            guard let categoryId = row.categoryId else { continue }
+            var current = row
+            while current.active, current.rollover,
+                let previousMonth = shiftedMonth(current.budgetMonth, by: -1),
+                let previous = activeByCategory[categoryId]?[previousMonth]
+            {
+                earliest = min(earliest, previousMonth)
+                current = previous
+            }
+        }
+        return earliest
+    }
+
+    private static func shiftedMonth(_ month: String, by delta: Int) -> String? {
+        guard let date = LedgerDate.date(from: month),
+            let shifted = LedgerDate.calendar.date(byAdding: .month, value: delta, to: date)
+        else { return nil }
+        return LedgerDate.string(from: shifted)
     }
 
     static func calculate(
