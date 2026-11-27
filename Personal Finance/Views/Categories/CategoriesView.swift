@@ -60,7 +60,6 @@ struct CategoriesView: View {
         .sheet(isPresented: $showStore) { CategoryStoreView() }
         .sheet(item: $dependencies) { CategoryDependencySheet(dependencies: $0) }
         .refreshable { await sync.syncAll(modelContext: modelContext) }
-        .onAppear { Task { @MainActor in await sync.syncAll(modelContext: modelContext) } }
         .sheet(isPresented: $showAdd) { AddEditCategoryView(category: nil) }
         .sheet(item: $editing) { cat in AddEditCategoryView(category: cat) }
         .deleteConfirmation(

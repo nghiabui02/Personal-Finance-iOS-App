@@ -28,9 +28,9 @@ struct BudgetsView: View {
         )
     }
 
-    private func suggestions(from transactions: [LocalTransaction]) -> [BudgetSuggestion] {
+    private func suggestions(from operating: [LocalTransaction]) -> [BudgetSuggestion] {
         BudgetSuggestionCalculator.calculate(
-            transactions: transactions, categories: allCategories,
+            operatingTransactions: operating, categories: allCategories,
             existingBudgetCategoryIds: Set(monthBudgets.compactMap(\.categoryId)),
             targetMonth: selectedMonth
         )
@@ -43,11 +43,9 @@ struct BudgetsView: View {
     }
 
     private func budgetScreen(_ transactions: [LocalTransaction]) -> some View {
-        let activeBudgets = monthBudgets.filter(\.active)
-        let inactiveBudgets = monthBudgets.filter { !$0.active }
-        let usage = BudgetUsageCalculator.calculate(
-            budgets: allBudgets, operatingTransactions: transactions.operatingOnly(using: allCategories)
-        )
+        // Filtered once: usage and suggestions both need only operating rows.
+        let operating = transactions.operatingOnly(using: allCategories)
+        let usage = BudgetUsageCalculator.calculate(budgets: allBudgets, operatingTransactions: operating)
         return VStack(spacing: 0) {
             MonthSelectorView(selectedMonth: $selectedMonth)
                 .padding(.horizontal)
@@ -55,23 +53,7 @@ struct BudgetsView: View {
                 .frame(maxWidth: .infinity)
                 .background(Color(.secondarySystemGroupedBackground))
 
-            List {
-                suggestionsSection(suggestions(from: transactions))
-                activeSection(activeBudgets, usage: usage)
-                inactiveSection(inactiveBudgets, usage: usage)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .listStyle(.insetGrouped)
-            .refreshable { await sync.syncAll(modelContext: modelContext) }
-            .overlay {
-                if monthBudgets.isEmpty {
-                    ContentUnavailableView(
-                        "No Budgets",
-                        systemImage: "chart.bar",
-                        description: Text("Tap + to add a budget for this month")
-                    )
-                }
-            }
+            budgetList(operating, usage: usage)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
@@ -96,6 +78,26 @@ struct BudgetsView: View {
             Task { await delete(budget) }
         }
         .errorAlert($errorMsg)
+    }
+
+    private func budgetList(_ operating: [LocalTransaction], usage: [UUID: BudgetUsage]) -> some View {
+        List {
+            suggestionsSection(suggestions(from: operating))
+            activeSection(monthBudgets.filter(\.active), usage: usage)
+            inactiveSection(monthBudgets.filter { !$0.active }, usage: usage)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .listStyle(.insetGrouped)
+        .refreshable { await sync.syncAll(modelContext: modelContext) }
+        .overlay {
+            if monthBudgets.isEmpty {
+                ContentUnavailableView(
+                    "No Budgets",
+                    systemImage: "chart.bar",
+                    description: Text("Tap + to add a budget for this month")
+                )
+            }
+        }
     }
 
     @ViewBuilder

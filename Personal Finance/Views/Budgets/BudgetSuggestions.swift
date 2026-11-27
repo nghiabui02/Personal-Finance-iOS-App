@@ -14,7 +14,7 @@ struct BudgetSuggestion: Identifiable {
 @MainActor
 enum BudgetSuggestionCalculator {
     static func calculate(
-        transactions: [LocalTransaction],
+        operatingTransactions: [LocalTransaction],
         categories: [LocalCategory],
         existingBudgetCategoryIds: Set<UUID>,
         targetMonth: Date,
@@ -27,10 +27,8 @@ enum BudgetSuggestionCalculator {
         else { return [] }
 
         let categoryLookup = Dictionary(categories.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
-        let operating = transactions.operatingOnly(using: categories)
-
         var monthlyTotals: [UUID: [String: Decimal]] = [:]
-        for tx in operating {
+        for tx in operatingTransactions {
             guard tx.type == .expense, let catId = tx.categoryId else { continue }
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
             guard !existingBudgetCategoryIds.contains(catId) else { continue }
