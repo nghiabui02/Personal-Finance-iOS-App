@@ -66,7 +66,7 @@ private struct DebtPaymentHistoryRow: View {
 
     private var paymentMetadata: some View {
         HStack(spacing: 4) {
-            Text(payment.paidAt.formatted(date: .abbreviated, time: .omitted))
+            Text(payment.paidAt.formatted(LedgerDate.display(.dateTime.day().month(.abbreviated).year())))
             if let note = payment.note, !note.isEmpty {
                 Text("·")
                 Text(note).lineLimit(1)

@@ -124,6 +124,7 @@ struct BudgetsView: View {
                     let effective = usage[budget.serverId]?.effectiveAmount ?? budget.amount
                     BudgetRow(budget: budget, spent: spent, effectiveAmount: effective)
                         .onTapGesture { editing = budget }
+                        .accessibilityAddTraits(.isButton)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 pendingDeletion = budget
@@ -153,6 +154,7 @@ struct BudgetsView: View {
                     BudgetRow(budget: budget, spent: spent, effectiveAmount: budget.amount)
                         .foregroundStyle(.secondary)
                         .onTapGesture { editing = budget }
+                        .accessibilityAddTraits(.isButton)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 pendingDeletion = budget

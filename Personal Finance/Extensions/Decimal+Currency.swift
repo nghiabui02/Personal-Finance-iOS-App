@@ -27,6 +27,17 @@ extension Decimal {
     }
 }
 
+/// Short amount for chart axes and calendar cells, in the app language: 1.950.000 reads
+/// "1.9M" / "1,9 Tr". Rounding keeps the fraction, so neighbouring axis ticks stay distinct.
+@MainActor
+func compactAmount(_ value: Double, showsSign: Bool = false) -> String {
+    let style = FloatingPointFormatStyle<Double>.number
+        .notation(.compactName)
+        .precision(.fractionLength(0...1))
+        .locale(AppLocalization.shared.language.locale)
+    return value.formatted(showsSign ? style.sign(strategy: .always()) : style)
+}
+
 /// Upper bound shared by every currency field: 999.999.999.999 ₫
 let maxAmountDigits = 12
 

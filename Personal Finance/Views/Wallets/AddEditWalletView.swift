@@ -190,6 +190,9 @@ struct ColorSwatchPicker: View {
                     }
                 }
                 .onTapGesture { selected = hex }
+                .accessibilityElement()
+                .accessibilityLabel("Color")
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(.vertical, 4)

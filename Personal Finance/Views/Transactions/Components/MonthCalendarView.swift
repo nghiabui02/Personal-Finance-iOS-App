@@ -48,24 +48,31 @@ struct MonthCalendarView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "chevron.left")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-                    .onTapGesture { changeMonth(by: -1) }
+                Button { changeMonth(by: -1) } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Previous Month")
 
                 Spacer()
-                Text(selectedMonth.formatted(.dateTime.month(.wide).year()))
+                Text(selectedMonth.formatted(LedgerDate.display(.dateTime.month(.wide).year())))
                     .font(.headline.weight(.bold))
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(nextDisabled ? Color.secondary.opacity(0.25) : .secondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-                    .onTapGesture { if !nextDisabled { changeMonth(by: 1) } }
+                Button { changeMonth(by: 1) } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(nextDisabled ? Color.secondary.opacity(0.25) : .secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(nextDisabled)
+                .accessibilityLabel("Next Month")
             }
             .padding(.horizontal, 4)
             .padding(.top, 8)
@@ -73,7 +80,7 @@ struct MonthCalendarView: View {
 
             HStack(spacing: 0) {
                 ForEach(weekdaySymbols, id: \.self) { sym in
-                    Text(sym)
+                    Text(LocalizedStringKey(sym))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
@@ -153,7 +160,7 @@ private struct CalendarDayCell: View {
                 .frame(height: 30)
 
                 if let n = net {
-                    Text(compactNet(n.doubleValue))
+                    Text(compactAmount(n.doubleValue, showsSign: true))
                         .font(.system(size: netFontSize, weight: .medium))
                         .foregroundStyle(n > 0 ? Color.income : Color.expense)
                         .lineLimit(1)
@@ -168,16 +175,4 @@ private struct CalendarDayCell: View {
         .buttonStyle(.plain)
     }
 
-    private func compactNet(_ n: Double) -> String {
-        let abs = Swift.abs(n)
-        let sign = n > 0 ? "+" : "-"
-        if abs >= 1_000_000_000 {
-            return "\(sign)\(String(format: "%.1f", abs / 1_000_000_000))B"
-        } else if abs >= 1_000_000 {
-            return "\(sign)\(Int(abs / 1_000_000))M"
-        } else if abs >= 1_000 {
-            return "\(sign)\(Int(abs / 1_000))k"
-        }
-        return "\(sign)\(Int(abs))"
-    }
 }

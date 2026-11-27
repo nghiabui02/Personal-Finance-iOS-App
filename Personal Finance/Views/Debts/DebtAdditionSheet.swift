@@ -50,7 +50,8 @@ struct DebtAdditionSheet: View {
                 )
             }
             .formKeyboardHandling()
-            .navigationTitle("Add to \(debt.type == .lend ? "Lending" : "Borrowing")")
+            // Two whole titles: an interpolated "Lending" is a plain String and is never translated.
+            .navigationTitle(debt.type == .lend ? LocalizedStringKey("Add to Lending") : "Add to Borrowing")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

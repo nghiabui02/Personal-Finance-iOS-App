@@ -31,7 +31,7 @@ struct RecentTransactionRowView: View {
                 HStack(spacing: 4) {
                     Text(transaction.walletLabel)
                     Text("·")
-                    Text(transaction.transactionDate.formatted(date: .abbreviated, time: .omitted))
+                    Text(transaction.transactionDate.formatted(LedgerDate.display(.dateTime.day().month(.abbreviated).year())))
                 }
                 .font(.caption).foregroundStyle(.secondary)
             }

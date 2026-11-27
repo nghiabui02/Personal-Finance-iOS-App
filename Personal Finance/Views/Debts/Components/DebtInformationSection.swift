@@ -18,7 +18,7 @@ struct DebtInformationSection: View {
             if let dueDate = debt.dueDate {
                 DetailInfoRow(
                     title: "Due Date",
-                    value: dueDate.formatted(date: .abbreviated, time: .omitted),
+                    value: dueDate.formatted(LedgerDate.display(.dateTime.day().month(.abbreviated).year())),
                     valueColor: isOverdue ? .expense : .secondary
                 )
             }

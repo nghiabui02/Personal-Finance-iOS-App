@@ -114,6 +114,21 @@ struct DebtStatusEditingTests {
 }
 
 @MainActor
+struct CompactAmountTests {
+
+    @Test("should keep neighbouring axis ticks distinct instead of truncating to whole millions")
+    func keepsFraction() {
+        #expect(compactAmount(1_000_000) != compactAmount(1_500_000))
+    }
+
+    @Test("should prefix a positive calendar net with a plus sign")
+    func showsSign() {
+        #expect(compactAmount(1_950_000, showsSign: true).hasPrefix("+"))
+        #expect(compactAmount(-1_950_000, showsSign: true).hasPrefix("-"))
+    }
+}
+
+@MainActor
 struct RowInsertIDTests {
 
     private struct Rule: Encodable { var id: UUID?; let amount: Decimal }
@@ -199,3 +214,24 @@ struct FormRuleTests {
     }
 }
 
+@MainActor
+struct LedgerDisplayTests {
+
+    @Test("should format display dates in ledger time, whatever the device time zone")
+    func usesLedgerTimeZone() {
+        #expect(LedgerDate.display(.dateTime.month(.wide).year()).timeZone == LedgerDate.timeZone)
+    }
+
+    @Test("should translate every string added in the November 2026 audit")
+    func newStringsAreTranslated() {
+        let keys = [
+            "%@%% above your usual pace", "%@%% below your usual pace", "%@%% saved", "Add Budget",
+            "Add to Borrowing", "Add to Lending", "Color", "Day %lld", "Negative Balance", "Next Month", "No",
+            "Previous Month", "Remove", "Skip Next Occurrence?", "Spent more than earned",
+            "The next transaction from this rule will not be recorded.", "Yes"
+        ]
+        for key in keys {
+            #expect(AppLanguage.vietnamese.text(key) != key, "\(key) has no Vietnamese translation")
+        }
+    }
+}

@@ -36,7 +36,7 @@ struct TransactionFilterSection: View {
     private var categoryChips: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                categoryChip(title: "All", icon: nil, categoryId: nil)
+                categoryChip(title: AppLocalization.shared.language.text("All"), icon: nil, categoryId: nil)
 
                 ForEach(availableCategories, id: \.serverId) { category in
                     categoryChip(

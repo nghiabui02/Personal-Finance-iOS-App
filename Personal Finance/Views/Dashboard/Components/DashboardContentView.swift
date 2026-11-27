@@ -35,14 +35,17 @@ struct DashboardContentView: View {
                 Image(systemName: "plus.circle.fill")
             }
             .help("New Transaction")
+            .accessibilityLabel("New Transaction")
             Button(action: onAddTransfer) {
                 Image(systemName: "arrow.left.arrow.right.circle.fill")
             }
             .help("Transfer")
+            .accessibilityLabel("Transfer")
             Button(action: onAddDebt) {
                 Image(systemName: "person.crop.circle.badge.plus")
             }
             .help("Add Debt")
+            .accessibilityLabel("Add Debt")
         }
         .padding(.horizontal)
     }
@@ -60,8 +63,10 @@ struct DashboardContentView: View {
     @ViewBuilder
     private var spendingPaceSection: some View {
         if let pct = metrics.spendingPaceDeltaPct, abs(pct) >= 0.05 {
+            let percent = abs(pct * 100).formatted(.number.precision(.fractionLength(0)))
+            // Two whole sentences: an interpolated "above" is a plain String and is never translated.
             Label(
-                "\(abs(pct * 100).formatted(.number.precision(.fractionLength(0))))% \(pct > 0 ? "above" : "below") your usual pace",
+                pct > 0 ? LocalizedStringKey("\(percent)% above your usual pace") : "\(percent)% below your usual pace",
                 systemImage: pct > 0 ? "arrow.up.right" : "arrow.down.right"
             )
             .font(.caption)

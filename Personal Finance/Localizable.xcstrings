@@ -103,6 +103,39 @@
         }
       }
     },
+    "%@%% above your usual pace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cao hơn %@%% so với tốc độ chi tiêu thường lệ"
+          }
+        }
+      }
+    },
+    "%@%% below your usual pace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thấp hơn %@%% so với tốc độ chi tiêu thường lệ"
+          }
+        }
+      }
+    },
+    "%@%% saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã tiết kiệm %@%%"
+          }
+        }
+      }
+    },
     "%@, %@" : {
       "localizations" : {
         "en" : {
@@ -130,17 +163,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@%2$@"
-          }
-        }
-      }
-    },
-    "%@%% %@ your usual pace" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@%% %@ tốc độ chi tiêu thường lệ"
           }
         }
       }
@@ -368,13 +390,24 @@
         }
       }
     },
-    "Add to %@" : {
+    "Add to Borrowing" : {
       "extractionState" : "manual",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Thêm vào %@"
+            "value" : "Thêm vào khoản đi vay"
+          }
+        }
+      }
+    },
+    "Add to Lending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào khoản cho vay"
           }
         }
       }
@@ -973,6 +1006,17 @@
         }
       }
     },
+    "Color" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Màu"
+          }
+        }
+      }
+    },
     "Completed" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1211,6 +1255,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ngày"
+          }
+        }
+      }
+    },
+    "Day %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngày %lld"
           }
         }
       }
@@ -2546,6 +2601,17 @@
         }
       }
     },
+    "Next Month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tháng sau"
+          }
+        }
+      }
+    },
     "Next run: %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2564,6 +2630,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiếp theo: %@"
+          }
+        }
+      }
+    },
+    "No" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không"
           }
         }
       }
@@ -2949,17 +3026,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vượt %@"
-          }
-        }
-      }
-    },
-    "over budget" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vượt ngân sách"
           }
         }
       }
@@ -4724,6 +4790,17 @@
         }
       }
     },
+    "Previous Month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tháng trước"
+          }
+        }
+      }
+    },
     "Remove" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4767,6 +4844,17 @@
         }
       }
     },
+    "Spent more than earned" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi nhiều hơn thu"
+          }
+        }
+      }
+    },
     "The next transaction from this rule will not be recorded." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4774,6 +4862,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giao dịch tới của quy tắc này sẽ không được ghi lại."
+          }
+        }
+      }
+    },
+    "Yes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Có"
           }
         }
       }

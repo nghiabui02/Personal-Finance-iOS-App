@@ -69,7 +69,7 @@ struct ReportIncomeExpenseChartCard: View {
                 AxisMarks { value in
                     AxisValueLabel {
                         if let amount = value.as(Double.self) {
-                            Text(compactThousands(amount))
+                            Text(compactAmount(amount * 1_000))
                                 .font(.caption2)
                         }
                     }
@@ -88,11 +88,6 @@ struct ReportIncomeExpenseChartCard: View {
         }
     }
 
-    private func compactThousands(_ kValue: Double) -> String {
-        if kValue == 0 { return "0 đ" }
-        if kValue >= 1000 { return "\(Int(kValue / 1000))M đ" }
-        return "\(Int(kValue))K đ"
-    }
 }
 
 private struct ReportChartLegend: View {

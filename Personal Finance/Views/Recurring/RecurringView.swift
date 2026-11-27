@@ -20,6 +20,7 @@ struct RecurringView: View {
                 ForEach(recurring, id: \.serverId) { rec in
                     RecurringRow(rec: rec)
                         .onTapGesture { editing = rec }
+                        .accessibilityAddTraits(.isButton)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 pendingDeletion = rec

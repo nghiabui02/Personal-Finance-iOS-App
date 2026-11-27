@@ -31,7 +31,7 @@ struct ReportCashFlowCard: View {
     private var savingsBadge: some View {
         if metrics.income > 0 {
             if metrics.net >= 0 {
-                Text(String(format: "%.1f%% saved", metrics.savingsRate))
+                Text("\(metrics.savingsRate.formatted(.number.precision(.fractionLength(1))))% saved")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.income)
                     .padding(.horizontal, 10)
@@ -39,7 +39,7 @@ struct ReportCashFlowCard: View {
                     .background(Color.income.opacity(0.15))
                     .clipShape(Capsule())
             } else {
-                Text("over budget")
+                Text("Spent more than earned")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)

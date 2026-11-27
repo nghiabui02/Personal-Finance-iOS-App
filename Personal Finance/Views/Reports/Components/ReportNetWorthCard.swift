@@ -136,7 +136,7 @@ struct ReportNetWorthCard: View {
                 AxisMarks { value in
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
-                            Text(compactLabel(v))
+                            Text(compactAmount(v * 1_000_000))
                                 .font(.caption2)
                         }
                     }
@@ -174,11 +174,6 @@ struct ReportNetWorthCard: View {
         }
     }
 
-    private func compactLabel(_ millionValue: Double) -> String {
-        if millionValue == 0 { return "0" }
-        if abs(millionValue) >= 1000 { return "\(Int(millionValue / 1000))B" }
-        return "\(Int(millionValue))M"
-    }
 }
 
 private struct NWPill: View {

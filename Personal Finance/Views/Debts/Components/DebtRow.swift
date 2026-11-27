@@ -90,7 +90,7 @@ struct DebtRow: View {
             Text(debt.type == .lend ? "Lent" : "Borrowed")
             if let dueDate = debt.dueDate {
                 Text("·")
-                Text("Due \(dueDate.formatted(.dateTime.month(.abbreviated).day()))")
+                Text("Due \(dueDate.formatted(LedgerDate.display(.dateTime.month(.abbreviated).day())))")
                     .foregroundStyle(debt.status == .overdue ? .red : .secondary)
             }
         }

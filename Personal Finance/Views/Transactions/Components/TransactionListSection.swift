@@ -36,6 +36,7 @@ struct TransactionListSection: View {
                         TransactionRow(transaction: tx, showDivider: idx < txs.count - 1)
                             .contentShape(Rectangle())
                             .onTapGesture { if !tx.isTransfer { onTap(tx) } }
+                            .accessibilityAddTraits(tx.isTransfer ? [] : .isButton)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 if !tx.isTransfer {
                                     Button {

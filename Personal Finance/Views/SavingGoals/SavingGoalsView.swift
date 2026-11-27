@@ -33,6 +33,7 @@ struct SavingGoalsView: View {
                     ForEach(filtered, id: \.serverId) { goal in
                         GoalRow(goal: goal)
                             .onTapGesture { editing = goal }
+                            .accessibilityAddTraits(.isButton)
                             .swipeActions(edge: .leading) {
                                 if goal.status == .active {
                                     Button { contributing = goal } label: {
@@ -102,7 +103,7 @@ private struct GoalRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(goal.name).fontWeight(.medium)
                     if let dl = goal.deadline {
-                        Text("Due \(dl.formatted(.dateTime.month(.abbreviated).day().year()))")
+                        Text("Due \(dl.formatted(LedgerDate.display(.dateTime.month(.abbreviated).day().year())))")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
