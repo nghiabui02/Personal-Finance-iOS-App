@@ -169,18 +169,20 @@ enum DashboardMetricsCalculator {
     private static func makeSpendingItems(
         from categoryTotals: [String: CategoryTotal]
     ) -> [CategorySpending] {
-        let topCategories = categoryTotals.values.sorted { $0.total > $1.total }.prefix(5)
-        let displayedTotal = topCategories.reduce(0) { $0 + $1.total }
+        // Shares are of all spending, not of the top five, so the legend agrees with the total.
+        let topCategories = categoryTotals.sorted { $0.value.total > $1.value.total }.prefix(5)
+        let spendingTotal = categoryTotals.values.reduce(0) { $0 + $1.total }
         let palette: [Color] = [.blue, .indigo, .purple, .pink, .orange]
 
-        return topCategories.enumerated().map { index, item in
-            CategorySpending(
-                id: item.name,
+        return topCategories.enumerated().map { index, entry in
+            let item = entry.value
+            return CategorySpending(
+                id: entry.key,
                 name: item.name,
                 icon: item.icon,
                 color: item.color.map { Color(hex: $0) } ?? palette[index % palette.count],
                 amount: item.total,
-                percentage: displayedTotal > 0 ? (item.total / displayedTotal * 100).doubleValue : 0
+                percentage: spendingTotal > 0 ? (item.total / spendingTotal * 100).doubleValue : 0
             )
         }
     }

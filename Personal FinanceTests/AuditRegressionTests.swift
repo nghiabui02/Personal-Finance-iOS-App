@@ -69,6 +69,50 @@ struct ClientRequestIDTests {
     }
 }
 
+/// Edits that clear a field must reach the server as `null`, or the old value silently stays.
+struct ClearedFieldEncodingTests {
+
+    private func json(_ value: some Encodable) throws -> [String: Any] {
+        let data = try JSONEncoder().encode(value)
+        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
+    @Test("should send null for a debt's cleared due date, note and contact")
+    func debtClearsOptionalFields() throws {
+        let body = try json(DebtUpdate(person_name: "An", person_contact: nil, due_date: nil, note: nil, status: .active))
+        for key in ["person_contact", "due_date", "note"] {
+            #expect(body[key] is NSNull, "\(key) should be an explicit null")
+        }
+    }
+
+    @Test("should send null for a goal's cleared deadline, note and icon")
+    func goalClearsOptionalFields() throws {
+        let body = try json(GoalUpdate(name: "Trip", icon: nil, target_amount: 1_000_000, deadline: nil, note: nil))
+        for key in ["icon", "deadline", "note"] {
+            #expect(body[key] is NSNull, "\(key) should be an explicit null")
+        }
+    }
+}
+
+struct DebtStatusEditingTests {
+
+    @Test("should keep an overdue debt overdue when only its details are edited")
+    func keepsOverdue() {
+        #expect(DebtStatus.overdue.editing(markCompleted: false) == .overdue)
+    }
+
+    @Test("should reopen a completed debt as active when the toggle is turned off")
+    func reopensCompleted() {
+        #expect(DebtStatus.completed.editing(markCompleted: false) == .active)
+    }
+
+    @Test("should mark any debt completed when the toggle is on")
+    func marksCompleted() {
+        #expect(DebtStatus.overdue.editing(markCompleted: true) == .completed)
+        #expect(DebtStatus.active.editing(markCompleted: true) == .completed)
+    }
+}
+
 @MainActor
 struct RowInsertIDTests {
 
@@ -81,6 +125,53 @@ struct RowInsertIDTests {
         let first = try ClientRequestID.reusableId(for: "recurring_transactions", userId: userId, params: rule)
         let retry = try ClientRequestID.reusableId(for: "recurring_transactions", userId: userId, params: rule)
         #expect(retry == first)
+    }
+}
+
+@MainActor
+private func ledgerTransaction(_ amount: Decimal, category: UUID?, on day: String) throws -> LocalTransaction {
+    let categoryJSON = category.map { "\"\($0.uuidString)\"" } ?? "null"
+    let json = """
+    {"id":"\(UUID().uuidString)","type":"expense","amount":\(amount),"transaction_date":"\(day)",
+     "updated_at":"2026-11-01T00:00:00Z","user_category_id":\(categoryJSON)}
+    """
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return LocalTransaction(from: try decoder.decode(RemoteTransaction.self, from: Data(json.utf8)))
+}
+
+@MainActor
+struct SpendingShareTests {
+
+    @Test("should give each category its share of all spending, not of the top five")
+    func sharesOfAllSpending() throws {
+        let transactions = try (0..<6).map { _ in try ledgerTransaction(100_000, category: UUID(), on: "2026-11-03") }
+        let month = try #require(LedgerDate.date(from: "2026-11-01"))
+        let metrics = DashboardMetricsCalculator.calculate(
+            transactions: transactions, categories: [], wallets: [], budgets: [], debts: [],
+            selectedMonth: month, currency: "VND"
+        )
+        #expect(metrics.spendingItems.count == 5)
+        for item in metrics.spendingItems {
+            #expect(abs(item.percentage - 100.0 / 6) < 0.01)
+        }
+        #expect(Set(metrics.spendingItems.map(\.id)).count == metrics.spendingItems.count)
+    }
+}
+
+@MainActor
+struct DayHeaderTotalsTests {
+
+    @Test("should key day totals the same way the list groups its days, so each header finds its total")
+    func headersFindTheirTotals() throws {
+        let transactions = try ["2026-11-03", "2026-11-03", "2026-11-04"].map {
+            try ledgerTransaction(50_000, category: nil, on: $0)
+        }
+        let totals = TransactionPeriodTotalsCalculator.dailyTotals(from: transactions)
+        for (day, rows) in TransactionGroupingCalculator.group(transactions).all {
+            let total = try #require(totals[day])
+            #expect(total.expense == rows.reduce(0) { $0 + $1.amount })
+        }
     }
 }
 

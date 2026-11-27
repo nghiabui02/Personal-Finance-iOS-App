@@ -49,13 +49,9 @@ final class DebtService {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
-        struct Body: Encodable {
-            let person_name: String, person_contact: String?, due_date: String?, note: String?
-            let status: DebtStatus
-        }
         let remote: RemoteDebt = try await client
             .from("debts")
-            .update(Body(
+            .update(DebtUpdate(
                 person_name: personName,
                 person_contact: personContact?.isEmpty == true ? nil : personContact,
                 due_date: dueDate.map { LedgerDate.string(from: $0) },
@@ -135,5 +131,28 @@ final class DebtService {
                 p_note: note?.isEmpty == true ? nil : note
             )
         }
+    }
+}
+
+/// The editable details of a debt. A cleared field must reach the server as an explicit
+/// `null`; synthesized encoding would drop the key and keep the old value.
+struct DebtUpdate: Encodable {
+    let person_name: String
+    let person_contact: String?
+    let due_date: String?
+    let note: String?
+    let status: DebtStatus
+
+    private enum CodingKeys: String, CodingKey {
+        case person_name, person_contact, due_date, note, status
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(person_name, forKey: .person_name)
+        try container.encode(person_contact, forKey: .person_contact)
+        try container.encode(due_date, forKey: .due_date)
+        try container.encode(note, forKey: .note)
+        try container.encode(status, forKey: .status)
     }
 }

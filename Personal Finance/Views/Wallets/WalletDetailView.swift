@@ -10,7 +10,6 @@ struct WalletDetailView: View {
 
     let wallet: LocalWallet
 
-    @State private var metrics = WalletDetailMetrics()
     @State private var activeSheet: WalletDetailSheet?
 
     init(wallet: LocalWallet) {
@@ -47,8 +46,6 @@ struct WalletDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { detailToolbar }
         .sheet(item: $activeSheet, content: sheetContent)
-        .onAppear(perform: recompute)
-        .onChange(of: monthTransactions) { _, _ in recompute() }
     }
 
     @ToolbarContentBuilder
@@ -96,8 +93,11 @@ struct WalletDetailView: View {
         }
     }
 
-    private func recompute() {
-        metrics = WalletDetailMetricsCalculator.calculate(
+    /// Computed on each render rather than cached: `onChange` compares rows by identity, so a
+    /// synced edit to an existing row's amount would leave a cached total stale. The query
+    /// is already limited to one wallet and one month.
+    private var metrics: WalletDetailMetrics {
+        WalletDetailMetricsCalculator.calculate(
             transactions: monthTransactions,
             walletId: wallet.serverId
         )

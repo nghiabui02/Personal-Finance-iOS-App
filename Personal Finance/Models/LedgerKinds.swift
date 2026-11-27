@@ -42,6 +42,13 @@ enum DebtKind: String, LedgerKind {
 enum DebtStatus: String, LedgerKind {
     case active, overdue, completed
     static let fallback = Self.active
+
+    /// The status after an edit: the toggle only decides completed or not, so editing an
+    /// overdue debt's name keeps it overdue, and reopening a completed one makes it active.
+    func editing(markCompleted: Bool) -> Self {
+        if markCompleted { return .completed }
+        return self == .completed ? .active : self
+    }
 }
 
 /// `saving_goals.status`.

@@ -273,18 +273,20 @@ enum ReportMetricsCalculator {
     private static func makeSpendingBreakdown(
         categoryTotals: [String: CategoryTotal]
     ) -> [ReportCategoryBreakdown] {
-        let sorted = categoryTotals.values.sorted { $0.total > $1.total }.prefix(8)
-        let displayedTotal = sorted.reduce(Decimal.zero) { $0 + $1.total }
+        // Shares are of all spending, not of the top eight, so the legend agrees with the total.
+        let sorted = categoryTotals.sorted { $0.value.total > $1.value.total }.prefix(8)
+        let spendingTotal = categoryTotals.values.reduce(Decimal.zero) { $0 + $1.total }
         let palette: [Color] = [.red, .purple, .orange, .blue, .green, .pink, .indigo, .teal]
 
-        return sorted.enumerated().map { index, item in
-            ReportCategoryBreakdown(
-                id: item.name,
+        return sorted.enumerated().map { index, entry in
+            let item = entry.value
+            return ReportCategoryBreakdown(
+                id: entry.key,
                 name: item.name,
                 icon: item.icon,
                 amount: item.total,
                 color: item.color.map { Color(hex: $0) } ?? palette[index % palette.count],
-                percentage: displayedTotal > 0 ? (item.total / displayedTotal * 100).doubleValue : 0
+                percentage: spendingTotal > 0 ? (item.total / spendingTotal * 100).doubleValue : 0
             )
         }
     }

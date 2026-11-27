@@ -123,7 +123,7 @@ struct AddEditDebtView: View {
                     personContact: personContact.isEmpty ? nil : personContact,
                     dueDate: hasDueDate ? dueDate : nil,
                     note: note.isEmpty ? nil : note,
-                    status: markCompleted ? .completed : .active,
+                    status: d.status.editing(markCompleted: markCompleted),
                     in: modelContext
                 )
             } else {

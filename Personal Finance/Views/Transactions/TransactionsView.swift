@@ -31,10 +31,7 @@ struct TransactionsView: View {
         return TransactionGroupingCalculator.group(usesPagination ? Array(rows.prefix(visibleCount)) : rows).all
     }
 
-    private func headerSection(_ monthTransactions: [LocalTransaction]) -> some View {
-        let dailyTotals = TransactionPeriodTotalsCalculator.dailyTotals(
-            from: monthTransactions.operatingOnly(using: categories)
-        )
+    private func headerSection(dailyTotals: DailyTotals) -> some View {
         let interval = TransactionFilterEngine.dateInterval(for: filter.period, selectedMonth: selectedMonth,
                                                             selectedDate: selectedDate)
         let totals = dailyTotals.reduce(into: (income: Decimal.zero, expense: Decimal.zero)) { totals, entry in
@@ -68,9 +65,10 @@ struct TransactionsView: View {
         TransactionFilterSection(filter: $filter, categories: categories)
     }
 
-    @ViewBuilder private func listSection(_ monthTransactions: [LocalTransaction]) -> some View {
+    @ViewBuilder private func listSection(_ monthTransactions: [LocalTransaction], dailyTotals: DailyTotals) -> some View {
         TransactionListSection(
             groups: displayedGroups(monthTransactions),
+            dailyTotals: dailyTotals,
             isLoading: monthTransactions.isEmpty && sync.isSyncing,
             isFiltered: filter.hasContentFilter || filter.period != .month,
             onTap: { editing = $0 },
@@ -98,10 +96,15 @@ struct TransactionsView: View {
     var body: some View {
         NavigationStack {
             TransactionsInRange(monthWindow) { monthTransactions in
+                // One set of day totals feeds both the calendar and the list headers, so a
+                // day never shows two different nets.
+                let dailyTotals = TransactionPeriodTotalsCalculator.dailyTotals(
+                    from: monthTransactions.operatingOnly(using: categories)
+                )
                 List {
-                    headerSection(monthTransactions)
+                    headerSection(dailyTotals: dailyTotals)
                     filterSection
-                    listSection(monthTransactions)
+                    listSection(monthTransactions, dailyTotals: dailyTotals)
                     paginationSection(count: monthTransactions.count)
                 }
                 .listStyle(.grouped)

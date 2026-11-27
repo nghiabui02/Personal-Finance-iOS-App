@@ -66,7 +66,7 @@ struct AddEditBudgetView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
-                            .disabled(amount <= 0)
+                            .disabled(!Self.canSave(amount: amount, isNew: budget == nil, categoryId: selectedCategoryId))
                     }
                 }
             }
@@ -83,8 +83,13 @@ struct AddEditBudgetView: View {
         }
     }
 
+    /// A new budget needs a category: one without tracks no spending, so it would always show 0 spent.
+    static func canSave(amount: Decimal, isNew: Bool, categoryId: UUID?) -> Bool {
+        amount > 0 && (!isNew || categoryId != nil)
+    }
+
     private func save() async {
-        guard amount > 0 else { return }
+        guard Self.canSave(amount: amount, isNew: budget == nil, categoryId: selectedCategoryId) else { return }
         isSaving = true; defer { isSaving = false }
         do {
             if let b = budget {

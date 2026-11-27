@@ -2,6 +2,9 @@ import SwiftUI
 
 struct TransactionListSection: View {
     let groups: [(Date, [LocalTransaction])]
+    /// Whole-day operating totals, the same ones the calendar shows. Summing the visible rows
+    /// instead would count loans and transfers, and only part of a day cut by pagination.
+    let dailyTotals: DailyTotals
     let isLoading: Bool
     var isFiltered = false
     let onTap: (LocalTransaction) -> Void
@@ -55,7 +58,7 @@ struct TransactionListSection: View {
                             )
                     }
                 } header: {
-                    sectionHeader(date: date, txs: txs)
+                    sectionHeader(date: date)
                 }
                 .listSectionSeparator(.hidden)
             }
@@ -63,8 +66,9 @@ struct TransactionListSection: View {
     }
 
     @ViewBuilder
-    private func sectionHeader(date: Date, txs: [LocalTransaction]) -> some View {
-        let net = txs.reduce(0.0) { $0 + ($1.type == .income ? $1.amount : -$1.amount) }
+    private func sectionHeader(date: Date) -> some View {
+        let totals = dailyTotals[date]
+        let net = (totals?.income ?? 0) - (totals?.expense ?? 0)
         HStack {
             Text(sectionTitle(for: date))
                 .font(.caption.weight(.semibold))

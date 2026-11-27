@@ -41,14 +41,11 @@ final class SavingGoalService {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
-        struct Body: Encodable {
-            let name: String, icon: String?, target_amount: Decimal, deadline: String?, note: String?
-        }
         let remote: RemoteSavingGoal = try await client
             .from("saving_goals")
-            .update(Body(name: name, icon: icon, target_amount: targetAmount,
-                        deadline: deadline.map { LedgerDate.dayFormatter.string(from: $0) },
-                        note: note?.isEmpty == true ? nil : note))
+            .update(GoalUpdate(name: name, icon: icon, target_amount: targetAmount,
+                               deadline: deadline.map { LedgerDate.string(from: $0) },
+                               note: note?.isEmpty == true ? nil : note))
             .eq("id", value: goal.serverId)
             .eq("user_id", value: mutation.userId.uuidString)
             .select().single().execute().value
@@ -91,5 +88,28 @@ final class SavingGoalService {
         try LocalDataStore.validate(mutation.session)
         ctx.delete(goal)
         try LocalDataStore.saveMutation(in: ctx)
+    }
+}
+
+/// The editable fields of a goal. A cleared field must reach the server as an explicit
+/// `null`; synthesized encoding would drop the key and keep the old value.
+struct GoalUpdate: Encodable {
+    let name: String
+    let icon: String?
+    let target_amount: Decimal
+    let deadline: String?
+    let note: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case name, icon, target_amount, deadline, note
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(icon, forKey: .icon)
+        try container.encode(target_amount, forKey: .target_amount)
+        try container.encode(deadline, forKey: .deadline)
+        try container.encode(note, forKey: .note)
     }
 }
