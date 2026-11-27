@@ -4,6 +4,10 @@ struct ChangePasswordSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authVM: AuthViewModel
 
+    /// Opened from a password-reset link: the user is signed in by the link and has no
+    /// current password to confirm.
+    var isRecovery = false
+
     @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
@@ -12,31 +16,36 @@ struct ChangePasswordSheet: View {
 
     private var passwordsMatch: Bool { newPassword == confirmPassword }
     private var isValid: Bool {
-        !currentPassword.isEmpty && newPassword.count >= 6 && passwordsMatch
+        (isRecovery || !currentPassword.isEmpty) && newPassword.count >= 6 && passwordsMatch
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Current Password") {
-                    SecureField("Enter current password", text: $currentPassword)
+                if !isRecovery {
+                    Section("Current Password") {
+                        SecureField("Enter current password", text: $currentPassword)
+                            .textContentType(.password)
+                    }
                 }
 
                 Section("New Password") {
                     SecureField("New password (min. 6 characters)", text: $newPassword)
+                        .textContentType(.newPassword)
                     SecureField("Confirm new password", text: $confirmPassword)
+                        .textContentType(.newPassword)
                 }
 
                 if !confirmPassword.isEmpty && !passwordsMatch {
                     Section {
                         Text("Passwords do not match")
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                     }
                 }
             }
             .formKeyboardHandling()
-            .navigationTitle("Change Password")
+            .navigationTitle(isRecovery ? LocalizedStringKey("Set New Password") : "Change Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -63,10 +72,14 @@ struct ChangePasswordSheet: View {
         defer { isSaving = false }
 
         do {
-            try await authVM.updatePassword(
-                currentPassword: currentPassword,
-                newPassword: newPassword
-            )
+            if isRecovery {
+                try await authVM.setRecoveredPassword(newPassword)
+            } else {
+                try await authVM.updatePassword(
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                )
+            }
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

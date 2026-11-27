@@ -66,7 +66,7 @@ extension Error {
         return self
     }
 
-    private var isOfflineError: Bool {
+    var isOfflineError: Bool {
         guard let urlError = self as? URLError else { return false }
         switch urlError.code {
         case .notConnectedToInternet, .networkConnectionLost,
@@ -79,7 +79,7 @@ extension Error {
     }
 }
 
-final class SupabaseService {
+final class SupabaseService: Sendable {
     static let shared = SupabaseService()
 
     let client: SupabaseClient

@@ -8,7 +8,7 @@ struct DebtAdditionSheet: View {
     let debt: LocalDebt
     let wallets: [LocalWallet]
 
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var note = ""
     @State private var date = Date()
@@ -16,14 +16,14 @@ struct DebtAdditionSheet: View {
     @State private var isSaving = false
     @State private var errorMsg: String?
 
-    private var afterAddition: Double { debt.remainingAmount + amount }
+    private var afterAddition: Decimal { debt.remainingAmount + amount }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     HStack {
-                        Text(debt.type == "lend" ? "Currently lent" : "Currently owed")
+                        Text(debt.type == .lend ? "Currently lent" : "Currently owed")
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(debt.remainingAmount.formatted(currency: "VND"))
@@ -50,7 +50,7 @@ struct DebtAdditionSheet: View {
                 )
             }
             .formKeyboardHandling()
-            .navigationTitle("Add to \(debt.type == "lend" ? "Lending" : "Borrowing")")
+            .navigationTitle("Add to \(debt.type == .lend ? "Lending" : "Borrowing")")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -85,6 +85,7 @@ struct DebtAdditionSheet: View {
                 walletId: selectedWalletId,
                 in: modelContext
             )
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

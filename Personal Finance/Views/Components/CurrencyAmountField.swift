@@ -5,14 +5,14 @@ struct CurrencyAmountField: View {
     let currencySymbol: String
     let placeholder: LocalizedStringKey
 
-    @Binding var amount: Double
+    @Binding var amount: Decimal
     @Binding var amountText: String
 
     init(
         title: LocalizedStringKey = "Amount",
         currencySymbol: String = "₫",
         placeholder: LocalizedStringKey = "0",
-        amount: Binding<Double>,
+        amount: Binding<Decimal>,
         amountText: Binding<String>
     ) {
         self.title = title
@@ -38,7 +38,7 @@ struct CurrencyAmountField: View {
                     )
                 }
             Text(currencySymbol)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
 }

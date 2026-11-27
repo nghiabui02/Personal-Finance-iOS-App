@@ -13,8 +13,8 @@ struct AddEditTransactionView: View {
     /// Only the window frequent suggestions read from.
     @Query private var recentTx: [LocalTransaction]
 
-    @State private var type = "expense"
-    @State private var amount: Double = 0
+    @State private var type = TransactionKind.expense
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var date = Date()
     @State private var selectedCategoryId: UUID?
@@ -27,7 +27,7 @@ struct AddEditTransactionView: View {
     @State private var errorMsg: String?
 
     @State private var hasBankFee = false
-    @State private var bankFee: Double = 0
+    @State private var bankFee: Decimal = 0
     @State private var bankFeeText = ""
     @State private var linkedDebtId: UUID? = nil
     @State private var showDebtPicker = false
@@ -63,16 +63,16 @@ struct AddEditTransactionView: View {
         wallets.first { $0.serverId == selectedWalletId }
     }
 
-    private var debtTypeFilter: String? {
+    private var debtTypeFilter: DebtKind? {
         switch selectedCategory?.systemKey {
-        case SystemCategory.collectDebt: "lend"
-        case SystemCategory.repayDebt: "borrow"
+        case SystemCategory.collectDebt: .lend
+        case SystemCategory.repayDebt: .borrow
         default: nil
         }
     }
 
     private var activeDebtsForCategory: [LocalDebt] {
-        allDebts.filter { $0.type == debtTypeFilter && $0.status == "active" && $0.remainingAmount > 0 }
+        allDebts.filter { $0.type == debtTypeFilter && $0.status == .active && $0.remainingAmount > 0 }
     }
 
     private var linkedDebt: LocalDebt? {
@@ -81,7 +81,7 @@ struct AddEditTransactionView: View {
 
     private var isDebtPayment: Bool { transaction?.debtPaymentId != nil }
     private var allowsBankFee: Bool {
-        type == "expense" && selectedWalletId != nil && debtTypeFilter == nil && !isDebtPayment
+        type == .expense && selectedWalletId != nil && debtTypeFilter == nil && !isDebtPayment
     }
 
     var body: some View {
@@ -228,7 +228,7 @@ struct AddEditTransactionView: View {
         }
     }
 
-    private func resetCategoryIfNeeded(newType: String) {
+    private func resetCategoryIfNeeded(newType: TransactionKind) {
         if let selectedCategory, selectedCategory.type != newType {
             selectedCategoryId = nil
         }
@@ -246,7 +246,7 @@ struct AddEditTransactionView: View {
         note = suggestion.note ?? ""
     }
 
-    private func feeForUpdate(_ transaction: LocalTransaction) -> Double {
+    private func feeForUpdate(_ transaction: LocalTransaction) -> Decimal {
         if allowsBankFee { return hasBankFee ? bankFee : 0 }
         // Preserve fees on legacy rows when their original wallet and type remain unchanged.
         if !isDebtPayment && transaction.type == type && transaction.walletId == selectedWalletId {
@@ -289,6 +289,7 @@ struct AddEditTransactionView: View {
                     in: modelContext
                 )
             }
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

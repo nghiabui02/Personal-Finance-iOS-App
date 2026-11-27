@@ -20,11 +20,11 @@ struct DebtsView: View {
     }
 
     private var activeDebts: [LocalDebt] {
-        filteredDebts.filter { $0.status == "active" || $0.status == "overdue" }
+        filteredDebts.filter { $0.status == .active || $0.status == .overdue }
     }
 
     private var completedDebts: [LocalDebt] {
-        filteredDebts.filter { $0.status == "completed" }
+        filteredDebts.filter { $0.status == .completed }
     }
 
     var body: some View {

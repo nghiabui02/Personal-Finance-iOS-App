@@ -1,15 +1,15 @@
 import Foundation
 
 struct BudgetUsage {
-    let spent: Double
-    let effectiveAmount: Double
+    let spent: Decimal
+    let effectiveAmount: Decimal
 }
 
 protocol BudgetHistoryRow {
     var budgetId: UUID { get }
     var budgetMonth: String { get }
     var categoryId: UUID? { get }
-    var amount: Double { get }
+    var amount: Decimal { get }
     var active: Bool { get }
     var rollover: Bool { get }
 }
@@ -21,15 +21,15 @@ extension LocalBudget: BudgetHistoryRow {
 
 extension RemoteBudget: BudgetHistoryRow {
     var budgetId: UUID { id }
-    var budgetMonth: String { month }
+    var budgetMonth: String { month.string }
 }
 
 enum BudgetUsageCalculator {
-    typealias MonthlySpending = [UUID: [String: Double]]
+    typealias MonthlySpending = [UUID: [String: Decimal]]
 
     static func spending(from operatingTransactions: [LocalTransaction]) -> MonthlySpending {
         var spending: MonthlySpending = [:]
-        for row in operatingTransactions where row.type == "expense" {
+        for row in operatingTransactions where row.type == .expense {
             guard let categoryId = row.categoryId, let month = LedgerDate.startOfMonth(for: row.transactionDate) else {
                 continue
             }
@@ -41,7 +41,7 @@ enum BudgetUsageCalculator {
     /// The preceding active month's leftover can carry even if that month received no carry itself.
     static func calculate<Row: BudgetHistoryRow>(budgets: [Row], spending: MonthlySpending) -> [UUID: BudgetUsage] {
         var result: [UUID: BudgetUsage] = [:]
-        var previous: [UUID: (nextMonth: String, leftover: Double)] = [:]
+        var previous: [UUID: (nextMonth: String, leftover: Decimal)] = [:]
 
         for budget in budgets.sorted(by: { $0.budgetMonth < $1.budgetMonth }) {
             guard let categoryId = budget.categoryId else {

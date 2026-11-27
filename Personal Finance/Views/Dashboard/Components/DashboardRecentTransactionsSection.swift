@@ -41,7 +41,7 @@ struct DashboardRecentTransactionsSection: View {
             }
         }
         .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12)
+        .clipShape(.rect(cornerRadius: 12))
         .padding(.horizontal)
     }
 }

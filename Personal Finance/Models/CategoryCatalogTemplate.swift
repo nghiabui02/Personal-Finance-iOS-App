@@ -9,7 +9,7 @@ struct CategoryCatalogTemplate: Decodable, Identifiable {
     let nameVI: String
     let collection: String
     let aliases: [String]
-    let type: String
+    let type: TransactionKind
     let icon: String?
     let color: String?
 

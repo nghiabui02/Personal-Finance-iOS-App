@@ -10,7 +10,7 @@ struct AddEditBudgetView: View {
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
 
     @State private var selectedCategoryId: UUID?
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var month: Date
     @State private var rollover = false
@@ -24,7 +24,7 @@ struct AddEditBudgetView: View {
         _month = State(initialValue: defaultMonth)
     }
 
-    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == "expense" && $0.systemKey == nil && $0.isActiveMembership } }
+    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == .expense && $0.systemKey == nil && $0.isActiveMembership } }
 
     var body: some View {
         NavigationStack {
@@ -42,7 +42,7 @@ struct AddEditBudgetView: View {
                         HStack {
                             Text("Category")
                             Spacer()
-                            Text(budget?.categoryLabel ?? "").foregroundColor(.secondary)
+                            Text(budget?.categoryLabel ?? "").foregroundStyle(.secondary)
                         }
                     }
                     CurrencyAmountField(

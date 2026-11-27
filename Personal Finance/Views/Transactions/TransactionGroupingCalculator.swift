@@ -9,7 +9,7 @@ struct TransactionGroupedData {
 enum TransactionGroupingCalculator {
     static func group(
         _ transactions: [LocalTransaction],
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) -> TransactionGroupedData {
         var all: [Date: [LocalTransaction]] = [:]
         var income: [Date: [LocalTransaction]] = [:]
@@ -19,7 +19,7 @@ enum TransactionGroupingCalculator {
             let day = calendar.startOfDay(for: transaction.transactionDate)
             all[day, default: []].append(transaction)
 
-            if transaction.type == "income" {
+            if transaction.type == .income {
                 income[day, default: []].append(transaction)
             } else {
                 expense[day, default: []].append(transaction)

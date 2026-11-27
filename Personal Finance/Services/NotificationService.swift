@@ -36,12 +36,12 @@ final class NotificationService {
         )
 
         let budgets = try await budgetsTask
-        let currentBudgets = budgets.filter { $0.active && $0.month == monthStart }
+        let currentBudgets = budgets.filter { $0.active && $0.month.string == monthStart }
         let spending =
             currentBudgets.isEmpty
             ? [:]
             : try await budgetSpending(
-                from: budgets.map(\.month).min() ?? monthStart, to: monthEnd, using: dataClient
+                from: budgets.map(\.month.string).min() ?? monthStart, to: monthEnd, using: dataClient
             )
         let usage = BudgetUsageCalculator.calculate(budgets: budgets, spending: spending)
         let (debts, recurring, goals, wallets, states) = try await (
@@ -51,10 +51,10 @@ final class NotificationService {
 
         let notifications =
             budgetNotifications(currentBudgets, usage: usage)
-            + debtNotifications(debts.filter { $0.status == "active" }, today: today, horizon: debtHorizon)
+            + debtNotifications(debts.filter { $0.status == .active }, today: today, horizon: debtHorizon)
             + recurringNotifications(recurring.filter(\.active), horizon: recurringHorizon)
-            + goalNotifications(goals.filter { $0.status == "active" }, today: today, horizon: goalHorizon)
-            + creditNotifications(wallets.filter { $0.type == "credit" })
+            + goalNotifications(goals.filter { $0.status == .active }, today: today, horizon: goalHorizon)
+            + creditNotifications(wallets.filter { $0.type == .credit })
 
         await clearExpiredStates(states, currentIds: Set(notifications.map(\.id)), session: session, using: dataClient)
         try LocalDataStore.validate(session)
@@ -76,8 +76,8 @@ final class NotificationService {
     ) async throws -> BudgetUsageCalculator.MonthlySpending {
         struct Total: Decodable {
             let date: String
-            let type: String
-            let amount: Double
+            let type: TransactionKind
+            let amount: Decimal
             let categoryId: UUID?
             let categories: CategoryReference?
 
@@ -90,7 +90,7 @@ final class NotificationService {
         let params: [String: AnyJSON] = ["p_start": .string(start), "p_end": .string(end), "p_monthly": true]
         let totals: [Total] = try await client.rpc("report_totals", params: params).execute().value
         var spending: BudgetUsageCalculator.MonthlySpending = [:]
-        for row in totals where row.type == "expense" {
+        for row in totals where row.type == .expense {
             guard let id = row.categoryId,
                 SystemCategory.group(transferPairId: nil, systemKey: row.categories?.systemKey) == .operating
             else { continue }
@@ -103,7 +103,7 @@ final class NotificationService {
         rows.compactMap { row in
             guard let budget = usage[row.id] else { return nil }
             let exceeded = budget.spent > budget.effectiveAmount
-            let ratio = budget.effectiveAmount > 0 ? budget.spent / budget.effectiveAmount : 0
+            let ratio = budget.effectiveAmount > 0 ? (budget.spent / budget.effectiveAmount).doubleValue : 0
             guard exceeded || ratio >= 0.8 else { return nil }
             return AppNotification(
                 id: notificationID(exceeded ? "budget_over" : "budget_near", row.id),
@@ -123,7 +123,7 @@ final class NotificationService {
 
     private func debtNotifications(_ rows: [RemoteDebt], today: String, horizon: String) -> [AppNotification] {
         rows.compactMap { row in
-            guard row.remainingAmount > 0, let due = row.dueDate, due <= horizon else { return nil }
+            guard row.remainingAmount > 0, let due = row.dueDate?.string, due <= horizon else { return nil }
             let overdue = due < today
             return AppNotification(
                 id: notificationID(overdue ? "debt_overdue" : "debt_due", row.id, suffix: due),
@@ -141,7 +141,7 @@ final class NotificationService {
 
     private func recurringNotifications(_ rows: [RemoteRecurringTransaction], horizon: String) -> [AppNotification] {
         rows.compactMap { row in
-            guard let next = row.nextRunDate, next <= horizon, row.endDate.map({ next <= $0 }) ?? true else {
+            guard let next = row.nextRunDate?.string, next <= horizon, row.endDate.map({ next <= $0.string }) ?? true else {
                 return nil
             }
             return AppNotification(
@@ -152,7 +152,7 @@ final class NotificationService {
                     let name =
                         (row.note?.isEmpty == false ? row.note : nil)
                         ?? row.categories?.label(in: language)
-                        ?? language.text(row.type == "income" ? "Income" : "Expense")
+                        ?? language.text(row.type == .income ? "Income" : "Expense")
                     let amount = row.amount.formatted(currency: "VND")
                     return language.text("%@ · %@ on %@", name, amount, Self.dateLabel(next, language))
                 },
@@ -169,7 +169,7 @@ final class NotificationService {
                     message: { _ in "\(row.icon ?? "🎯") \(row.name)" }, destination: .savingGoals
                 )
             }
-            guard let deadline = row.deadline, deadline <= horizon else { return nil }
+            guard let deadline = row.deadline?.string, deadline <= horizon else { return nil }
             let overdue = deadline < today
             return AppNotification(
                 id: notificationID("goal_deadline", row.id, suffix: "\(deadline):\(overdue ? "overdue" : "soon")"),
@@ -188,7 +188,7 @@ final class NotificationService {
     private func creditNotifications(_ rows: [RemoteWallet]) -> [AppNotification] {
         rows.compactMap { row in
             guard let limit = row.creditLimit, limit > 0 else { return nil }
-            let usage = (limit - row.balance) / limit
+            let usage = ((limit - row.balance) / limit).doubleValue
             guard usage >= 0.8 else { return nil }
             return AppNotification(
                 id: notificationID("credit", row.id), severity: .warning, title: "Credit limit high",

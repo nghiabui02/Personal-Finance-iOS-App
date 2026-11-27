@@ -5,6 +5,8 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var tabRouter = AppTabRouter()
+    /// One list for every tab's bell, so switching tabs does not refetch it.
+    @StateObject private var notifications = NotificationViewModel()
     private var sync: SyncManager { .shared }
 
     var body: some View {
@@ -54,12 +56,18 @@ struct MainTabView: View {
                 .tag(AppTab.more)
         }
         .environmentObject(tabRouter)
+        .environmentObject(notifications)
         .task { await sync.syncAll(modelContext: modelContext) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { sync.requestSync(modelContext: modelContext) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
             sync.requestSync(modelContext: modelContext)
+        }
+        // Notices are derived from the ledger, so they are refetched whenever it syncs;
+        // opening the sheet refetches too, covering changes made since.
+        .onChange(of: sync.lastSyncDate) { _, synced in
+            if synced != nil { Task { await notifications.load() } }
         }
     }
 }

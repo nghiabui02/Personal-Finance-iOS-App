@@ -125,7 +125,7 @@ struct SettingsView: View {
             PhotosPicker(selection: $photoItem, matching: .images) {
                 Label("Change Avatar", systemImage: "photo.fill")
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(.primary)
 
             if authVM.avatarURL != nil {
                 Button(role: .destructive) {

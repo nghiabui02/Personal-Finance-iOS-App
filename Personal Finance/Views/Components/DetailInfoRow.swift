@@ -10,7 +10,7 @@ struct DetailInfoRow: View {
             Text(title)
             Spacer()
             Text(value)
-                .foregroundColor(valueColor)
+                .foregroundStyle(valueColor)
                 .multilineTextAlignment(.trailing)
         }
     }

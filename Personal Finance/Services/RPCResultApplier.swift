@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 import SwiftData
 
 /// Mirrors what a money RPC reports onto the local store.
@@ -24,6 +25,26 @@ enum RPCResultApplier {
             ctx.rollback()
             SyncManager.shared.requestSync(modelContext: ctx)
             throw BusinessRuleError(message: "The server saved the change. The app will refresh its local copy.")
+        }
+    }
+
+    /// Runs one money function as a single mutation: claims the mutation slot, builds the
+    /// parameters (which may need the request's client, e.g. to resolve a system
+    /// category), calls `function`, mirrors the envelope locally, and turns any failure
+    /// into an error worth showing.
+    @discardableResult
+    static func perform<Params: Encodable & Sendable>(
+        _ function: String, in ctx: ModelContext, params: (PostgrestClient) async throws -> Params
+    ) async throws -> RPC.Envelope {
+        let mutation = try await LocalDataStore.beginMutation()
+        defer { LocalDataStore.endMutation(mutation.session) }
+        do {
+            let parameters = try await params(mutation.client)
+            let result: RPC.Envelope = try await mutation.client.rpc(function, params: parameters).execute().value
+            try apply(result, for: mutation.session, in: ctx)
+            return result
+        } catch {
+            throw error.asDisplayableError()
         }
     }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TxStatBox: View {
     let label: LocalizedStringKey
-    let amount: Double
+    let amount: Decimal
     let color: Color
 
     var body: some View {

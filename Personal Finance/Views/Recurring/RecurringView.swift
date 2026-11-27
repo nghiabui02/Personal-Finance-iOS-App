@@ -89,11 +89,10 @@ private struct RecurringRow: View {
 
     private var freqLabel: LocalizedStringKey {
         switch rec.frequency {
-        case "daily": return "Daily"
-        case "weekly": return "Weekly"
-        case "monthly": return "Monthly"
-        case "yearly": return "Yearly"
-        default: return LocalizedStringKey(rec.frequency.capitalized)
+        case .daily: return "Daily"
+        case .weekly: return "Weekly"
+        case .monthly: return "Monthly"
+        case .yearly: return "Yearly"
         }
     }
 
@@ -101,12 +100,13 @@ private struct RecurringRow: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(rec.type == "income" ? Color.income.opacity(0.12) : Color.expense.opacity(0.12))
+                    .fill(rec.type == .income ? Color.income.opacity(0.12) : Color.expense.opacity(0.12))
                     .frame(width: 44, height: 44)
-                Text(rec.categoryIcon ?? (rec.type == "income" ? "💰" : "💸")).font(.system(size: 22))
+                Text(rec.categoryIcon ?? (rec.type == .income ? "💰" : "💸")).font(.system(size: 22))
+                    .accessibilityHidden(true)
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text(rec.categoryLabel ?? AppLocalization.shared.language.text(rec.type == "income" ? "Income" : "Expense"))
+                Text(rec.categoryLabel ?? AppLocalization.shared.language.text(rec.type == .income ? "Income" : "Expense"))
                     .fontWeight(.medium)
                 HStack(spacing: 4) {
                     Text(freqLabel)
@@ -119,13 +119,13 @@ private struct RecurringRow: View {
                         Text("+ \(rec.bankFee.formatted(currency: "VND")) fee")
                     }
                 }
-                .font(.caption).foregroundColor(.secondary)
+                .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(rec.type == "income" ? "+" : "-")\(rec.amount.formatted(currency: "VND"))")
+                Text("\(rec.type == .income ? "+" : "-")\(rec.amount.formatted(currency: "VND"))")
                     .fontWeight(.semibold)
-                    .foregroundColor(rec.type == "income" ? .income : .expense)
+                    .foregroundStyle(rec.type == .income ? Color.income : Color.expense)
                 if !rec.active {
                     Text("Paused")
                         .font(.caption2.weight(.medium))

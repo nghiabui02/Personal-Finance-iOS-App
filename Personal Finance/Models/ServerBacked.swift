@@ -14,6 +14,9 @@ protocol ServerBacked: PersistentModel {
     static func remoteId(_ remote: Remote) -> UUID
     init(from remote: Remote)
     func update(from remote: Remote)
+    /// Rows whose `serverId` is in `ids`. Each model spells out its own `#Predicate`:
+    /// SwiftData cannot translate a key path reached through this protocol.
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<Self>
 }
 
 extension ServerBacked {
@@ -31,28 +34,49 @@ extension ServerBacked {
 
 extension LocalWallet: ServerBacked {
     static func remoteId(_ remote: RemoteWallet) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalWallet> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalCategory: ServerBacked {
     static func remoteId(_ remote: RemoteCategory) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalCategory> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalDebt: ServerBacked {
     static func remoteId(_ remote: RemoteDebt) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalDebt> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalSavingGoal: ServerBacked {
     static func remoteId(_ remote: RemoteSavingGoal) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalSavingGoal> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalRecurringTransaction: ServerBacked {
     static func remoteId(_ remote: RemoteRecurringTransaction) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalRecurringTransaction> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalTransaction: ServerBacked {
     static func remoteId(_ remote: RemoteTransaction) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalTransaction> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }
 
 extension LocalBudget: ServerBacked {
     static func remoteId(_ remote: RemoteBudget) -> UUID { remote.id }
+    static func withServerIds(_ ids: [UUID]) -> FetchDescriptor<LocalBudget> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.serverId) })
+    }
 }

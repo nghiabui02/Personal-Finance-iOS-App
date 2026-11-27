@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct WalletCashFlowSection: View {
-    let income: Double
-    let expense: Double
+    let income: Decimal
+    let expense: Decimal
 
     var body: some View {
         Section("This Month") {
@@ -17,14 +17,14 @@ struct WalletCashFlowSection: View {
 
     private func valueColumn(
         title: LocalizedStringKey,
-        amount: Double,
+        amount: Decimal,
         color: Color
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundColor(.secondary)
+            Text(title).font(.caption).foregroundStyle(.secondary)
             Text(amount.formatted(currency: "VND"))
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
         }

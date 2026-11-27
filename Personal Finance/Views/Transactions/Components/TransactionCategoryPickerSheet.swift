@@ -46,11 +46,11 @@ struct TransactionCategoryPickerSheet: View {
             Text(category.icon ?? "📦")
                 .font(.title3)
             Text(category.displayName)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
             Spacer()
             if selected == category.serverId {
                 Image(systemName: "checkmark")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
             }
         }
     }

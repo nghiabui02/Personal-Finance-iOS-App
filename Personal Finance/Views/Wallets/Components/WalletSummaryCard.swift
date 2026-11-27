@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WalletSummaryCard: View {
-    let totalBalance: Double
+    let totalBalance: Decimal
     let walletCount: Int
 
     var body: some View {
@@ -12,7 +12,7 @@ struct WalletSummaryCard: View {
                 .tracking(1.2)
 
             Text(totalBalance.formatted(currency: "VND"))
-                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)

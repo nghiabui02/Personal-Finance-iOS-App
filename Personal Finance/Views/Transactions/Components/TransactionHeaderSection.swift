@@ -5,9 +5,9 @@ struct TransactionHeaderSection: View {
     @Binding var selectedDate: Date?
     @Binding var period: TransactionPeriodFilter
     @Binding var keyword: String
-    let dailyData: [Date: (income: Double, expense: Double)]
-    let income: Double
-    let expense: Double
+    let dailyData: [Date: (income: Decimal, expense: Decimal)]
+    let income: Decimal
+    let expense: Decimal
     let onAdd: () -> Void
 
     @State private var isSearching = false
@@ -37,7 +37,7 @@ struct TransactionHeaderSection: View {
                         }
                     } label: {
                         Image(systemName: isSearching ? "xmark" : "magnifyingglass")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.headline)
                             .frame(width: 42, height: 42)
                     }
                     .buttonStyle(.plain)
@@ -46,7 +46,7 @@ struct TransactionHeaderSection: View {
 
                     Button(action: onAdd) {
                         Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.title3.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(width: 48, height: 42)
                             .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))

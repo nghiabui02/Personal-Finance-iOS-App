@@ -5,6 +5,9 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isSigningUp = false
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case email, password }
 
     private var canSubmit: Bool {
         !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -22,49 +25,52 @@ struct LoginView: View {
                 Image(systemName: "chart.pie.fill")
                     .font(.system(size: 64))
                     .foregroundStyle(.blue.gradient)
+                    .accessibilityHidden(true)
                 Text("Personal Finance")
                     .font(.largeTitle).fontWeight(.bold)
                 Text("Manage your personal finances")
-                    .font(.subheadline).foregroundColor(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
 
             Spacer().frame(height: 48)
 
             // Form
             VStack(spacing: 16) {
+                // `.username` + `.password`/`.newPassword` is what lets iOS offer saved
+                // passwords from Keychain and suggest a strong one on sign-up.
                 TextField("Email", text: $email)
                     .keyboardType(.emailAddress)
+                    .textContentType(.username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .submitLabel(.next)
+                    .focused($focusedField, equals: .email)
+                    .onSubmit { focusedField = .password }
                     .padding()
                     .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .clipShape(.rect(cornerRadius: 12))
 
                 SecureField("Password", text: $password)
+                    .textContentType(isSigningUp ? .newPassword : .password)
+                    .submitLabel(.go)
+                    .focused($focusedField, equals: .password)
+                    .onSubmit(submit)
                     .padding()
                     .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .clipShape(.rect(cornerRadius: 12))
 
                 if let error = authVM.errorMessage {
                     Text(error)
-                        .font(.caption).foregroundColor(.red)
+                        .font(.caption).foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if let notice = authVM.authNotice {
                     Text(notice)
-                        .font(.caption).foregroundColor(.green)
+                        .font(.caption).foregroundStyle(.green)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                Button {
-                    Task {
-                        if isSigningUp {
-                            await authVM.signUp(email: email, password: password)
-                        } else {
-                            await authVM.signIn(email: email, password: password)
-                        }
-                    }
-                } label: {
+                Button(action: submit) {
                     ZStack {
                         if authVM.isLoading {
                             ProgressView().tint(.white)
@@ -73,10 +79,10 @@ struct LoginView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(minHeight: 50)
                     .background(canSubmit ? Color.blue : Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .foregroundStyle(.white)
+                    .clipShape(.rect(cornerRadius: 12))
                 }
                 .disabled(!canSubmit)
 
@@ -102,5 +108,17 @@ struct LoginView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
+    }
+
+    private func submit() {
+        guard canSubmit else { return }
+        focusedField = nil
+        Task {
+            if isSigningUp {
+                await authVM.signUp(email: email, password: password)
+            } else {
+                await authVM.signIn(email: email, password: password)
+            }
+        }
     }
 }

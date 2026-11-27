@@ -12,14 +12,14 @@ struct SettingsRow: View {
             HStack(spacing: 12) {
                 iconView
                 Text(title)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Text(value)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -31,7 +31,8 @@ struct SettingsRow: View {
                 .frame(width: 30, height: 30)
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
+                .accessibilityHidden(true)
+                .foregroundStyle(.white)
         }
     }
 }

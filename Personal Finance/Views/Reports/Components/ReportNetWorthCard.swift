@@ -2,11 +2,11 @@ import Charts
 import SwiftUI
 
 struct ReportNetWorthCard: View {
-    let amount: Double
-    let cash: Double
-    let lent: Double
-    let creditOwed: Double
-    let borrowed: Double
+    let amount: Decimal
+    let cash: Decimal
+    let lent: Decimal
+    let creditOwed: Decimal
+    let borrowed: Decimal
     let history: [NetWorthPoint]
 
     @State private var selectedPoint: NetWorthPoint?
@@ -36,7 +36,7 @@ struct ReportNetWorthCard: View {
                 .tracking(1)
 
             Text(amount.formatted(currency: "VND"))
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(amount >= 0 ? Color.primary : Color.expense)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
@@ -87,22 +87,24 @@ struct ReportNetWorthCard: View {
                 ForEach(history) { point in
                     LineMark(
                         x: .value("Date", point.date),
-                        y: .value("Value", point.value / 1_000_000)
+                        y: .value("Value", (point.value / 1_000_000).doubleValue)
                     )
                     .foregroundStyle(Color.blue)
-
+                    .accessibilityHidden(true)
 
                     PointMark(
                         x: .value("Date", point.date),
-                        y: .value("Value", point.value / 1_000_000)
+                        y: .value("Value", (point.value / 1_000_000).doubleValue)
                     )
                     .foregroundStyle(Color.blue)
                     .symbolSize(14)
+                    .accessibilityLabel(point.label)
+                    .accessibilityValue(point.value.formatted(currency: "VND"))
 
                     AreaMark(
                         x: .value("Date", point.date),
                         yStart: .value("Base", 0.0),
-                        yEnd: .value("Value", point.value / 1_000_000)
+                        yEnd: .value("Value", (point.value / 1_000_000).doubleValue)
                     )
                     .foregroundStyle(
                         LinearGradient(
@@ -110,7 +112,7 @@ struct ReportNetWorthCard: View {
                             startPoint: .top, endPoint: .bottom
                         )
                     )
-
+                    .accessibilityHidden(true)
                 }
 
                 if let sel = selectedPoint {
@@ -181,7 +183,7 @@ struct ReportNetWorthCard: View {
 
 private struct NWPill: View {
     let label: LocalizedStringKey
-    let value: Double
+    let value: Decimal
     var prefix: String = ""
     let color: Color
 

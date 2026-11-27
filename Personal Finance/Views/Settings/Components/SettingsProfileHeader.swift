@@ -26,7 +26,7 @@ struct SettingsProfileHeader: View {
                     .font(.headline)
                 Text(email)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()

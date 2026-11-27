@@ -9,17 +9,17 @@ struct AddEditRecurringView: View {
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
 
-    @State private var type = "expense"
-    @State private var amount: Double = 0
+    @State private var type = TransactionKind.expense
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
-    @State private var frequency = "monthly"
+    @State private var frequency = RecurringFrequency.monthly
     @State private var startDate = Date()
     @State private var hasEndDate = false
     @State private var endDate = Date()
     @State private var selectedCategoryId: UUID?
     @State private var selectedWalletId: UUID?
     @State private var note = ""
-    @State private var bankFee: Double = 0
+    @State private var bankFee: Decimal = 0
     @State private var bankFeeText = ""
     @State private var hasBankFee = false
     @State private var isSaving = false
@@ -32,7 +32,6 @@ struct AddEditRecurringView: View {
         return category.isActiveMembership && category.systemKey.map { !SystemCategory.debtKeys.contains($0) } != false
     } }
 
-    let frequencies = ["daily", "weekly", "monthly", "yearly"]
 
     var body: some View {
         NavigationStack {
@@ -40,17 +39,17 @@ struct AddEditRecurringView: View {
                 Section {
                     if !isEditing {
                         Picker("Type", selection: $type) {
-                            Text("Expense").tag("expense")
-                            Text("Income").tag("income")
+                            Text("Expense").tag(TransactionKind.expense)
+                            Text("Income").tag(TransactionKind.income)
                         }
                         .pickerStyle(.segmented)
-                        .tint(type == "income" ? .income : .expense)
+                        .tint(type == .income ? .income : .expense)
                         .onChange(of: type) { _, _ in selectedCategoryId = nil }
                     }
                     CurrencyAmountField(amount: $amount, amountText: $amountText)
                     Picker("Frequency", selection: $frequency) {
-                        ForEach(frequencies, id: \.self) { f in
-                            Text(f.capitalized).tag(f)
+                        ForEach(RecurringFrequency.allCases, id: \.self) { f in
+                            Text(LocalizedStringKey(f.rawValue.capitalized)).tag(f)
                         }
                     }
                 }
@@ -121,23 +120,18 @@ struct AddEditRecurringView: View {
     private func save() async {
         guard amount > 0 else { return }
         isSaving = true; defer { isSaving = false }
+        let draft = RecurringRuleDraft(
+            type: type, amount: amount, frequency: frequency,
+            startDate: startDate, endDate: hasEndDate ? endDate : nil,
+            walletId: selectedWalletId, categoryId: selectedCategoryId,
+            note: note.isEmpty ? nil : note,
+            bankFee: hasBankFee ? bankFee : 0
+        )
         do {
             if let r = recurring {
-                try await RecurringService.shared.update(
-                    r, amount: amount, frequency: frequency,
-                    endDate: hasEndDate ? endDate : nil,
-                    walletId: selectedWalletId, categoryId: selectedCategoryId,
-                    note: note.isEmpty ? nil : note,
-                    bankFee: hasBankFee ? bankFee : 0, in: modelContext
-                )
+                try await RecurringService.shared.update(r, with: draft, in: modelContext)
             } else {
-                try await RecurringService.shared.create(
-                    type: type, amount: amount, frequency: frequency,
-                    startDate: startDate, endDate: hasEndDate ? endDate : nil,
-                    walletId: selectedWalletId, categoryId: selectedCategoryId,
-                    note: note.isEmpty ? nil : note,
-                    bankFee: hasBankFee ? bankFee : 0, in: modelContext
-                )
+                try await RecurringService.shared.create(draft, in: modelContext)
             }
             dismiss()
         } catch { errorMsg = error.asDisplayableError().localizedDescription }

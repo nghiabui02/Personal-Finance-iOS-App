@@ -511,6 +511,17 @@
         }
       }
     },
+    "An account with this email already exists." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email này đã có tài khoản."
+          }
+        }
+      }
+    },
     "Appearance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -863,6 +874,17 @@
         }
       }
     },
+    "Choose a stronger password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy chọn mật khẩu mạnh hơn."
+          }
+        }
+      }
+    },
     "Choose a valid category for this operation." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -958,6 +980,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xác nhận mật khẩu mới"
+          }
+        }
+      }
+    },
+    "Confirm your email address before signing in." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy xác nhận địa chỉ email trước khi đăng nhập."
           }
         }
       }
@@ -1688,6 +1721,17 @@
         }
       }
     },
+    "Expense: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi: %@"
+          }
+        }
+      }
+    },
     "Family and pets" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1981,6 +2025,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "THU"
+          }
+        }
+      }
+    },
+    "Income: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thu: %@"
+          }
+        }
+      }
+    },
+    "Incorrect email or password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email hoặc mật khẩu không đúng."
           }
         }
       }
@@ -2652,6 +2718,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa có giao dịch"
+          }
+        }
+      }
+    },
+    "No wallet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ví"
           }
         }
       }
@@ -4130,6 +4207,28 @@
         }
       }
     },
+    "Today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hôm nay"
+          }
+        }
+      }
+    },
+    "Too many attempts. Try again in a few minutes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã thử quá nhiều lần. Hãy thử lại sau vài phút."
+          }
+        }
+      }
+    },
     "Total" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4537,6 +4636,17 @@
         }
       }
     },
+    "Yesterday" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hôm qua"
+          }
+        }
+      }
+    },
     "You're all caught up!" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4577,6 +4687,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "email@cuaban.com"
+          }
+        }
+      }
+    },
+    "No internet connection. Check your connection and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có kết nối mạng. Kiểm tra kết nối rồi thử lại."
+          }
+        }
+      }
+    },
+    "This reset link has expired or was opened on another device. Request a new one." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết đặt lại mật khẩu đã hết hạn hoặc được mở trên thiết bị khác. Hãy yêu cầu liên kết mới."
+          }
+        }
+      }
+    },
+    "Set New Password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt mật khẩu mới"
           }
         }
       }

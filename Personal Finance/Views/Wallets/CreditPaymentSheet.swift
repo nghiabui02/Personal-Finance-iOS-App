@@ -8,7 +8,7 @@ struct CreditPaymentSheet: View {
     let creditWallet: LocalWallet
     let wallets: [LocalWallet]
 
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var note = ""
     @State private var date = Date()
@@ -17,7 +17,7 @@ struct CreditPaymentSheet: View {
     @State private var errorMsg: String?
 
     private var sourceWallets: [LocalWallet] {
-        wallets.filter { $0.serverId != creditWallet.serverId && $0.type != "credit" }
+        wallets.filter { $0.serverId != creditWallet.serverId && $0.type != .credit }
     }
 
     private var selectedSourceWallet: LocalWallet? {
@@ -71,7 +71,7 @@ struct CreditPaymentSheet: View {
                 Text("Outstanding")
                 Spacer()
                 Text(creditWallet.amountOwed.formatted(currency: "VND"))
-                    .foregroundColor(.expense)
+                    .foregroundStyle(Color.expense)
                     .fontWeight(.semibold)
             }
 
@@ -79,7 +79,7 @@ struct CreditPaymentSheet: View {
                 Text("Credit Limit")
                 Spacer()
                 Text((creditWallet.creditLimit ?? 0).formatted(currency: "VND"))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -120,6 +120,7 @@ struct CreditPaymentSheet: View {
                 note: note.isEmpty ? nil : note,
                 in: modelContext
             )
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

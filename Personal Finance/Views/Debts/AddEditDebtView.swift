@@ -8,10 +8,10 @@ struct AddEditDebtView: View {
 
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
 
-    @State private var type = "lend"
+    @State private var type = DebtKind.lend
     @State private var personName = ""
     @State private var personContact = ""
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var selectedWalletId: UUID?
     @State private var hasDueDate = false
@@ -29,22 +29,22 @@ struct AddEditDebtView: View {
                 Section {
                     if !isEditing {
                         Picker("Type", selection: $type) {
-                            Text("I Lend").tag("lend")
-                            Text("I Borrow").tag("borrow")
+                            Text("I Lend").tag(DebtKind.lend)
+                            Text("I Borrow").tag(DebtKind.borrow)
                         }
                         .pickerStyle(.segmented)
-                        .tint(type == "lend" ? .lend : .borrow)
+                        .tint(type == .lend ? .lend : .borrow)
                         CurrencyAmountField(amount: $amount, amountText: $amountText)
                     } else {
                         HStack {
                             Text("Type")
                             Spacer()
-                            Text(debt?.type == "lend" ? "I Lend" : "I Borrow").foregroundColor(.secondary)
+                            Text(debt?.type == .lend ? "I Lend" : "I Borrow").foregroundStyle(.secondary)
                         }
                         HStack {
                             Text("Original Amount")
                             Spacer()
-                            Text((debt?.amount ?? 0).formatted(currency: "VND")).foregroundColor(.secondary)
+                            Text((debt?.amount ?? 0).formatted(currency: "VND")).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -108,7 +108,7 @@ struct AddEditDebtView: View {
                 personContact = d.personContact ?? ""
                 note = d.note ?? ""
                 if let dd = d.dueDate { hasDueDate = true; dueDate = dd }
-                markCompleted = d.status == "completed"
+                markCompleted = d.status == .completed
             }
         }
     }
@@ -124,7 +124,7 @@ struct AddEditDebtView: View {
                     personContact: personContact.isEmpty ? nil : personContact,
                     dueDate: hasDueDate ? dueDate : nil,
                     note: note.isEmpty ? nil : note,
-                    status: markCompleted ? "completed" : "active",
+                    status: markCompleted ? .completed : .active,
                     in: modelContext
                 )
             } else {

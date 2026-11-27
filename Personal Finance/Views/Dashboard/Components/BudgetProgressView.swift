@@ -13,7 +13,7 @@ struct BudgetProgressView: View {
             if budgets.isEmpty {
                 Text("No budgets set for this month")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 16)
             } else {
@@ -36,12 +36,12 @@ struct BudgetProgressView: View {
 
 private struct BudgetRowView: View {
     let budget: LocalBudget
-    let spent: Double
-    let effectiveAmount: Double
+    let spent: Decimal
+    let effectiveAmount: Decimal
     let currency: String
 
-    private var progress: Double { effectiveAmount > 0 ? min(spent / effectiveAmount, 1.0) : (isOver ? 1 : 0) }
-    private var remaining: Double { effectiveAmount - spent }
+    private var progress: Double { effectiveAmount > 0 ? min((spent / effectiveAmount).doubleValue, 1.0) : (isOver ? 1 : 0) }
+    private var remaining: Decimal { effectiveAmount - spent }
     private var isOver: Bool { spent > effectiveAmount }
 
     private var barColor: Color {
@@ -62,12 +62,12 @@ private struct BudgetRowView: View {
                 if isOver {
                     Text("Over \(abs(remaining).formatted(currency: currency))")
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .fontWeight(.medium)
                 } else {
                     Text("\(remaining.formatted(currency: currency)) left")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -87,11 +87,11 @@ private struct BudgetRowView: View {
             HStack {
                 Text("\(spent.formatted(currency: currency)) spent")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text("of \(effectiveAmount.formatted(currency: currency))")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }

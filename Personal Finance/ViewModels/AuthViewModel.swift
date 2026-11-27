@@ -20,6 +20,8 @@ final class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var updateError: String?
     @Published var authNotice: String?
+    /// Set once a password-reset link has signed the user in, so the app asks for a new password.
+    @Published var isRecoveringPassword = false
 
     private let auth = SupabaseService.shared.client.auth
     private let storage = SupabaseService.shared.client.storage
@@ -62,6 +64,7 @@ final class AuthViewModel: ObservableObject {
             case .signedOut, .userDeleted:
                 authState = .unauthenticated
                 currentUser = nil
+                isRecoveringPassword = false
             default:
                 break
             }
@@ -81,7 +84,7 @@ final class AuthViewModel: ObservableObject {
         do {
             try await auth.signIn(email: email, password: password)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.message(for: error)
         }
     }
 
@@ -98,7 +101,7 @@ final class AuthViewModel: ObservableObject {
                 authNotice = AppLocalization.shared.language.text("Check your email to confirm your account.")
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.message(for: error)
         }
     }
 
@@ -109,18 +112,67 @@ final class AuthViewModel: ObservableObject {
         }
         isLoading = true; errorMessage = nil; authNotice = nil
         defer { isLoading = false }
+        let sentNotice = AppLocalization.shared.language.text(
+            "If an account exists, password reset instructions have been sent.")
         do {
-            try await auth.resetPasswordForEmail(email)
-            authNotice = AppLocalization.shared.language.text("If an account exists, password reset instructions have been sent.")
+            try await auth.resetPasswordForEmail(email, redirectTo: AppConfig.passwordResetRedirectURL)
+            authNotice = sentNotice
+        } catch let error where error.isOfflineError {
+            errorMessage = AppLocalization.shared.language.text(
+                "No internet connection. Check your connection and try again.")
         } catch {
-            // Do not reveal whether the address is registered.
-            authNotice = AppLocalization.shared.language.text("If an account exists, password reset instructions have been sent.")
+            // Any other failure reads like success, so the reply never reveals whether the address is registered.
+            authNotice = sentNotice
         }
+    }
+
+    /// The reset email links back to `AppConfig.passwordResetRedirectURL`. Exchanging the
+    /// code in it signs the user in; `isRecoveringPassword` then opens the new-password sheet.
+    /// The exchange needs the PKCE verifier saved when the reset was requested, so a link
+    /// opened on another device, or after a newer request, fails here.
+    func handlePasswordResetLink(_ url: URL) async {
+        let redirect = AppConfig.passwordResetRedirectURL
+        guard url.scheme == redirect.scheme, url.host() == redirect.host() else { return }
+        errorMessage = nil; authNotice = nil
+        do {
+            try await auth.session(from: url)
+            isRecoveringPassword = true
+        } catch {
+            errorMessage = AppLocalization.shared.language.text(
+                "This reset link has expired or was opened on another device. Request a new one.")
+        }
+    }
+
+    func setRecoveredPassword(_ newPassword: String) async throws {
+        isUpdating = true; defer { isUpdating = false }
+        currentUser = try await auth.update(user: UserAttributes(password: newPassword))
+        isRecoveringPassword = false
     }
 
     func signOut() async {
         do { try await auth.signOut() }
         catch { errorMessage = error.localizedDescription }
+    }
+
+    /// Supabase words its auth errors in English for developers; these are the ones a
+    /// person signing in actually hits, phrased for them and localized.
+    private static func message(for error: Error) -> String {
+        let language = AppLocalization.shared.language
+        guard let authError = error as? AuthError else { return error.asDisplayableError().localizedDescription }
+        switch authError.errorCode {
+        case .invalidCredentials:
+            return language.text("Incorrect email or password.")
+        case .emailNotConfirmed:
+            return language.text("Confirm your email address before signing in.")
+        case .userAlreadyExists, .emailExists:
+            return language.text("An account with this email already exists.")
+        case .weakPassword:
+            return language.text("Choose a stronger password.")
+        case .overRequestRateLimit, .overEmailSendRateLimit:
+            return language.text("Too many attempts. Try again in a few minutes.")
+        default:
+            return authError.localizedDescription
+        }
     }
 
     // MARK: - Profile updates

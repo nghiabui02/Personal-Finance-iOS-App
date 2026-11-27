@@ -3,13 +3,13 @@ import Foundation
 struct RemoteWallet: Codable, Identifiable {
     let id: UUID
     let name: String
-    let type: String
-    let balance: Double
+    let type: WalletKind
+    let balance: Decimal
     let isDefault: Bool
     let color: String?
     let icon: String?
     let updatedAt: Date
-    let creditLimit: Double?
+    let creditLimit: Decimal?
     let statementDay: Int?
     let paymentDueDay: Int?
 
@@ -68,7 +68,7 @@ struct CategoryReference: Codable {
 struct RemoteCategory: Codable, Identifiable, Equatable {
     let id: UUID
     let name: String?
-    let type: String
+    let type: TransactionKind
     let icon: String?
     let color: String?
     let templateId: UUID?
@@ -112,8 +112,8 @@ func categoryLabel(
 
 struct RemoteNetWorthSnapshot: Codable, Identifiable {
     let id: UUID
-    let recordedDate: String
-    let netWorth: Double
+    let recordedDate: LedgerDay
+    let netWorth: Decimal
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -126,13 +126,13 @@ struct RemoteTransaction: Codable, Identifiable {
     let id: UUID
     let walletId: UUID?
     let categoryId: UUID?
-    let type: String
-    let amount: Double
+    let type: TransactionKind
+    let amount: Decimal
     let note: String?
-    let transactionDate: String       // "YYYY-MM-DD"
+    let transactionDate: LedgerDay
     let updatedAt: Date
     let transferPairId: UUID?
-    let bankFee: Double?
+    let bankFee: Decimal?
     // Joined via .select("*, categories(...), wallets(...)")
     let categories: CategoryReference?
     let wallets: WalletInfo?
@@ -159,8 +159,8 @@ struct RemoteTransaction: Codable, Identifiable {
 struct RemoteBudget: Codable, Identifiable {
     let id: UUID
     let categoryId: UUID?
-    let amount: Double
-    let month: String                 // "YYYY-MM-01"
+    let amount: Decimal
+    let month: LedgerDay              // always the 1st
     let rollover: Bool
     let active: Bool
     let categories: CategoryReference?
@@ -174,13 +174,13 @@ struct RemoteBudget: Codable, Identifiable {
 struct RemoteDebt: Codable, Identifiable {
     let id: UUID
     let walletId: UUID?
-    let type: String
+    let type: DebtKind
     let personName: String
     let personContact: String?
-    let amount: Double
-    let remainingAmount: Double
-    let dueDate: String?
-    let status: String
+    let amount: Decimal
+    let remainingAmount: Decimal
+    let dueDate: LedgerDay?
+    let status: DebtStatus
     let note: String?
     let updatedAt: Date
 
@@ -198,10 +198,10 @@ struct RemoteDebt: Codable, Identifiable {
 struct RemoteDebtPayment: Codable, Identifiable {
     let id: UUID
     let debtId: UUID
-    let amount: Double
+    let amount: Decimal
     let note: String?
     let paidAt: Date
-    let type: String?
+    let type: DebtPaymentKind?
 
     enum CodingKeys: String, CodingKey {
         case id, amount, note, type
@@ -214,10 +214,10 @@ struct RemoteSavingGoal: Codable, Identifiable {
     let id: UUID
     let name: String
     let icon: String?
-    let targetAmount: Double
-    let currentAmount: Double
-    let deadline: String?
-    let status: String
+    let targetAmount: Decimal
+    let currentAmount: Decimal
+    let deadline: LedgerDay?
+    let status: GoalStatus
     let note: String?
     let updatedAt: Date
 
@@ -234,13 +234,13 @@ struct RemoteRecurringTransaction: Codable, Identifiable {
     let id: UUID
     let walletId: UUID?
     let categoryId: UUID?
-    let type: String
-    let amount: Double
+    let type: TransactionKind
+    let amount: Decimal
     let note: String?
-    let frequency: String
-    let startDate: String
-    let endDate: String?
-    let nextRunDate: String?
+    let frequency: RecurringFrequency
+    let startDate: LedgerDay
+    let endDate: LedgerDay?
+    let nextRunDate: LedgerDay?
     let updatedAt: Date
     let categories: CategoryReference?
     let wallets: WalletInfo?
@@ -252,7 +252,7 @@ struct RemoteRecurringTransaction: Codable, Identifiable {
 
     let active: Bool
     /// NULL when the rule has no fee — the server stores `bank_fee > 0 ? fee : null`.
-    let bankFee: Double?
+    let bankFee: Decimal?
 
     enum CodingKeys: String, CodingKey {
         case id, note, amount, type, frequency, categories, wallets, active

@@ -14,19 +14,19 @@ struct MonthSelectorView: View {
             Button { changeMonth(by: -1) } label: {
                 Image(systemName: "chevron.left")
                     .font(.title3.weight(.semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
             }
 
             Button { showPicker = true } label: {
                 Text(selectedMonth, format: LedgerDate.display(.dateTime.month(.wide).year()))
                     .font(.title.weight(.bold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
             }
 
             Button { changeMonth(by: 1) } label: {
                 Image(systemName: "chevron.right")
                     .font(.title3.weight(.semibold))
-                    .foregroundColor(isCurrentMonth ? .secondary : .primary)
+                    .foregroundStyle(isCurrentMonth ? .secondary : .primary)
             }
             .disabled(isCurrentMonth)
         }

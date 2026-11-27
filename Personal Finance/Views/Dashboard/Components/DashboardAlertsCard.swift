@@ -16,17 +16,17 @@ struct DashboardAlertsCard: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("ALERTS")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(1)
 
             ForEach(alerts) { alert in
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: alert.symbol)
-                        .foregroundColor(alert.color)
+                        .foregroundStyle(alert.color)
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(alert.title).font(.subheadline.weight(.semibold))
-                        Text(alert.message).font(.caption).foregroundColor(.secondary)
+                        Text(alert.message).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                 }

@@ -8,7 +8,7 @@ struct DebtPaymentSheet: View {
     let debt: LocalDebt
     let wallets: [LocalWallet]
 
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var note = ""
     @State private var date = Date()
@@ -25,7 +25,7 @@ struct DebtPaymentSheet: View {
         _selectedWalletId = State(initialValue: initialWallet)
     }
 
-    private var afterPayment: Double { max(0, debt.remainingAmount - amount) }
+    private var afterPayment: Decimal { max(0, debt.remainingAmount - amount) }
 
     var body: some View {
         NavigationStack {
@@ -94,6 +94,7 @@ struct DebtPaymentSheet: View {
                 walletId: selectedWalletId,
                 in: modelContext
             )
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

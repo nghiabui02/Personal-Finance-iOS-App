@@ -41,17 +41,21 @@ struct ReportIncomeExpenseChartCard: View {
                 ForEach(data) { bar in
                     BarMark(
                         x: .value("Label", bar.label),
-                        y: .value("Income", bar.income / 1_000)
+                        y: .value("Income", (bar.income / 1_000).doubleValue)
                     )
                     .foregroundStyle(Color.income.opacity(0.85))
                     .position(by: .value("Type", "Income"))
+                    .accessibilityLabel(bar.label)
+                    .accessibilityValue(Text("Income: \(bar.income.formatted(currency: "VND"))"))
 
                     BarMark(
                         x: .value("Label", bar.label),
-                        y: .value("Expense", bar.expense / 1_000)
+                        y: .value("Expense", (bar.expense / 1_000).doubleValue)
                     )
                     .foregroundStyle(Color.expense.opacity(0.85))
                     .position(by: .value("Type", "Expense"))
+                    .accessibilityLabel(bar.label)
+                    .accessibilityValue(Text("Expense: \(bar.expense.formatted(currency: "VND"))"))
                 }
             }
             .chartXAxis {

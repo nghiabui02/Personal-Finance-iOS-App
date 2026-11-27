@@ -4,7 +4,7 @@ struct TransactionPaginationSection: View {
     let selectedDate: Date?
     let hasMore: Bool
     let isLoadingMore: Bool
-    let count: Int
+    let loadedCount: Int
     let onLoadMore: () async -> Void
 
     var body: some View {
@@ -19,10 +19,10 @@ struct TransactionPaginationSection: View {
                     .listRowSeparator(.hidden)
                     .onAppear { Task { await onLoadMore() } }
                 }
-            } else if count > 0 {
+            } else if loadedCount > 0 {
                 Section {
-                    Text("All \(count) transactions loaded")
-                        .font(.caption).foregroundColor(.secondary)
+                    Text("All \(loadedCount) transactions loaded")
+                        .font(.caption).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .listRowSeparator(.hidden)
                 }

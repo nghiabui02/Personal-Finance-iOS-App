@@ -7,7 +7,7 @@ struct ReportSpendingBreakdownCard: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SPENDING BREAKDOWN")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(1)
 
             ForEach(items) { item in
@@ -33,7 +33,7 @@ private struct ReportSpendingBreakdownRow: View {
                 Spacer()
                 Text(String(format: "%.0f%%", item.percentage))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 36, alignment: .trailing)
                 Text(item.amount.formatted(currency: "VND"))
                     .font(.subheadline.weight(.semibold))
@@ -65,6 +65,7 @@ private struct ReportSpendingBreakdownRow: View {
                 .frame(width: 36, height: 36)
             Text(item.icon)
                 .font(.system(size: 18))
+                .accessibilityHidden(true)
         }
     }
 }

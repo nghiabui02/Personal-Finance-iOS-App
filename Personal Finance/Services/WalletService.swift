@@ -8,25 +8,21 @@ final class WalletService {
     private init() {}
 
     func create(
-        name: String, type: String, initialBalance: Double,
+        name: String, type: WalletKind, initialBalance: Decimal,
         icon: String?, color: String?, isDefault: Bool,
-        creditLimit: Double? = nil, statementDay: Int? = nil, paymentDueDay: Int? = nil,
+        creditLimit: Decimal? = nil, statementDay: Int? = nil, paymentDueDay: Int? = nil,
         in ctx: ModelContext
     ) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
-        let limit = type == "credit" ? creditLimit : nil
-        let params: [String: AnyJSON] = [
-            "p_name": .string(name), "p_type": .string(type),
-            "p_balance": .double(type == "credit" ? limit ?? 0 : initialBalance),
-            "p_icon": icon.map(AnyJSON.string) ?? .null,
-            "p_color": color.map(AnyJSON.string) ?? .null,
-            "p_is_default": .bool(isDefault),
-            "p_credit_limit": limit.map(AnyJSON.double) ?? .null,
-            "p_statement_day": statementDay.map(AnyJSON.integer) ?? .null,
-            "p_payment_due_day": paymentDueDay.map(AnyJSON.integer) ?? .null
-        ]
+        let limit = type == .credit ? creditLimit : nil
+        let params = NewWallet(
+            p_name: name, p_type: type,
+            p_balance: type == .credit ? limit ?? 0 : initialBalance,
+            p_icon: icon, p_color: color, p_is_default: isDefault,
+            p_credit_limit: limit, p_statement_day: statementDay, p_payment_due_day: paymentDueDay
+        )
         let remote: RemoteWallet = try await client.rpc("create_wallet", params: params).execute().value
         let local = LocalWallet(from: remote)
         if isDefault {
@@ -84,23 +80,15 @@ final class WalletService {
     /// happen together. Past transactions keep their history — the foreign key
     /// clears `wallet_id` rather than deleting them.
     func delete(_ wallet: LocalWallet, in ctx: ModelContext) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_wallet_id: String
             let p_date: String
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("delete_wallet", params: Params(
-                    p_wallet_id: wallet.serverId.uuidString,
-                    p_date: LedgerDate.string(from: Date())
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("delete_wallet", in: ctx) { _ in
+            Params(
+                p_wallet_id: wallet.serverId.uuidString,
+                p_date: LedgerDate.string(from: Date())
+            )
         }
     }
 
@@ -111,37 +99,28 @@ final class WalletService {
     /// picks — guessing here and sending one would be wrong whenever another
     /// write lands in between.
     func reconcile(
-        _ wallet: LocalWallet, actualBalance: Double, note: String?,
+        _ wallet: LocalWallet, actualBalance: Decimal, note: String?,
         date: Date = Date(), in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
-        let up = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustUp, using: client)
-        let down = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustDown, using: client)
-
         struct Params: Encodable {
             let p_wallet_id: String
-            let p_actual_balance: Double
+            let p_actual_balance: Decimal
             let p_date: String
             let p_category_up: String?
             let p_category_down: String?
             let p_note: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("reconcile_wallet", params: Params(
-                    p_wallet_id: wallet.serverId.uuidString,
-                    p_actual_balance: actualBalance,
-                    p_date: LedgerDate.string(from: date),
-                    p_category_up: up.uuidString,
-                    p_category_down: down.uuidString,
-                    p_note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("reconcile_wallet", in: ctx) { client in
+            let up = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustUp, using: client)
+            let down = try await CategoryService.shared.ensureSystemCategory(SystemCategory.adjustDown, using: client)
+            return Params(
+                p_wallet_id: wallet.serverId.uuidString,
+                p_actual_balance: actualBalance,
+                p_date: LedgerDate.string(from: date),
+                p_category_up: up.uuidString,
+                p_category_down: down.uuidString,
+                p_note: note?.isEmpty == true ? "Reconciled \(wallet.name)" : note
+            )
         }
     }
 
@@ -149,32 +128,56 @@ final class WalletService {
     /// written as a transfer pair.
     func payCredit(
         _ creditWallet: LocalWallet, from sourceWallet: LocalWallet,
-        amount: Double, date: Date, note: String?,
+        amount: Decimal, date: Date, note: String?,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_card_wallet_id: String
             let p_from_wallet_id: String
-            let p_amount: Double
+            let p_amount: Decimal
             let p_date: String
             let p_note: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("pay_credit_card", params: Params(
-                    p_card_wallet_id: creditWallet.serverId.uuidString,
-                    p_from_wallet_id: sourceWallet.serverId.uuidString,
-                    p_amount: amount,
-                    p_date: LedgerDate.string(from: date),
-                    p_note: note?.isEmpty == true ? nil : note
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("pay_credit_card", in: ctx) { _ in
+            Params(
+                p_card_wallet_id: creditWallet.serverId.uuidString,
+                p_from_wallet_id: sourceWallet.serverId.uuidString,
+                p_amount: amount,
+                p_date: LedgerDate.string(from: date),
+                p_note: note?.isEmpty == true ? nil : note
+            )
         }
+    }
+}
+
+/// `create_wallet` arguments. Every argument is sent, `null` included — the function
+/// declares no defaults, so an omitted key would not match its signature.
+private struct NewWallet: Encodable {
+    let p_name: String
+    let p_type: WalletKind
+    let p_balance: Decimal
+    let p_icon: String?
+    let p_color: String?
+    let p_is_default: Bool
+    let p_credit_limit: Decimal?
+    let p_statement_day: Int?
+    let p_payment_due_day: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case p_name, p_type, p_balance, p_icon, p_color, p_is_default
+        case p_credit_limit, p_statement_day, p_payment_due_day
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_name, forKey: .p_name)
+        try container.encode(p_type, forKey: .p_type)
+        try container.encode(p_balance, forKey: .p_balance)
+        try container.encode(p_icon, forKey: .p_icon)
+        try container.encode(p_color, forKey: .p_color)
+        try container.encode(p_is_default, forKey: .p_is_default)
+        try container.encode(p_credit_limit, forKey: .p_credit_limit)
+        try container.encode(p_statement_day, forKey: .p_statement_day)
+        try container.encode(p_payment_due_day, forKey: .p_payment_due_day)
     }
 }

@@ -6,11 +6,11 @@ struct RecentTransactionRowView: View {
 
     private var iconEmoji: String {
         if let icon = transaction.categoryIcon, !icon.isEmpty { return icon }
-        return transaction.type == "income" ? "💰" : "💸"
+        return transaction.type == .income ? "💰" : "💸"
     }
 
     private var amountText: String {
-        let prefix = transaction.type == "income" ? "+" : "-"
+        let prefix = transaction.type == .income ? "+" : "-"
         return "\(prefix)\(transaction.amount.formatted(currency: currency))"
     }
 
@@ -21,6 +21,7 @@ struct RecentTransactionRowView: View {
                     .fill(Color(.systemGray6))
                     .frame(width: 44, height: 44)
                 Text(iconEmoji).font(.system(size: 22))
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -28,18 +29,18 @@ struct RecentTransactionRowView: View {
                     .font(.subheadline).fontWeight(.medium)
                     .lineLimit(1)
                 HStack(spacing: 4) {
-                    Text(transaction.walletName)
+                    Text(transaction.walletLabel)
                     Text("·")
                     Text(transaction.transactionDate.formatted(date: .abbreviated, time: .omitted))
                 }
-                .font(.caption).foregroundColor(.secondary)
+                .font(.caption).foregroundStyle(.secondary)
             }
 
             Spacer()
 
             Text(amountText)
                 .font(.subheadline).fontWeight(.semibold)
-                .foregroundColor(transaction.type == "income" ? .green : .red)
+                .foregroundStyle(transaction.type == .income ? .green : .red)
         }
         .padding(.horizontal)
         .padding(.vertical, 12)

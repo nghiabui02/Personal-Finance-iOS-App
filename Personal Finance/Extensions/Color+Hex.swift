@@ -52,6 +52,7 @@ extension View {
 }
 
 // Global helper so any file can dismiss keyboard without importing UIKit.
+@MainActor
 func hideKeyboard() {
     UIApplication.shared.sendAction(
         #selector(UIResponder.resignFirstResponder),

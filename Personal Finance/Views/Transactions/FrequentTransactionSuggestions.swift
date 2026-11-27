@@ -2,14 +2,14 @@ import Foundation
 
 struct FrequentTransactionSuggestion: Identifiable {
     let id: String
-    let type: String
+    let type: TransactionKind
     let categoryId: UUID
     let categoryName: String
     let categoryIcon: String
     let categoryColor: String?
     let walletId: UUID?
-    let amount: Double
-    let bankFee: Double
+    let amount: Decimal
+    let bankFee: Decimal
     let note: String?
     let occurrenceCount: Int
 }
@@ -46,9 +46,9 @@ enum FrequentTransactionSuggestionCalculator {
         let transactions = transactions.operatingOnly(using: categories)
 
         struct Group {
-            let type: String, categoryId: UUID, walletId: UUID?, amount: Double
+            let type: TransactionKind, categoryId: UUID, walletId: UUID?, amount: Decimal
             var note: String?
-            var bankFee = 0.0
+            var bankFee: Decimal = 0
             var lastEdit = Date.distantPast
             var count = 0
             var lastDate = Date.distantPast
@@ -66,7 +66,7 @@ enum FrequentTransactionSuggestionCalculator {
                 g.lastDate = tx.transactionDate
                 g.lastEdit = tx.updatedAt
                 g.note = tx.note
-                if tx.type == "expense", tx.walletId != nil, let fee = tx.bankFee, fee > 0, fee < tx.amount {
+                if tx.type == .expense, tx.walletId != nil, let fee = tx.bankFee, fee > 0, fee < tx.amount {
                     g.bankFee = fee
                 } else {
                     g.bankFee = 0
@@ -93,7 +93,7 @@ enum FrequentTransactionSuggestionCalculator {
         )
     }
 
-    private static func key(type: String, categoryId: UUID?, walletId: UUID?, amount: Double) -> String {
-        "\(type)|\(categoryId?.uuidString ?? "none")|\(walletId?.uuidString ?? "none")|\(amount)"
+    private static func key(type: TransactionKind, categoryId: UUID?, walletId: UUID?, amount: Decimal) -> String {
+        "\(type.rawValue)|\(categoryId?.uuidString ?? "none")|\(walletId?.uuidString ?? "none")|\(amount)"
     }
 }

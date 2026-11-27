@@ -1,0 +1,36 @@
+# SwiftLint — run by CI (.github/workflows/ios.yml); locally: `swiftlint lint`.
+# Errors fail the build, warnings are annotations to clean up over time.
+
+included:
+  - Personal Finance
+  - Personal FinanceTests
+  - Personal FinanceUITests
+
+opt_in_rules:
+  - closure_spacing
+  - contains_over_filter_count
+  - empty_count
+  - fatal_error_message
+  - first_where
+  - private_swiftui_state
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+
+identifier_name:
+  # `r` for a remote row and `p_*` RPC parameter names mirror the wire format on purpose.
+  min_length: 1
+  allowed_symbols: ["_"]
+
+large_tuple:
+  warning: 4
+  error: 5
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+
+type_body_length:
+  warning: 300
+  error: 500

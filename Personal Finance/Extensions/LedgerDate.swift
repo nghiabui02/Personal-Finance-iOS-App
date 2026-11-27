@@ -51,3 +51,36 @@ enum LedgerDate {
         return f
     }
 }
+
+/// A `DATE` column as it travels: the "yyyy-MM-dd" wire string, which the app compares
+/// and keys on directly, plus the parsed ledger day.
+///
+/// Decoding throws on anything that is not a valid day, so a malformed date fails the
+/// sync with a decoding error instead of quietly becoming "today" in every report.
+struct LedgerDay: Codable, Hashable, Comparable, Sendable {
+    let string: String
+    let date: Date
+
+    init?(_ string: String) {
+        guard let date = LedgerDate.date(from: string) else { return nil }
+        self.string = string
+        self.date = date
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        guard let day = LedgerDay(raw) else {
+            throw DecodingError.dataCorruptedError(
+                in: container, debugDescription: "Expected a yyyy-MM-dd ledger date, got \"\(raw)\".")
+        }
+        self = day
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(string)
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool { lhs.string < rhs.string }
+}

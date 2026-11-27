@@ -1,22 +1,34 @@
 import Foundation
 import SwiftData
 
+// Kind columns are stored as their raw text (`typeRaw`, `statusRaw`, ...) and read
+// through a typed property: the text keeps the store independent of how SwiftData
+// would encode an enum, and the typed property is what the rest of the app touches.
+// `originalName` points each raw column at the name older builds stored it under
+// (`type`, `status`, `frequency`), so an upgrade migrates the offline cache in place
+// instead of failing and wiping it.
+
 @Model
 final class LocalWallet {
     var serverId: UUID
     var name: String
-    var type: String
-    var balance: Double
+    @Attribute(originalName: "type") private var typeRaw: String
+    var balance: Decimal
     var isDefault: Bool
     var color: String?
     var icon: String?
     var updatedAt: Date
-    var creditLimit: Double?
+    var creditLimit: Decimal?
     var statementDay: Int?
     var paymentDueDay: Int?
 
+    var type: WalletKind {
+        get { WalletKind(wireValue: typeRaw) }
+        set { typeRaw = newValue.rawValue }
+    }
+
     init(from r: RemoteWallet) {
-        serverId = r.id; name = r.name; type = r.type
+        serverId = r.id; name = r.name; typeRaw = r.type.rawValue
         balance = r.balance; isDefault = r.isDefault
         color = r.color; icon = r.icon; updatedAt = r.updatedAt
         creditLimit = r.creditLimit; statementDay = r.statementDay
@@ -30,31 +42,31 @@ final class LocalWallet {
         setIfChanged(\.paymentDueDay, r.paymentDueDay)
     }
 
-    var amountOwed: Double {
-        guard type == "credit" else { return 0 }
+    var amountOwed: Decimal {
+        guard type == .credit else { return 0 }
         return max(0, (creditLimit ?? 0) - balance)
     }
 
     var displayIcon: String {
         if let icon, !icon.isEmpty { return icon }
         switch type {
-        case "cash": return "💵"
-        case "bank": return "🏦"
-        case "e_wallet": return "📱"
-        case "investment": return "📈"
-        case "credit": return "💳"
-        default: return "💼"
+        case .cash: return "💵"
+        case .bank: return "🏦"
+        case .eWallet: return "📱"
+        case .investment: return "📈"
+        case .credit: return "💳"
+        case .other: return "💼"
         }
     }
 
     @MainActor var typeLabel: String {
         switch type {
-        case "cash": return AppLocalization.shared.language.text("Cash")
-        case "bank": return AppLocalization.shared.language.text("Bank")
-        case "e_wallet": return AppLocalization.shared.language.text("E-Wallet")
-        case "investment": return AppLocalization.shared.language.text("Investment")
-        case "credit": return AppLocalization.shared.language.text("Credit")
-        default: return AppLocalization.shared.language.text("Other")
+        case .cash: return AppLocalization.shared.language.text("Cash")
+        case .bank: return AppLocalization.shared.language.text("Bank")
+        case .eWallet: return AppLocalization.shared.language.text("E-Wallet")
+        case .investment: return AppLocalization.shared.language.text("Investment")
+        case .credit: return AppLocalization.shared.language.text("Credit")
+        case .other: return AppLocalization.shared.language.text("Other")
         }
     }
 }
@@ -63,14 +75,19 @@ final class LocalWallet {
 final class LocalCategory {
     var serverId: UUID
     var name: String
-    var type: String
+    @Attribute(originalName: "type") private var typeRaw: String
     var icon: String?
     var color: String?
     var isDefault: Bool = false
     var systemKey: String?
 
+    var type: TransactionKind {
+        get { TransactionKind(wireValue: typeRaw) }
+        set { typeRaw = newValue.rawValue }
+    }
+
     init(from r: RemoteCategory) {
-        serverId = r.id; name = r.displayName; type = r.type
+        serverId = r.id; name = r.displayName; typeRaw = r.type.rawValue
         icon = r.icon; color = r.color; isDefault = r.isDefault
         systemKey = r.systemKey
     }
@@ -90,17 +107,25 @@ final class LocalTransaction {
     var categoryName: String?
     var categoryIcon: String?
     var categoryColor: String?
-    var type: String
-    var amount: Double
+    @Attribute(originalName: "type") private var typeRaw: String
+    var amount: Decimal
     var note: String?
     var transactionDate: Date
     var updatedAt: Date
     var syncStatus: String
     var transferPairId: UUID?
     var debtPaymentId: UUID?
-    var bankFee: Double?
+    var bankFee: Decimal?
+
+    var type: TransactionKind {
+        get { TransactionKind(wireValue: typeRaw) }
+        set { typeRaw = newValue.rawValue }
+    }
 
     var isTransfer: Bool { transferPairId != nil }
+
+    /// `amount` with the sign it has on a balance: income adds, expense subtracts.
+    var signedAmount: Decimal { type == .income ? amount : -amount }
 
     init(from r: RemoteTransaction) {
         serverId = r.id
@@ -110,8 +135,8 @@ final class LocalTransaction {
         categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
-        type = r.type.lowercased(); amount = r.amount; note = r.note
-        transactionDate = LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date()
+        typeRaw = r.type.rawValue; amount = r.amount; note = r.note
+        transactionDate = r.transactionDate.date
         updatedAt = r.updatedAt; syncStatus = "synced"
         transferPairId = r.transferPairId
         debtPaymentId = r.debtPaymentId
@@ -125,8 +150,8 @@ final class LocalTransaction {
         setIfChanged(\.categoryName, r.categories?.displayName)
         setIfChanged(\.categoryIcon, r.categories?.icon)
         setIfChanged(\.categoryColor, r.categories?.color)
-        setIfChanged(\.type, r.type.lowercased()); setIfChanged(\.amount, r.amount); setIfChanged(\.note, r.note)
-        setIfChanged(\.transactionDate, LedgerDate.dayFormatter.date(from: r.transactionDate) ?? Date())
+        setIfChanged(\.type, r.type); setIfChanged(\.amount, r.amount); setIfChanged(\.note, r.note)
+        setIfChanged(\.transactionDate, r.transactionDate.date)
         setIfChanged(\.updatedAt, r.updatedAt); setIfChanged(\.syncStatus, "synced")
         setIfChanged(\.transferPairId, r.transferPairId)
         setIfChanged(\.debtPaymentId, r.debtPaymentId)
@@ -141,7 +166,7 @@ final class LocalBudget {
     var categoryName: String
     var categoryIcon: String?
     var categoryColor: String?
-    var amount: Double
+    var amount: Decimal
     var month: Date
     var rollover: Bool = false
     var active: Bool = true
@@ -153,7 +178,7 @@ final class LocalBudget {
         categoryIcon = r.categories?.icon
         categoryColor = r.categories?.color
         amount = r.amount
-        month = LedgerDate.dayFormatter.date(from: r.month) ?? Date()
+        month = r.month.date
         rollover = r.rollover
         active = r.active
     }
@@ -164,7 +189,7 @@ final class LocalBudget {
         setIfChanged(\.categoryIcon, r.categories?.icon)
         setIfChanged(\.categoryColor, r.categories?.color)
         setIfChanged(\.amount, r.amount)
-        setIfChanged(\.month, LedgerDate.dayFormatter.date(from: r.month) ?? Date())
+        setIfChanged(\.month, r.month.date)
         setIfChanged(\.rollover, r.rollover)
         setIfChanged(\.active, r.active)
     }
@@ -174,28 +199,38 @@ final class LocalBudget {
 final class LocalDebt {
     var serverId: UUID
     var walletId: UUID?
-    var type: String
+    @Attribute(originalName: "type") private var typeRaw: String
     var personName: String
     var personContact: String?
-    var amount: Double
-    var remainingAmount: Double
+    var amount: Decimal
+    var remainingAmount: Decimal
     var dueDate: Date?
-    var status: String
+    @Attribute(originalName: "status") private var statusRaw: String
     var note: String?
     var updatedAt: Date
 
+    var type: DebtKind {
+        get { DebtKind(wireValue: typeRaw) }
+        set { typeRaw = newValue.rawValue }
+    }
+
+    var status: DebtStatus {
+        get { DebtStatus(wireValue: statusRaw) }
+        set { statusRaw = newValue.rawValue }
+    }
+
     init(from r: RemoteDebt) {
-        serverId = r.id; walletId = r.walletId; type = r.type
+        serverId = r.id; walletId = r.walletId; typeRaw = r.type.rawValue
         personName = r.personName; personContact = r.personContact
         amount = r.amount; remainingAmount = r.remainingAmount
-        dueDate = r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        status = r.status; note = r.note; updatedAt = r.updatedAt
+        dueDate = r.dueDate?.date
+        statusRaw = r.status.rawValue; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteDebt) {
         setIfChanged(\.walletId, r.walletId); setIfChanged(\.type, r.type)
         setIfChanged(\.personName, r.personName); setIfChanged(\.personContact, r.personContact)
         setIfChanged(\.amount, r.amount); setIfChanged(\.remainingAmount, r.remainingAmount)
-        setIfChanged(\.dueDate, r.dueDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.dueDate, r.dueDate?.date)
         setIfChanged(\.status, r.status); setIfChanged(\.note, r.note); setIfChanged(\.updatedAt, r.updatedAt)
     }
 }
@@ -205,25 +240,34 @@ final class LocalSavingGoal {
     var serverId: UUID
     var name: String
     var icon: String?
-    var targetAmount: Double
-    var currentAmount: Double
+    var targetAmount: Decimal
+    var currentAmount: Decimal
     var deadline: Date?
-    var status: String
+    @Attribute(originalName: "status") private var statusRaw: String
     var note: String?
     var updatedAt: Date
 
-    var progress: Double { targetAmount > 0 ? min(currentAmount / targetAmount, 1.0) : 0 }
+    var status: GoalStatus {
+        get { GoalStatus(wireValue: statusRaw) }
+        set { statusRaw = newValue.rawValue }
+    }
+
+    /// Share of the target reached, capped at 1 — a ratio for progress bars, not money.
+    var progress: Double {
+        guard targetAmount > 0 else { return 0 }
+        return min((currentAmount / targetAmount).doubleValue, 1.0)
+    }
 
     init(from r: RemoteSavingGoal) {
         serverId = r.id; name = r.name; icon = r.icon
         targetAmount = r.targetAmount; currentAmount = r.currentAmount
-        deadline = r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        status = r.status; note = r.note; updatedAt = r.updatedAt
+        deadline = r.deadline?.date
+        statusRaw = r.status.rawValue; note = r.note; updatedAt = r.updatedAt
     }
     func update(from r: RemoteSavingGoal) {
         setIfChanged(\.name, r.name); setIfChanged(\.icon, r.icon)
         setIfChanged(\.targetAmount, r.targetAmount); setIfChanged(\.currentAmount, r.currentAmount)
-        setIfChanged(\.deadline, r.deadline.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.deadline, r.deadline?.date)
         setIfChanged(\.status, r.status); setIfChanged(\.note, r.note); setIfChanged(\.updatedAt, r.updatedAt)
     }
 }
@@ -237,25 +281,35 @@ final class LocalRecurringTransaction {
     var categoryName: String?
     var categoryIcon: String?
     var categoryColor: String?
-    var type: String
-    var amount: Double
+    @Attribute(originalName: "type") private var typeRaw: String
+    var amount: Decimal
     var note: String?
-    var frequency: String
+    @Attribute(originalName: "frequency") private var frequencyRaw: String
     var startDate: Date
     var endDate: Date?
     var nextRunDate: Date?
     var updatedAt: Date
     var active: Bool = true
-    var bankFee: Double = 0
+    var bankFee: Decimal = 0
+
+    var type: TransactionKind {
+        get { TransactionKind(wireValue: typeRaw) }
+        set { typeRaw = newValue.rawValue }
+    }
+
+    var frequency: RecurringFrequency {
+        get { RecurringFrequency(wireValue: frequencyRaw) }
+        set { frequencyRaw = newValue.rawValue }
+    }
 
     init(from r: RemoteRecurringTransaction) {
         serverId = r.id; walletId = r.walletId; walletName = r.wallets?.name
         categoryId = r.categoryId; categoryName = r.categories?.displayName
         categoryIcon = r.categories?.icon; categoryColor = r.categories?.color
-        type = r.type; amount = r.amount; note = r.note; frequency = r.frequency
-        startDate = LedgerDate.dayFormatter.date(from: r.startDate) ?? Date()
-        endDate = r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
-        nextRunDate = r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) }
+        typeRaw = r.type.rawValue; amount = r.amount; note = r.note; frequencyRaw = r.frequency.rawValue
+        startDate = r.startDate.date
+        endDate = r.endDate?.date
+        nextRunDate = r.nextRunDate?.date
         updatedAt = r.updatedAt
         active = r.active
         bankFee = r.bankFee ?? 0
@@ -266,9 +320,9 @@ final class LocalRecurringTransaction {
         setIfChanged(\.categoryIcon, r.categories?.icon); setIfChanged(\.categoryColor, r.categories?.color)
         setIfChanged(\.type, r.type); setIfChanged(\.amount, r.amount); setIfChanged(\.note, r.note)
         setIfChanged(\.frequency, r.frequency)
-        setIfChanged(\.startDate, LedgerDate.dayFormatter.date(from: r.startDate) ?? Date())
-        setIfChanged(\.endDate, r.endDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
-        setIfChanged(\.nextRunDate, r.nextRunDate.flatMap { LedgerDate.dayFormatter.date(from: $0) })
+        setIfChanged(\.startDate, r.startDate.date)
+        setIfChanged(\.endDate, r.endDate?.date)
+        setIfChanged(\.nextRunDate, r.nextRunDate?.date)
         setIfChanged(\.updatedAt, r.updatedAt)
         setIfChanged(\.active, r.active)
         setIfChanged(\.bankFee, r.bankFee ?? 0)

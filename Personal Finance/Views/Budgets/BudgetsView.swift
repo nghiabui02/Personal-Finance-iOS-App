@@ -201,12 +201,12 @@ private struct SuggestionRow: View {
                 Circle()
                     .fill((suggestion.categoryColor.map { Color(hex: $0) } ?? .blue).opacity(0.15))
                     .frame(width: 36, height: 36)
-                Text(suggestion.categoryIcon).font(.system(size: 16))
+                Text(suggestion.categoryIcon).font(.system(size: 16)).accessibilityHidden(true)
             }
             Text(suggestion.categoryName).fontWeight(.medium)
             Spacer()
             Text(suggestion.amount.formatted(currency: "VND"))
-                .font(.subheadline).foregroundColor(.secondary)
+                .font(.subheadline).foregroundStyle(.secondary)
             Button(action: onAdd) {
                 Image(systemName: "plus.circle.fill").foregroundStyle(.blue)
             }
@@ -218,11 +218,11 @@ private struct SuggestionRow: View {
 
 private struct BudgetRow: View {
     let budget: LocalBudget
-    let spent: Double
-    let effectiveAmount: Double
+    let spent: Decimal
+    let effectiveAmount: Decimal
 
-    private var progress: Double { effectiveAmount > 0 ? min(spent / effectiveAmount, 1.0) : 0 }
-    private var remaining: Double { effectiveAmount - spent }
+    private var progress: Double { effectiveAmount > 0 ? min((spent / effectiveAmount).doubleValue, 1.0) : 0 }
+    private var remaining: Decimal { effectiveAmount - spent }
     private var overBudget: Bool { spent > effectiveAmount }
 
     var body: some View {
@@ -232,7 +232,7 @@ private struct BudgetRow: View {
                     Circle()
                         .fill((budget.categoryColor.map { Color(hex: $0) } ?? .blue).opacity(0.15))
                         .frame(width: 40, height: 40)
-                    Text(budget.categoryIcon ?? "📦").font(.system(size: 20))
+                    Text(budget.categoryIcon ?? "📦").font(.system(size: 20)).accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
@@ -247,14 +247,14 @@ private struct BudgetRow: View {
                         }
                     }
                     Text("\(spent.formatted(currency: "VND")) / \(effectiveAmount.formatted(currency: "VND"))")
-                        .font(.caption).foregroundColor(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(overBudget ? AppLocalization.shared.language.text("Over!") : remaining.formatted(currency: "VND"))
                         .font(.caption).fontWeight(.semibold)
-                        .foregroundColor(overBudget ? .red : .green)
-                    Text("left").font(.caption2).foregroundColor(.secondary)
+                        .foregroundStyle(overBudget ? .red : .green)
+                    Text("left").font(.caption2).foregroundStyle(.secondary)
                 }
             }
             ProgressView(value: progress)

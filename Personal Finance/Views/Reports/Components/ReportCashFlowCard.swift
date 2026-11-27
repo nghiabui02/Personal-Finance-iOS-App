@@ -52,7 +52,7 @@ struct ReportCashFlowCard: View {
 
     private var netAmount: some View {
         Text(netFormatted)
-            .font(.system(size: 38, weight: .bold, design: .rounded))
+            .font(.system(.largeTitle, design: .rounded, weight: .bold))
             .foregroundStyle(metrics.net >= 0 ? Color.income : Color.expense)
             .minimumScaleFactor(0.5)
             .lineLimit(1)
@@ -75,7 +75,7 @@ struct ReportCashFlowCard: View {
         VStack(spacing: 6) {
             GeometryReader { geo in
                 let ratio = metrics.income > 0
-                    ? max(0, min(1, metrics.net / metrics.income))
+                    ? max(0, min(1, (metrics.net / metrics.income).doubleValue))
                     : 0
                 HStack(spacing: 0) {
                     Rectangle()
@@ -109,7 +109,7 @@ struct ReportCashFlowCard: View {
 
 private struct ReportAmountSummaryColumn: View {
     let title: LocalizedStringKey
-    let amount: Double
+    let amount: Decimal
     let color: Color
 
     var body: some View {

@@ -6,13 +6,13 @@ final class BudgetService {
     static let shared = BudgetService()
     private init() {}
 
-    func create(categoryId: UUID?, amount: Double, month: Date, rollover: Bool = false, in ctx: ModelContext) async throws {
+    func create(categoryId: UUID?, amount: Decimal, month: Date, rollover: Bool = false, in ctx: ModelContext) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
         let monthStr = monthString(from: month)
         struct Body: Encodable {
-            let user_id: String, user_category_id: String?, amount: Double, month: String, rollover: Bool
+            let user_id: String, user_category_id: String?, amount: Decimal, month: String, rollover: Bool
         }
         let remote: RemoteBudget = try await client
             .from("budgets")
@@ -24,11 +24,11 @@ final class BudgetService {
         try LocalDataStore.saveMutation(in: ctx)
     }
 
-    func update(_ budget: LocalBudget, amount: Double, rollover: Bool, active: Bool, in ctx: ModelContext) async throws {
+    func update(_ budget: LocalBudget, amount: Decimal, rollover: Bool, active: Bool, in ctx: ModelContext) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
-        struct Body: Encodable { let amount: Double; let rollover: Bool; let active: Bool }
+        struct Body: Encodable { let amount: Decimal; let rollover: Bool; let active: Bool }
         let remote: RemoteBudget = try await client
             .from("budgets")
             .update(Body(amount: amount, rollover: rollover, active: active))

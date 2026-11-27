@@ -6,7 +6,7 @@ struct BudgetSuggestion: Identifiable {
     let categoryName: String
     let categoryIcon: String
     let categoryColor: String?
-    let amount: Double
+    let amount: Decimal
 }
 
 // Median (not mean) of the last 3 calendar months' spending per category —
@@ -29,9 +29,9 @@ enum BudgetSuggestionCalculator {
         let categoryLookup = Dictionary(categories.map { ($0.serverId, $0) }, uniquingKeysWith: { first, _ in first })
         let operating = transactions.operatingOnly(using: categories)
 
-        var monthlyTotals: [UUID: [String: Double]] = [:]
+        var monthlyTotals: [UUID: [String: Decimal]] = [:]
         for tx in operating {
-            guard tx.type == "expense", let catId = tx.categoryId else { continue }
+            guard tx.type == .expense, let catId = tx.categoryId else { continue }
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
             guard !existingBudgetCategoryIds.contains(catId) else { continue }
             let key = LedgerDate.monthKey(for: tx.transactionDate)
@@ -40,7 +40,7 @@ enum BudgetSuggestionCalculator {
 
         let suggestions = monthlyTotals.compactMap { catId, monthTotals -> BudgetSuggestion? in
             guard let cat = categoryLookup[catId], cat.isActiveMembership else { return nil }
-            let amount = max(50_000, (median(Array(monthTotals.values)) / 50_000).rounded() * 50_000)
+            let amount = max(50_000, roundedToStep(median(Array(monthTotals.values)), step: 50_000))
             return BudgetSuggestion(
                 id: catId, categoryId: catId, categoryName: cat.displayName,
                 categoryIcon: cat.icon ?? "📦", categoryColor: cat.color, amount: amount
@@ -50,7 +50,15 @@ enum BudgetSuggestionCalculator {
         return Array(suggestions.sorted { $0.amount > $1.amount }.prefix(limit))
     }
 
-    private static func median(_ values: [Double]) -> Double {
+    /// Nearest multiple of `step`, halves rounding up.
+    private static func roundedToStep(_ value: Decimal, step: Decimal) -> Decimal {
+        var quotient = value / step
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &quotient, 0, .plain)
+        return rounded * step
+    }
+
+    private static func median(_ values: [Decimal]) -> Decimal {
         let sorted = values.sorted()
         guard !sorted.isEmpty else { return 0 }
         let mid = sorted.count / 2

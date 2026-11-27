@@ -14,12 +14,12 @@ struct WalletRow: View {
 
     private var defaultColor: Color {
         switch wallet.type {
-        case "bank":       return Color(red: 0.2, green: 0.7, blue: 0.4)
-        case "e_wallet":   return Color(red: 0.1, green: 0.65, blue: 0.8)
-        case "cash":       return Color(red: 0.8, green: 0.65, blue: 0.1)
-        case "credit":     return Color(red: 0.55, green: 0.2, blue: 0.85)
-        case "investment": return Color(red: 0.2, green: 0.5, blue: 0.9)
-        default:           return Color(red: 0.3, green: 0.5, blue: 0.8)
+        case .bank:       return Color(red: 0.2, green: 0.7, blue: 0.4)
+        case .eWallet:    return Color(red: 0.1, green: 0.65, blue: 0.8)
+        case .cash:       return Color(red: 0.8, green: 0.65, blue: 0.1)
+        case .credit:     return Color(red: 0.55, green: 0.2, blue: 0.85)
+        case .investment: return Color(red: 0.2, green: 0.5, blue: 0.9)
+        case .other:      return Color(red: 0.3, green: 0.5, blue: 0.8)
         }
     }
 
@@ -57,6 +57,7 @@ struct WalletRow: View {
             HStack(spacing: 8) {
                 Text(wallet.displayIcon)
                     .font(.system(size: 20))
+                    .accessibilityHidden(true)
                 Text(wallet.typeLabel)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white)
@@ -80,18 +81,20 @@ struct WalletRow: View {
 
     @ViewBuilder
     private var balanceRow: some View {
-        if wallet.type == "credit" {
+        if wallet.type == .credit {
             VStack(alignment: .leading, spacing: 2) {
                 Text(wallet.amountOwed.formatted(currency: "VND"))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(.white)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
                 Text("used of \((wallet.creditLimit ?? 0).formatted(currency: "VND"))")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.7))
             }
         } else {
             Text(wallet.balance.formatted(currency: "VND"))
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(.title, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
@@ -103,7 +106,7 @@ struct WalletRow: View {
             if canTransfer {
                 cardButton("arrow.2.squarepath", title: "Transfer", action: onTransfer)
             }
-            if wallet.type == "credit" {
+            if wallet.type == .credit {
                 cardButton("creditcard.fill", title: "Pay Bill", action: onPayCredit)
             }
             cardButton("pencil", title: "Edit", action: onEdit)

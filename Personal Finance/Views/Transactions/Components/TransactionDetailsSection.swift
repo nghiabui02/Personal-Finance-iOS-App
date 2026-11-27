@@ -26,26 +26,26 @@ struct TransactionDetailsSection: View {
         }
     }
 
-    private var categoryValue: AnyView {
+    @ViewBuilder
+    private var categoryValue: some View {
         if let selectedCategory {
-            return AnyView(
-                HStack(spacing: 4) {
-                    Text(selectedCategory.icon ?? "📦")
-                    Text(selectedCategory.displayName)
-                        .foregroundColor(.secondary)
-                }
-            )
+            HStack(spacing: 4) {
+                Text(selectedCategory.icon ?? "📦")
+                Text(selectedCategory.displayName)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text("Select").foregroundStyle(.secondary)
         }
-
-        return AnyView(Text("Select").foregroundColor(.secondary))
     }
 
-    private var walletValue: AnyView {
+    @ViewBuilder
+    private var walletValue: some View {
         if let selectedWallet {
-            return AnyView(Text(selectedWallet.name).foregroundColor(.secondary))
+            Text(selectedWallet.name).foregroundStyle(.secondary)
+        } else {
+            Text("Select").foregroundStyle(.secondary)
         }
-
-        return AnyView(Text("Select").foregroundColor(.secondary))
     }
 }
 
@@ -58,12 +58,12 @@ private struct TransactionSelectionRow<Value: View>: View {
         Button(action: onTap) {
             HStack {
                 Text(title)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 Spacer()
                 value
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }

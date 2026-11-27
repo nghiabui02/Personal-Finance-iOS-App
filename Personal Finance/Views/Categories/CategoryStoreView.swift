@@ -6,7 +6,7 @@ struct CategoryStoreView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var templates: [CategoryCatalogTemplate] = []
     @State private var selected = Set<UUID>()
-    @State private var type = "expense"
+    @State private var type = TransactionKind.expense
     @State private var collection: String?
     @State private var search = ""
     @State private var isSelecting = false
@@ -70,8 +70,8 @@ struct CategoryStoreView: View {
     private var filters: some View {
         Section {
             Picker("Type", selection: $type) {
-                Text("Expense").tag("expense")
-                Text("Income").tag("income")
+                Text("Expense").tag(TransactionKind.expense)
+                Text("Income").tag(TransactionKind.income)
             }
             .pickerStyle(.segmented)
             .onChange(of: type) { _, _ in collection = nil }

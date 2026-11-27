@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DebtAmountEntrySection: View {
-    @Binding var amount: Double
+    @Binding var amount: Decimal
     @Binding var amountText: String
     @Binding var date: Date
     @Binding var note: String

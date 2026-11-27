@@ -19,7 +19,7 @@ struct WeekSelectorView: View {
     var body: some View {
         HStack(spacing: 16) {
             Button { change(by: -1) } label: {
-                Image(systemName: "chevron.left").fontWeight(.semibold).foregroundColor(.primary)
+                Image(systemName: "chevron.left").fontWeight(.semibold).foregroundStyle(.primary)
             }
             Text(label).font(.headline).frame(minWidth: 180)
                 .onTapGesture {
@@ -29,7 +29,7 @@ struct WeekSelectorView: View {
                 }
             Button { change(by: 1) } label: {
                 Image(systemName: "chevron.right").fontWeight(.semibold)
-                    .foregroundColor(isCurrentWeek ? .secondary : .primary)
+                    .foregroundStyle(isCurrentWeek ? .secondary : .primary)
             }
             .disabled(isCurrentWeek)
         }

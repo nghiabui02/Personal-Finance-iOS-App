@@ -8,7 +8,7 @@ struct AddEditSavingGoalView: View {
 
     @State private var name = ""
     @State private var icon = "🎯"
-    @State private var targetAmount: Double = 0
+    @State private var targetAmount: Decimal = 0
     @State private var targetAmountText = ""
     @State private var hasDeadline = false
     @State private var deadline = Date()

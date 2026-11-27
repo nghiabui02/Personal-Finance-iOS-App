@@ -11,7 +11,7 @@ enum RPC {
     /// wallet moves, so only the new balance comes back.
     struct WalletBalance: Decodable {
         let id: UUID
-        let balance: Double
+        let balance: Decimal
     }
 
     /// One shape for all ten functions.
@@ -39,9 +39,9 @@ enum RPC {
         /// Reported by `record_debt_payment` when the payment cleared the debt.
         let settled: Bool?
         /// Reported by `pay_credit_card`.
-        let newAvailableCredit: Double?
+        let newAvailableCredit: Decimal?
         /// Reported by `reconcile_wallet`; `0` means nothing needed recording.
-        let delta: Double?
+        let delta: Decimal?
 
         enum CodingKeys: String, CodingKey {
             case transactions, wallets, debt, settled, delta
@@ -60,8 +60,8 @@ enum RPC {
             deletedDebtPaymentIds = try c.decodeIfPresent([UUID].self, forKey: .deletedDebtPaymentIds) ?? []
             deletedWalletIds = try c.decodeIfPresent([UUID].self, forKey: .deletedWalletIds) ?? []
             settled = try c.decodeIfPresent(Bool.self, forKey: .settled)
-            newAvailableCredit = try c.decodeIfPresent(Double.self, forKey: .newAvailableCredit)
-            delta = try c.decodeIfPresent(Double.self, forKey: .delta)
+            newAvailableCredit = try c.decodeIfPresent(Decimal.self, forKey: .newAvailableCredit)
+            delta = try c.decodeIfPresent(Decimal.self, forKey: .delta)
         }
     }
 }

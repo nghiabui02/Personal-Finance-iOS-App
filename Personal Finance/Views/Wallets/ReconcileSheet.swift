@@ -7,15 +7,15 @@ struct ReconcileSheet: View {
 
     let wallet: LocalWallet
 
-    @State private var actualBalance: Double = 0
+    @State private var actualBalance: Decimal = 0
     @State private var actualBalanceText = ""
     @State private var note = ""
     @State private var isSaving = false
     @State private var errorMsg: String?
 
-    private var delta: Double { actualBalance - wallet.balance }
-    private var trackedLabel: LocalizedStringKey { wallet.type == "credit" ? "Tracked Available Credit" : "Tracked Balance" }
-    private var actualLabel: LocalizedStringKey { wallet.type == "credit" ? "Actual Available Credit" : "Actual Balance" }
+    private var delta: Decimal { actualBalance - wallet.balance }
+    private var trackedLabel: LocalizedStringKey { wallet.type == .credit ? "Tracked Available Credit" : "Tracked Balance" }
+    private var actualLabel: LocalizedStringKey { wallet.type == .credit ? "Actual Available Credit" : "Actual Balance" }
 
     var body: some View {
         NavigationStack {
@@ -24,7 +24,7 @@ struct ReconcileSheet: View {
                     HStack {
                         Text(trackedLabel)
                         Spacer()
-                        Text(wallet.balance.formatted(currency: "VND")).foregroundColor(.secondary)
+                        Text(wallet.balance.formatted(currency: "VND")).foregroundStyle(.secondary)
                     }
                 }
                 Section {
@@ -36,7 +36,7 @@ struct ReconcileSheet: View {
                             Spacer()
                             Text(abs(delta).formatted(currency: "VND"))
                                 .font(.caption).fontWeight(.semibold)
-                                .foregroundColor(delta > 0 ? .income : .expense)
+                                .foregroundStyle(delta > 0 ? Color.income : Color.expense)
                         }
                     }
                 }
@@ -77,6 +77,7 @@ struct ReconcileSheet: View {
                 note: note,
                 in: modelContext
             )
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

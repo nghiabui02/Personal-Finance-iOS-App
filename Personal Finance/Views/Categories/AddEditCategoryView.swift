@@ -8,7 +8,7 @@ struct AddEditCategoryView: View {
 
     @State private var initialName = ""
     @State private var name = ""
-    @State private var type = "expense"
+    @State private var type = TransactionKind.expense
     @State private var icon = "📦"
     @State private var colorHex = "EAB308"
     @State private var isSaving = false
@@ -22,8 +22,8 @@ struct AddEditCategoryView: View {
                 Section {
                     if !isEditing {
                         Picker("Type", selection: $type) {
-                            Text("Expense").tag("expense")
-                            Text("Income").tag("income")
+                            Text("Expense").tag(TransactionKind.expense)
+                            Text("Income").tag(TransactionKind.income)
                         }
                         .pickerStyle(.segmented)
                     }

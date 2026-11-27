@@ -1,9 +1,8 @@
 import Foundation
 
 struct WalletDetailMetrics {
-    var transactions: [LocalTransaction] = []
-    var monthlyIncome: Double = 0
-    var monthlyExpense: Double = 0
+    var monthlyIncome: Decimal = 0
+    var monthlyExpense: Decimal = 0
 }
 
 enum WalletDetailMetricsCalculator {
@@ -11,7 +10,7 @@ enum WalletDetailMetricsCalculator {
         transactions: [LocalTransaction],
         walletId: UUID,
         referenceDate: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = LedgerDate.calendar
     ) -> WalletDetailMetrics {
         let walletTransactions = transactions.filter { $0.walletId == walletId }
         let reportableThisMonth = walletTransactions.filter {
@@ -24,16 +23,15 @@ enum WalletDetailMetricsCalculator {
         }
 
         return WalletDetailMetrics(
-            transactions: walletTransactions,
-            monthlyIncome: total(for: "income", in: reportableThisMonth),
-            monthlyExpense: total(for: "expense", in: reportableThisMonth)
+            monthlyIncome: total(for: .income, in: reportableThisMonth),
+            monthlyExpense: total(for: .expense, in: reportableThisMonth)
         )
     }
 
     private static func total(
-        for type: String,
+        for type: TransactionKind,
         in transactions: [LocalTransaction]
-    ) -> Double {
+    ) -> Decimal {
         transactions
             .filter { $0.type == type }
             .reduce(0) { $0 + $1.amount }

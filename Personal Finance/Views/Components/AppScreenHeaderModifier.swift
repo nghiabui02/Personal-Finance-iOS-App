@@ -4,7 +4,7 @@ struct AppScreenHeaderModifier: ViewModifier {
     @EnvironmentObject private var authViewModel: AuthViewModel
     let title: LocalizedStringKey
 
-    @StateObject private var notifVM = NotificationViewModel()
+    @EnvironmentObject private var notifVM: NotificationViewModel
     @State private var showsProfile = false
 
     func body(content: Content) -> some View {
@@ -28,7 +28,6 @@ struct AppScreenHeaderModifier: ViewModifier {
                 SettingsView(onClose: { showsProfile = false })
                     .environmentObject(authViewModel)
             }
-            .onAppear { Task { await notifVM.load() } }
     }
 }
 

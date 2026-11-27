@@ -12,34 +12,26 @@ final class TransferService {
     func transfer(
         from fromWallet: LocalWallet,
         to toWallet: LocalWallet,
-        amount: Double,
+        amount: Decimal,
         date: Date,
         note: String?,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_from_wallet_id: String
             let p_to_wallet_id: String
-            let p_amount: Double
+            let p_amount: Decimal
             let p_date: String
             let p_note: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("transfer_funds", params: Params(
-                    p_from_wallet_id: fromWallet.serverId.uuidString,
-                    p_to_wallet_id: toWallet.serverId.uuidString,
-                    p_amount: amount,
-                    p_date: LedgerDate.string(from: date),
-                    p_note: note?.isEmpty == true ? nil : note
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("transfer_funds", in: ctx) { _ in
+            Params(
+                p_from_wallet_id: fromWallet.serverId.uuidString,
+                p_to_wallet_id: toWallet.serverId.uuidString,
+                p_amount: amount,
+                p_date: LedgerDate.string(from: date),
+                p_note: note?.isEmpty == true ? nil : note
+            )
         }
     }
 }

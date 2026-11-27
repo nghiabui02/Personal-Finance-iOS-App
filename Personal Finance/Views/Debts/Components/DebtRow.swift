@@ -5,15 +5,15 @@ struct DebtRow: View {
     var onPay: (() -> Void)? = nil
     var onAdd: (() -> Void)? = nil
 
-    private var paidAmount: Double { debt.amount - debt.remainingAmount }
-    private var progress: Double { debt.amount > 0 ? max(0, min(1, paidAmount / debt.amount)) : 0 }
-    private var accentColor: Color { debt.type == "lend" ? .lend : .borrow }
+    private var paidAmount: Decimal { debt.amount - debt.remainingAmount }
+    private var progress: Double { debt.amount > 0 ? max(0, min(1, (paidAmount / debt.amount).doubleValue)) : 0 }
+    private var accentColor: Color { debt.type == .lend ? .lend : .borrow }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
             progressSection
-            if debt.status != "completed", onPay != nil || onAdd != nil {
+            if debt.status != .completed, onPay != nil || onAdd != nil {
                 actionButtons
             }
         }
@@ -26,8 +26,8 @@ struct DebtRow: View {
                 Button(action: onPay) {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(debt.type == "lend" ? "Collect" : "Repay")
+                            .font(.caption2.weight(.bold))
+                        Text(debt.type == .lend ? "Collect" : "Repay")
                             .font(.caption.weight(.semibold))
                     }
                     .foregroundStyle(.green)
@@ -42,8 +42,8 @@ struct DebtRow: View {
                 Button(action: onAdd) {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(debt.type == "lend" ? "Lend More" : "Borrow More")
+                            .font(.caption2.weight(.bold))
+                        Text(debt.type == .lend ? "Lend More" : "Borrow More")
                             .font(.caption.weight(.semibold))
                     }
                     .foregroundStyle(.orange)
@@ -78,23 +78,24 @@ struct DebtRow: View {
             Circle()
                 .fill(accentColor.opacity(0.12))
                 .frame(width: 44, height: 44)
-            Image(systemName: debt.type == "lend" ? "arrow.up.right" : "arrow.down.left")
-                .foregroundColor(accentColor)
+            Image(systemName: debt.type == .lend ? "arrow.up.right" : "arrow.down.left")
+                .foregroundStyle(accentColor)
                 .font(.system(size: 18, weight: .semibold))
+                .accessibilityHidden(true)
         }
     }
 
     private var subtitle: some View {
         HStack(spacing: 4) {
-            Text(debt.type == "lend" ? "Lent" : "Borrowed")
+            Text(debt.type == .lend ? "Lent" : "Borrowed")
             if let dueDate = debt.dueDate {
                 Text("·")
                 Text("Due \(dueDate.formatted(.dateTime.month(.abbreviated).day()))")
-                    .foregroundColor(debt.status == "overdue" ? .red : .secondary)
+                    .foregroundStyle(debt.status == .overdue ? .red : .secondary)
             }
         }
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundStyle(.secondary)
     }
 
     private var progressSection: some View {
@@ -102,12 +103,12 @@ struct DebtRow: View {
             HStack {
                 Text("Paid \(paidAmount.formatted(currency: "VND"))")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text("\(debt.remainingAmount.formatted(currency: "VND")) left")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(debt.status == "completed" ? .secondary : .primary)
+                    .foregroundStyle(debt.status == .completed ? .secondary : .primary)
             }
 
             ProgressView(value: progress)
@@ -117,7 +118,7 @@ struct DebtRow: View {
                 Spacer()
                 Text("of \(debt.amount.formatted(currency: "VND"))")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -125,11 +126,11 @@ struct DebtRow: View {
     @ViewBuilder
     private var statusBadge: some View {
         switch debt.status {
-        case "completed":
+        case .completed:
             StatusBadge(label: "Done", color: .green)
-        case "overdue":
+        case .overdue:
             StatusBadge(label: "Overdue", color: .red)
-        default:
+        case .active:
             StatusBadge(label: "Active", color: .blue)
         }
     }

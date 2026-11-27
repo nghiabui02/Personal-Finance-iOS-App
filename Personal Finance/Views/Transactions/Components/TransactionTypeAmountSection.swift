@@ -1,22 +1,22 @@
 import SwiftUI
 
 struct TransactionTypeAmountSection: View {
-    @Binding var type: String
-    @Binding var amount: Double
+    @Binding var type: TransactionKind
+    @Binding var amount: Decimal
     @Binding var amountText: String
 
     let allowsTypeChange: Bool
-    let onTypeChanged: (String) -> Void
+    let onTypeChanged: (TransactionKind) -> Void
 
     var body: some View {
         Section {
             Picker("Type", selection: $type) {
-                Text("Expense").tag("expense")
-                Text("Income").tag("income")
+                Text("Expense").tag(TransactionKind.expense)
+                Text("Income").tag(TransactionKind.income)
             }
             .pickerStyle(.segmented)
             .disabled(!allowsTypeChange)
-            .tint(type == "income" ? .income : .expense)
+            .tint(type == .income ? .income : .expense)
             .onChange(of: type) { _, newType in
                 onTypeChanged(newType)
             }

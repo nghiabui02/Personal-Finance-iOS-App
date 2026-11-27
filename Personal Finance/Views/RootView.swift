@@ -49,6 +49,13 @@ struct RootView: View {
             colorScheme == "light" ? .light :
             colorScheme == "dark" ? .dark : nil
         )
+        .onOpenURL { url in
+            Task { await authVM.handlePasswordResetLink(url) }
+        }
+        .sheet(isPresented: $authVM.isRecoveringPassword) {
+            ChangePasswordSheet(isRecovery: true)
+                .environmentObject(authVM)
+        }
         .onChange(of: cacheIdentity, initial: true) { _, identity in
             switch identity {
             case .waiting: break

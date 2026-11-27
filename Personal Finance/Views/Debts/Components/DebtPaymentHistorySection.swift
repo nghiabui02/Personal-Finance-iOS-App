@@ -40,14 +40,14 @@ private struct DebtPaymentHistoryRow: View {
     let payment: RemoteDebtPayment
 
     private var isAddition: Bool {
-        payment.type == "addition"
+        payment.type == .addition
     }
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: isAddition ? "plus.circle.fill" : "checkmark.circle.fill")
                 .font(.title3)
-                .foregroundColor(isAddition ? .orange : .green)
+                .foregroundStyle(isAddition ? .orange : .green)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(isAddition ? "Amount Added" : "Payment")
@@ -59,7 +59,7 @@ private struct DebtPaymentHistoryRow: View {
 
             Text("\(isAddition ? "+" : "-")\(payment.amount.formatted(currency: "VND"))")
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(isAddition ? .orange : .green)
+                .foregroundStyle(isAddition ? .orange : .green)
         }
         .padding(.vertical, 4)
     }
@@ -73,6 +73,6 @@ private struct DebtPaymentHistoryRow: View {
             }
         }
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundStyle(.secondary)
     }
 }

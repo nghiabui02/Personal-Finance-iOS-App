@@ -3,7 +3,7 @@ import SwiftUI
 struct MonthCalendarView: View {
     @Binding var selectedMonth: Date
     @Binding var selectedDate: Date?
-    let dailyData: [Date: (income: Double, expense: Double)]
+    let dailyData: [Date: (income: Decimal, expense: Decimal)]
 
     private let cal = LedgerDate.calendar
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
@@ -50,7 +50,7 @@ struct MonthCalendarView: View {
             HStack {
                 Image(systemName: "chevron.left")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                     .onTapGesture { changeMonth(by: -1) }
@@ -62,7 +62,7 @@ struct MonthCalendarView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(nextDisabled ? Color.secondary.opacity(0.25) : .secondary)
+                    .foregroundStyle(nextDisabled ? Color.secondary.opacity(0.25) : .secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                     .onTapGesture { if !nextDisabled { changeMonth(by: 1) } }
@@ -75,7 +75,7 @@ struct MonthCalendarView: View {
                 ForEach(weekdaySymbols, id: \.self) { sym in
                     Text(sym)
                         .font(.caption2.weight(.medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -121,14 +121,17 @@ struct MonthCalendarView: View {
 }
 
 private struct CalendarDayCell: View {
+    /// The day cell is tiny, so the amount starts at 9pt but still follows Dynamic Type.
+    @ScaledMetric(relativeTo: .caption2) private var netFontSize: CGFloat = 9
+
     let day: Int
     let date: Date
     let isToday: Bool
     let isSelected: Bool
-    let data: (income: Double, expense: Double)?
+    let data: (income: Decimal, expense: Decimal)?
     let onTap: () -> Void
 
-    private var net: Double? {
+    private var net: Decimal? {
         guard let d = data else { return nil }
         let n = d.income - d.expense
         return n == 0 ? nil : n
@@ -145,14 +148,14 @@ private struct CalendarDayCell: View {
                     }
                     Text("\(day)")
                         .font(.subheadline)
-                        .foregroundColor(isToday ? .white : isSelected ? Color(.systemBackground) : .primary)
+                        .foregroundStyle(isToday ? .white : isSelected ? Color(.systemBackground) : .primary)
                 }
                 .frame(height: 30)
 
                 if let n = net {
-                    Text(compactNet(n))
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(n > 0 ? .income : .expense)
+                    Text(compactNet(n.doubleValue))
+                        .font(.system(size: netFontSize, weight: .medium))
+                        .foregroundStyle(n > 0 ? Color.income : Color.expense)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 } else {

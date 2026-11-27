@@ -25,9 +25,9 @@ enum DebtFilter {
         case .all:
             return debts
         case .lend:
-            return debts.filter { $0.type == "lend" }
+            return debts.filter { $0.type == .lend }
         case .borrow:
-            return debts.filter { $0.type == "borrow" }
+            return debts.filter { $0.type == .borrow }
         }
     }
 }

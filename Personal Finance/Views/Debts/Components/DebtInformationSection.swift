@@ -8,11 +8,11 @@ struct DebtInformationSection: View {
         Section("Details") {
             DetailInfoRow(
                 title: "Type",
-                value: debt.type == "lend" ? "I Lent" : "I Borrowed"
+                value: debt.type == .lend ? "I Lent" : "I Borrowed"
             )
             DetailInfoRow(
                 title: "Status",
-                value: AppLocalization.shared.language.text(debt.status.capitalized),
+                value: AppLocalization.shared.language.text(debt.status.rawValue.capitalized),
                 valueColor: statusColor
             )
             if let dueDate = debt.dueDate {
@@ -33,7 +33,7 @@ struct DebtInformationSection: View {
             }
             if let note = debt.note, !note.isEmpty {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Note").font(.caption).foregroundColor(.secondary)
+                    Text("Note").font(.caption).foregroundStyle(.secondary)
                     Text(note)
                 }
                 .padding(.vertical, 2)
@@ -43,16 +43,16 @@ struct DebtInformationSection: View {
 
     private var statusColor: Color {
         switch debt.status {
-        case "completed": return .green
-        case "overdue": return .expense
-        default: return .blue
+        case .completed: return .green
+        case .overdue: return .expense
+        case .active: return .blue
         }
     }
 
     private var isOverdue: Bool {
         guard let dueDate = debt.dueDate else { return false }
-        return Calendar.current.startOfDay(for: dueDate)
-            < Calendar.current.startOfDay(for: Date())
-            && debt.status != "completed"
+        return LedgerDate.calendar.startOfDay(for: dueDate)
+            < LedgerDate.calendar.startOfDay(for: Date())
+            && debt.status != .completed
     }
 }

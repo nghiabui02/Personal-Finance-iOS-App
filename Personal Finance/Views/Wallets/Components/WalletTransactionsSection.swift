@@ -1,12 +1,10 @@
 import SwiftUI
 
 struct WalletTransactionsSection: View {
-    let transactions: [LocalTransaction]
-    var limit = 50
+    /// The caller fetches at most this many, newest first.
+    static let limit = 50
 
-    private var displayedTransactions: ArraySlice<LocalTransaction> {
-        transactions.prefix(limit)
-    }
+    let transactions: [LocalTransaction]
 
     var body: some View {
         Section("Transactions") {
@@ -19,12 +17,12 @@ struct WalletTransactionsSection: View {
                 .padding(.vertical)
             } else {
                 ForEach(
-                    Array(displayedTransactions.enumerated()),
+                    Array(transactions.enumerated()),
                     id: \.element.serverId
                 ) { index, transaction in
                     TransactionRow(
                         transaction: transaction,
-                        showDivider: index < displayedTransactions.count - 1
+                        showDivider: index < transactions.count - 1
                     )
                 }
             }

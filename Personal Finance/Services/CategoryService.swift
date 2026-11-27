@@ -66,11 +66,11 @@ final class CategoryService {
         return result
     }
 
-    func create(name: String, type: String, icon: String?, color: String?, in context: ModelContext) async throws {
+    func create(name: String, type: TransactionKind, icon: String?, color: String?, in context: ModelContext) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let values: [String: AnyJSON] = [
-            "user_id": .string(mutation.userId.uuidString), "name": .string(name), "type": .string(type),
+            "user_id": .string(mutation.userId.uuidString), "name": .string(name), "type": .string(type.rawValue),
             "icon": icon.map(AnyJSON.string) ?? .null, "color": color.map(AnyJSON.string) ?? .null,
         ]
         let row: RemoteCategory = try await mutation.client

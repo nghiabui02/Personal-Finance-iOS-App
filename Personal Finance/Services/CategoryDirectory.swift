@@ -85,6 +85,14 @@ extension LocalTransaction {
     }
 }
 
+extension LocalTransaction {
+    /// The stored name comes from a join that is empty once the wallet is gone, so a
+    /// row without a wallet gets a localized label instead of the English fallback.
+    @MainActor var walletLabel: String {
+        walletId == nil ? AppLocalization.shared.language.text("No wallet") : walletName
+    }
+}
+
 extension LocalBudget {
     @MainActor var categoryLabel: String {
         CategoryDirectory.shared.label(for: categoryId, fallback: categoryName) ?? categoryName

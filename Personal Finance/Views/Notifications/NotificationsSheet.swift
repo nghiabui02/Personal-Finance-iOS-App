@@ -26,7 +26,7 @@ struct NotificationsSheet: View {
         }
         .presentationDetents([.medium, .large])
         .task {
-            if vm.notifications.isEmpty { await vm.load() }
+            await vm.load()
             await vm.markAllRead()
         }
         .onChange(of: vm.isLoading) { _, loading in
@@ -72,6 +72,7 @@ private struct NotificationRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: notif.severity.icon)
                 .font(.system(size: 18, weight: .semibold))
+                .accessibilityHidden(true)
                 .foregroundStyle(notif.severity.color)
                 .frame(width: 26, height: 26)
                 .padding(.top, 2)

@@ -64,38 +64,38 @@ struct TransactionListSection: View {
 
     @ViewBuilder
     private func sectionHeader(date: Date, txs: [LocalTransaction]) -> some View {
-        let net = txs.reduce(0.0) { $0 + ($1.type == "income" ? $1.amount : -$1.amount) }
+        let net = txs.reduce(0.0) { $0 + ($1.type == .income ? $1.amount : -$1.amount) }
         HStack {
             Text(sectionTitle(for: date))
                 .font(.caption.weight(.semibold))
                 .textCase(nil)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Spacer()
             if net != 0 {
                 Text(netLabel(net))
                     .font(.caption)
-                    .foregroundColor(net >= 0 ? .income : .expense)
+                    .foregroundStyle(net >= 0 ? Color.income : Color.expense)
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 4)
     }
 
-    private static let headerDateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
     private func sectionTitle(for date: Date) -> String {
         let cal = LedgerDate.calendar
-        if cal.isDateInToday(date)     { return "TODAY" }
-        if cal.isDateInYesterday(date) { return "YESTERDAY" }
-        return Self.headerDateFormatter.string(from: date).uppercased()
+        let language = AppLocalization.shared.language
+        let title: String
+        if cal.isDateInToday(date) {
+            title = language.text("Today")
+        } else if cal.isDateInYesterday(date) {
+            title = language.text("Yesterday")
+        } else {
+            title = date.formatted(LedgerDate.display(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+        }
+        return title.uppercased(with: language.locale)
     }
 
-    private func netLabel(_ net: Double) -> String {
+    private func netLabel(_ net: Decimal) -> String {
         let abs = Swift.abs(net)
         return "\(net < 0 ? "-" : "")\(abs.formatted(currency: "VND"))"
     }

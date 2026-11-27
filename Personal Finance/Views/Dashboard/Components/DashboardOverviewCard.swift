@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct DashboardOverviewCard: View {
-    let netBalance: Double
-    let income: Double
-    let expense: Double
+    let netBalance: Decimal
+    let income: Decimal
+    let expense: Decimal
     let currency: String
 
     var body: some View {
@@ -11,11 +11,11 @@ struct DashboardOverviewCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("NET BALANCE")
                     .font(.caption.weight(.semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .tracking(1)
                 Text(netBalance.formatted(currency: currency))
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .foregroundColor(netBalance >= 0 ? .income : .expense)
+                    .foregroundStyle(netBalance >= 0 ? Color.income : Color.expense)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
             }
@@ -34,18 +34,18 @@ struct DashboardOverviewCard: View {
 
     private func amountColumn(
         title: LocalizedStringKey,
-        amount: Double,
+        amount: Decimal,
         color: Color,
         prefix: String = ""
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .tracking(1)
             Text("\(prefix)\(amount.formatted(currency: currency))")
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
         }

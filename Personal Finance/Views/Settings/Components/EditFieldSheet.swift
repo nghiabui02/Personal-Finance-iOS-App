@@ -20,6 +20,7 @@ struct EditFieldSheet: View {
                 Section {
                     TextField(placeholder, text: $value)
                         .keyboardType(keyboardType.swiftUIKeyboardType)
+                        .textContentType(keyboardType.textContentType)
                         .textInputAutocapitalization(keyboardType == .email ? .never : .words)
                         .autocorrectionDisabled(keyboardType == .email)
                 }
@@ -28,7 +29,7 @@ struct EditFieldSheet: View {
                     Section {
                         Text(note)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

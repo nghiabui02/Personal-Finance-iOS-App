@@ -2,8 +2,10 @@ import SwiftData
 import SwiftUI
 
 struct WalletDetailView: View {
-    /// Only this wallet's history, not every transaction in the ledger.
-    @Query private var walletTransactions: [LocalTransaction]
+    /// The newest rows the list shows, and this month's rows for the totals; a long
+    /// history is never loaded in full.
+    @Query private var recentTransactions: [LocalTransaction]
+    @Query private var monthTransactions: [LocalTransaction]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
 
     let wallet: LocalWallet
@@ -14,10 +16,18 @@ struct WalletDetailView: View {
     init(wallet: LocalWallet) {
         self.wallet = wallet
         let walletId: UUID? = wallet.serverId
-        _walletTransactions = Query(
-            filter: #Predicate { $0.walletId == walletId },
-            sort: \LocalTransaction.transactionDate, order: .reverse
+        var recent = FetchDescriptor<LocalTransaction>(
+            predicate: #Predicate { $0.walletId == walletId },
+            sortBy: [SortDescriptor(\.transactionDate, order: .reverse)]
         )
+        recent.fetchLimit = WalletTransactionsSection.limit
+        _recentTransactions = Query(recent)
+
+        let monthStart = LedgerDate.startOfMonth(for: Date()) ?? .distantPast
+        let nextMonth = LedgerDate.calendar.date(byAdding: .month, value: 1, to: monthStart) ?? .distantFuture
+        _monthTransactions = Query(filter: #Predicate {
+            $0.walletId == walletId && $0.transactionDate >= monthStart && $0.transactionDate < nextMonth
+        })
     }
 
     var body: some View {
@@ -30,7 +40,7 @@ struct WalletDetailView: View {
                 expense: metrics.monthlyExpense
             )
             WalletInformationSection(wallet: wallet)
-            WalletTransactionsSection(transactions: metrics.transactions)
+            WalletTransactionsSection(transactions: recentTransactions)
         }
         .listStyle(.insetGrouped)
         .navigationTitle(wallet.name)
@@ -38,7 +48,7 @@ struct WalletDetailView: View {
         .toolbar { detailToolbar }
         .sheet(item: $activeSheet, content: sheetContent)
         .onAppear(perform: recompute)
-        .onChange(of: walletTransactions) { _, _ in recompute() }
+        .onChange(of: monthTransactions) { _, _ in recompute() }
     }
 
     @ToolbarContentBuilder
@@ -52,7 +62,7 @@ struct WalletDetailView: View {
                 }
             }
 
-            if wallet.type == "credit" {
+            if wallet.type == .credit {
                 Button("Pay Bill") {
                     activeSheet = .creditPayment
                 }
@@ -88,7 +98,7 @@ struct WalletDetailView: View {
 
     private func recompute() {
         metrics = WalletDetailMetricsCalculator.calculate(
-            transactions: walletTransactions,
+            transactions: monthTransactions,
             walletId: wallet.serverId
         )
     }

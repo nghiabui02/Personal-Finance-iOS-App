@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct DashboardNetWorthCard: View {
-    let netWorth: Double
-    let cash: Double
-    let lent: Double
-    let borrowed: Double
+    let netWorth: Decimal
+    let cash: Decimal
+    let lent: Decimal
+    let borrowed: Decimal
     let currency: String
 
     var body: some View {
@@ -15,8 +15,10 @@ struct DashboardNetWorthCard: View {
                 .tracking(1.5)
 
             Text(netWorth.formatted(currency: currency))
-                .font(.system(size: 38, weight: .bold))
+                .font(.system(.largeTitle, weight: .bold))
                 .foregroundStyle(netWorth >= 0 ? Color.primary : Color.expense)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
 
             pillsLayout
         }
@@ -43,7 +45,7 @@ struct DashboardNetWorthCard: View {
 
 private struct NetWorthPill: View {
     let label: LocalizedStringKey
-    let value: Double
+    let value: Decimal
     let prefix: String
     let color: Color
     let currency: String

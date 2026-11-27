@@ -11,7 +11,7 @@ struct WalletInformationSection: View {
                 value: wallet.isDefault ? "Yes" : "No"
             )
 
-            if wallet.type == "credit" {
+            if wallet.type == .credit {
                 if let statementDay = wallet.statementDay {
                     DetailInfoRow(
                         title: "Statement Day",

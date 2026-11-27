@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct DashboardMetrics {
-    var income: Double = 0
-    var expense: Double = 0
-    var netWorth: Double = 0
-    var cash: Double = 0
-    var outstandingLent: Double = 0
-    var outstandingBorrowed: Double = 0
+    var income: Decimal = 0
+    var expense: Decimal = 0
+    var netWorth: Decimal = 0
+    var cash: Decimal = 0
+    var outstandingLent: Decimal = 0
+    var outstandingBorrowed: Decimal = 0
     var recentTransactions: [LocalTransaction] = []
     var spendingItems: [CategorySpending] = []
     var budgetUsage: [UUID: BudgetUsage] = [:]
@@ -14,7 +14,7 @@ struct DashboardMetrics {
     var alerts: [DashboardAlert] = []
     var spendingPaceDeltaPct: Double? = nil
 
-    var netBalance: Double { income - expense }
+    var netBalance: Decimal { income - expense }
 }
 
 @MainActor
@@ -75,7 +75,7 @@ enum DashboardMetricsCalculator {
     private static func calculateSpendingPace(
         transactions: [LocalTransaction],
         selectedMonth: Date,
-        actualExpense: Double
+        actualExpense: Decimal
     ) -> Double? {
         // "Today" must follow ledger time, not the device's — otherwise pace reads
         // differently on iOS than web for the same data when traveling.
@@ -86,13 +86,13 @@ enum DashboardMetricsCalculator {
             let startWindow = ledgerCalendar.date(byAdding: .month, value: -3, to: startOfTarget)
         else { return nil }
 
-        var byMonth: [String: Double] = [:]
-        for tx in transactions where tx.type == "expense" && !tx.isTransfer {
+        var byMonth: [String: Decimal] = [:]
+        for tx in transactions where tx.type == .expense && !tx.isTransfer {
             guard tx.transactionDate >= startWindow, tx.transactionDate < startOfTarget else { continue }
             byMonth[LedgerDate.monthKey(for: tx.transactionDate), default: 0] += tx.amount
         }
         guard !byMonth.isEmpty else { return nil }
-        let monthlyAverage = byMonth.values.reduce(0, +) / Double(byMonth.count)
+        let monthlyAverage = byMonth.values.reduce(0, +) / Decimal(byMonth.count)
         guard monthlyAverage > 0 else { return nil }
 
         let today = ledgerCalendar.startOfDay(for: Date())
@@ -107,16 +107,16 @@ enum DashboardMetricsCalculator {
         }
         guard daysElapsed > 0 else { return nil }
 
-        let expected = monthlyAverage * (Double(daysElapsed) / Double(daysInMonth))
+        let expected = monthlyAverage * Decimal(daysElapsed) / Decimal(daysInMonth)
         guard expected > 0 else { return nil }
-        return actualExpense / expected - 1
+        return (actualExpense / expected).doubleValue - 1
     }
 
     private typealias CategoryTotal = (
         name: String,
         icon: String,
         color: String?,
-        total: Double
+        total: Decimal
     )
 
     private static func calculateTransactions(
@@ -124,12 +124,12 @@ enum DashboardMetricsCalculator {
         selectedMonth: Date,
         calendar: Calendar
     ) -> (
-        income: Double,
-        expense: Double,
+        income: Decimal,
+        expense: Decimal,
         categoryTotals: [String: CategoryTotal]
     ) {
-        var income = 0.0
-        var expense = 0.0
+        var income: Decimal = 0
+        var expense: Decimal = 0
         var categories: [String: CategoryTotal] = [:]
 
         for transaction in transactions {
@@ -139,7 +139,7 @@ enum DashboardMetricsCalculator {
                 toGranularity: .month
             ) else { continue }
 
-            if transaction.type == "income" {
+            if transaction.type == .income {
                 income += transaction.amount
             } else {
                 expense += transaction.amount
@@ -180,7 +180,7 @@ enum DashboardMetricsCalculator {
                 icon: item.icon,
                 color: item.color.map { Color(hex: $0) } ?? palette[index % palette.count],
                 amount: item.total,
-                percentage: displayedTotal > 0 ? item.total / displayedTotal * 100 : 0
+                percentage: displayedTotal > 0 ? (item.total / displayedTotal * 100).doubleValue : 0
             )
         }
     }
@@ -238,7 +238,7 @@ enum DashboardMetricsCalculator {
         }
 
         return debts.compactMap { debt in
-            guard debt.status != "completed", let dueDate = debt.dueDate else { return nil }
+            guard debt.status != .completed, let dueDate = debt.dueDate else { return nil }
             let dueDay = calendar.startOfDay(for: dueDate)
             guard dueDay <= sevenDaysFromNow else { return nil }
             let overdue = dueDay < today

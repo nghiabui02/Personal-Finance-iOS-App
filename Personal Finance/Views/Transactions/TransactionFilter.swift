@@ -7,11 +7,11 @@ enum TransactionTypeFilter: String, CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    var transactionType: String? {
+    var transactionType: TransactionKind? {
         switch self {
         case .all: nil
-        case .expense: "expense"
-        case .income: "income"
+        case .expense: .expense
+        case .income: .income
         }
     }
 }
@@ -127,7 +127,7 @@ enum TransactionFilterEngine {
         keyword: String
     ) -> Bool {
         guard !keyword.isEmpty else { return true }
-        return [transaction.note, transaction.categoryLabel, transaction.walletName]
+        return [transaction.note, transaction.categoryLabel, transaction.walletLabel]
             .compactMap { $0 }
             .contains { normalized($0).contains(keyword) }
     }

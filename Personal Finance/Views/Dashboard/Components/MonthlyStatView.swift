@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MonthlyStatView: View {
     let title: LocalizedStringKey
-    let amount: Double
+    let amount: Decimal
     let color: Color
     let icon: String
     let currency: String
@@ -10,19 +10,19 @@ struct MonthlyStatView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: icon).foregroundColor(color)
-                Text(title).font(.subheadline).foregroundColor(.secondary)
+                Image(systemName: icon).foregroundStyle(color)
+                Text(title).font(.subheadline).foregroundStyle(.secondary)
             }
             Text(amount.formatted(currency: currency))
                 .font(.system(.title3, design: .rounded))
                 .fontWeight(.semibold)
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12)
+        .clipShape(.rect(cornerRadius: 12))
     }
 }

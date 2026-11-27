@@ -9,14 +9,14 @@ struct WalletDetailHeader: View {
 
     private var creditUtilization: Double {
         guard let limit = wallet.creditLimit, limit > 0 else { return 0 }
-        return min(wallet.amountOwed / limit, 1)
+        return min((wallet.amountOwed / limit).doubleValue, 1)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             identitySection
 
-            if wallet.type == "credit" {
+            if wallet.type == .credit {
                 creditSummary
             } else {
                 balanceSummary
@@ -32,10 +32,11 @@ struct WalletDetailHeader: View {
                     .fill(accentColor.opacity(0.15))
                     .frame(width: 52, height: 52)
                 Text(wallet.displayIcon).font(.system(size: 26))
+                    .accessibilityHidden(true)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(wallet.name).font(.headline)
-                Text(wallet.typeLabel).font(.caption).foregroundColor(.secondary)
+                Text(wallet.typeLabel).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             if wallet.isDefault {
@@ -47,7 +48,7 @@ struct WalletDetailHeader: View {
     private var balanceSummary: some View {
         Text(wallet.balance.formatted(currency: "VND"))
             .font(.system(.largeTitle, design: .rounded).weight(.bold))
-            .foregroundColor(wallet.balance >= 0 ? .primary : .expense)
+            .foregroundStyle(wallet.balance >= 0 ? Color.primary : Color.expense)
             .minimumScaleFactor(0.6)
             .lineLimit(1)
     }
@@ -72,7 +73,7 @@ struct WalletDetailHeader: View {
                 .tint(creditUtilization >= 0.8 ? .expense : accentColor)
             Text("Limit: \((wallet.creditLimit ?? 0).formatted(currency: "VND"))")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -85,10 +86,10 @@ struct WalletDetailHeader: View {
         VStack(alignment: alignment, spacing: 4) {
             Text(title)
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text(value)
                 .font(.title3.weight(.bold))
-                .foregroundColor(color)
+                .foregroundStyle(color)
         }
     }
 }

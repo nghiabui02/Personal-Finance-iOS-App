@@ -7,8 +7,8 @@ struct AddEditWalletView: View {
     let wallet: LocalWallet?
 
     @State private var name = ""
-    @State private var type = "cash"
-    @State private var initialBalance: Double = 0
+    @State private var type = WalletKind.cash
+    @State private var initialBalance: Decimal = 0
     @State private var initialBalanceText = ""
     @State private var icon = ""
     @State private var colorHex = "EAB308"
@@ -17,7 +17,7 @@ struct AddEditWalletView: View {
     @State private var errorMsg: String?
 
     // Credit wallet fields
-    @State private var creditLimit: Double = 0
+    @State private var creditLimit: Decimal = 0
     @State private var creditLimitText = ""
     @State private var statementDay: Int = 15
     @State private var paymentDueDay: Int = 5
@@ -32,15 +32,15 @@ struct AddEditWalletView: View {
 
                     if !isEditing {
                         Picker("Type", selection: $type) {
-                            Label("Cash", systemImage: "banknote").tag("cash")
-                            Label("Bank", systemImage: "building.columns").tag("bank")
-                            Label("E-Wallet", systemImage: "iphone").tag("e_wallet")
-                            Label("Investment", systemImage: "chart.line.uptrend.xyaxis").tag("investment")
-                            Label("Credit", systemImage: "creditcard").tag("credit")
-                            Label("Other", systemImage: "ellipsis.circle").tag("other")
+                            Label("Cash", systemImage: "banknote").tag(WalletKind.cash)
+                            Label("Bank", systemImage: "building.columns").tag(WalletKind.bank)
+                            Label("E-Wallet", systemImage: "iphone").tag(WalletKind.eWallet)
+                            Label("Investment", systemImage: "chart.line.uptrend.xyaxis").tag(WalletKind.investment)
+                            Label("Credit", systemImage: "creditcard").tag(WalletKind.credit)
+                            Label("Other", systemImage: "ellipsis.circle").tag(WalletKind.other)
                         }
 
-                        if type != "credit" {
+                        if type != .credit {
                             CurrencyAmountField(
                                 title: "Initial Balance",
                                 currencySymbol: "",
@@ -51,7 +51,7 @@ struct AddEditWalletView: View {
                     }
                 }
 
-                if type == "credit" && !isEditing {
+                if type == .credit && !isEditing {
                     Section("Credit") {
                         CurrencyAmountField(
                             title: "Credit Limit",
@@ -111,7 +111,7 @@ struct AddEditWalletView: View {
 
     private var isSaveDisabled: Bool {
         if name.trimmingCharacters(in: .whitespaces).isEmpty { return true }
-        if type == "credit" && !isEditing && creditLimit <= 0 { return true }
+        if type == .credit && !isEditing && creditLimit <= 0 { return true }
         return false
     }
 
@@ -124,7 +124,7 @@ struct AddEditWalletView: View {
             .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
             .uppercased()
         isDefault = w.isDefault
-        if w.type == "credit" {
+        if w.type == .credit {
             creditLimit = w.creditLimit ?? 0
             if creditLimit > 0 { creditLimitText = creditLimit.formattedDecimal() }
             statementDay = w.statementDay ?? 15
@@ -147,9 +147,9 @@ struct AddEditWalletView: View {
                 try await WalletService.shared.create(
                     name: trimName, type: type, initialBalance: initialBalance,
                     icon: iconVal, color: colorHex, isDefault: isDefault,
-                    creditLimit: type == "credit" ? creditLimit : nil,
-                    statementDay: type == "credit" ? statementDay : nil,
-                    paymentDueDay: type == "credit" ? paymentDueDay : nil,
+                    creditLimit: type == .credit ? creditLimit : nil,
+                    statementDay: type == .credit ? statementDay : nil,
+                    paymentDueDay: type == .credit ? paymentDueDay : nil,
                     in: modelContext
                 )
             }

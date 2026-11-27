@@ -33,6 +33,7 @@ enum LocalDataStore {
             do {
                 try clearLedger(in: context)
                 try context.save()
+                SyncCursor.resetAll()
             } catch {
                 context.rollback()
                 throw error

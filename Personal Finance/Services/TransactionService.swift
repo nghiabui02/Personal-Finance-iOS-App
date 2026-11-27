@@ -13,77 +13,61 @@ final class TransactionService {
     private init() {}
 
     func create(
-        type: String, amount: Double, date: Date,
+        type: TransactionKind, amount: Decimal, date: Date,
         walletId: UUID?, categoryId: UUID?, note: String?,
-        bankFee: Double = 0,
+        bankFee: Decimal = 0,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
-            let p_type: String
-            let p_amount: Double
+            let p_type: TransactionKind
+            let p_amount: Decimal
             let p_transaction_date: String
             let p_user_category_id: String?
             let p_wallet_id: String?
             let p_note: String?
-            let p_bank_fee: Double?
+            let p_bank_fee: Decimal?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("create_transaction", params: Params(
-                    p_type: type,
-                    p_amount: amount,
-                    p_transaction_date: LedgerDate.string(from: date),
-                    p_user_category_id: categoryId?.uuidString,
-                    p_wallet_id: walletId?.uuidString,
-                    p_note: note?.isEmpty == true ? nil : note,
-                    p_bank_fee: bankFee > 0 ? bankFee : nil
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("create_transaction", in: ctx) { _ in
+            Params(
+                p_type: type,
+                p_amount: amount,
+                p_transaction_date: LedgerDate.string(from: date),
+                p_user_category_id: categoryId?.uuidString,
+                p_wallet_id: walletId?.uuidString,
+                p_note: note?.isEmpty == true ? nil : note,
+                p_bank_fee: bankFee > 0 ? bankFee : nil
+            )
         }
     }
 
     func update(
         _ tx: LocalTransaction,
-        type: String, amount: Double, date: Date,
+        type: TransactionKind, amount: Decimal, date: Date,
         walletId: UUID?, categoryId: UUID?, note: String?,
-        bankFee: Double = 0,
+        bankFee: Decimal = 0,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_id: String
-            let p_type: String
-            let p_amount: Double
+            let p_type: TransactionKind
+            let p_amount: Decimal
             let p_transaction_date: String
             let p_user_category_id: String?
             let p_wallet_id: String?
             let p_note: String?
-            let p_bank_fee: Double?
+            let p_bank_fee: Decimal?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("update_transaction", params: Params(
-                    p_id: tx.serverId.uuidString,
-                    p_type: type,
-                    p_amount: amount,
-                    p_transaction_date: LedgerDate.string(from: date),
-                    p_user_category_id: categoryId?.uuidString,
-                    p_wallet_id: walletId?.uuidString,
-                    p_note: note?.isEmpty == true ? nil : note,
-                    p_bank_fee: bankFee > 0 ? bankFee : nil
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("update_transaction", in: ctx) { _ in
+            Params(
+                p_id: tx.serverId.uuidString,
+                p_type: type,
+                p_amount: amount,
+                p_transaction_date: LedgerDate.string(from: date),
+                p_user_category_id: categoryId?.uuidString,
+                p_wallet_id: walletId?.uuidString,
+                p_note: note?.isEmpty == true ? nil : note,
+                p_bank_fee: bankFee > 0 ? bankFee : nil
+            )
         }
     }
 
@@ -91,17 +75,9 @@ final class TransactionService {
     /// the server decides what that means, so a transfer can no longer be left
     /// half-deleted with the other wallet permanently wrong.
     func delete(_ tx: LocalTransaction, in ctx: ModelContext) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable { let p_id: String }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("delete_transaction", params: Params(p_id: tx.serverId.uuidString))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("delete_transaction", in: ctx) { _ in
+            Params(p_id: tx.serverId.uuidString)
         }
     }
 }

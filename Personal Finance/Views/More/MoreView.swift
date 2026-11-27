@@ -15,7 +15,7 @@ struct MoreView: View {
                                 Text(authVM.displayName)
                                     .font(.headline)
                                 Text(authVM.userEmail)
-                                    .font(.subheadline).foregroundColor(.secondary)
+                                    .font(.subheadline).foregroundStyle(.secondary)
                             }
                             Spacer()
                         }

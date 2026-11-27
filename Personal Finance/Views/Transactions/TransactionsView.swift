@@ -37,7 +37,7 @@ struct TransactionsView: View {
         )
         let interval = TransactionFilterEngine.dateInterval(for: filter.period, selectedMonth: selectedMonth,
                                                             selectedDate: selectedDate)
-        let totals = dailyTotals.reduce(into: (income: 0.0, expense: 0.0)) { totals, entry in
+        let totals = dailyTotals.reduce(into: (income: Decimal.zero, expense: Decimal.zero)) { totals, entry in
             guard let interval, interval.start <= entry.key, entry.key < interval.end else { return }
             totals.income += entry.value.income
             totals.expense += entry.value.expense
@@ -87,7 +87,7 @@ struct TransactionsView: View {
                 selectedDate: nil,
                 hasMore: visibleCount < count,
                 isLoadingMore: false,
-                count: min(visibleCount, count),
+                loadedCount: min(visibleCount, count),
                 onLoadMore: { visibleCount += Self.pageSize }
             )
         }
@@ -146,6 +146,7 @@ struct TransactionsView: View {
     private func delete(_ transaction: LocalTransaction) async {
         do {
             try await TransactionService.shared.delete(transaction, in: modelContext)
+            Haptics.moneyRecorded()
         } catch {
             errorMessage = error.asDisplayableError().localizedDescription
         }

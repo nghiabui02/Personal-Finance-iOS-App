@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BalanceCardView: View {
-    let balance: Double
+    let balance: Decimal
     let currency: String
 
     @Environment(\.colorScheme) private var colorScheme
@@ -10,11 +10,11 @@ struct BalanceCardView: View {
         VStack(spacing: 8) {
             Text("Total Balance")
                 .font(.subheadline)
-                .foregroundColor(.white.opacity(0.85))
+                .foregroundStyle(.white.opacity(0.85))
 
             Text(balance.formatted(currency: currency))
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
         }
@@ -26,7 +26,7 @@ struct BalanceCardView: View {
                            startPoint: .topLeading,
                            endPoint: .bottomTrailing)
         )
-        .cornerRadius(20)
+        .clipShape(.rect(cornerRadius: 20))
         .padding(.horizontal)
         .shadow(color: .blue.opacity(colorScheme == .dark ? 0.5 : 0.25),
                 radius: colorScheme == .dark ? 20 : 12,

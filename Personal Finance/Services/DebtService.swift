@@ -10,18 +10,15 @@ final class DebtService {
     /// together — a wallet that cannot cover the loan no longer leaves a debt
     /// record behind with no money having moved.
     func create(
-        type: String, personName: String, personContact: String?,
-        amount: Double, walletId: UUID?, categoryId: UUID? = nil,
+        type: DebtKind, personName: String, personContact: String?,
+        amount: Decimal, walletId: UUID?, categoryId: UUID? = nil,
         dueDate: Date?, note: String?, date: Date = Date(),
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
-            let p_type: String
+            let p_type: DebtKind
             let p_person_name: String
-            let p_amount: Double
+            let p_amount: Decimal
             let p_date: String
             let p_person_contact: String?
             let p_due_date: String?
@@ -29,37 +26,32 @@ final class DebtService {
             let p_wallet_id: String?
             let p_user_category_id: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("create_debt", params: Params(
-                    p_type: type,
-                    p_person_name: personName,
-                    p_amount: amount,
-                    p_date: LedgerDate.string(from: date),
-                    p_person_contact: personContact?.isEmpty == true ? nil : personContact,
-                    p_due_date: dueDate.map { LedgerDate.string(from: $0) },
-                    p_note: note?.isEmpty == true ? nil : note,
-                    p_wallet_id: walletId?.uuidString,
-                    p_user_category_id: categoryId?.uuidString
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("create_debt", in: ctx) { _ in
+            Params(
+                p_type: type,
+                p_person_name: personName,
+                p_amount: amount,
+                p_date: LedgerDate.string(from: date),
+                p_person_contact: personContact?.isEmpty == true ? nil : personContact,
+                p_due_date: dueDate.map { LedgerDate.string(from: $0) },
+                p_note: note?.isEmpty == true ? nil : note,
+                p_wallet_id: walletId?.uuidString,
+                p_user_category_id: categoryId?.uuidString
+            )
         }
     }
 
     /// Editing a debt's details touches no money, so it stays a plain update.
     func update(
         _ debt: LocalDebt, personName: String, personContact: String?,
-        dueDate: Date?, note: String?, status: String? = nil, in ctx: ModelContext
+        dueDate: Date?, note: String?, status: DebtStatus? = nil, in ctx: ModelContext
     ) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
         let client = mutation.client
         struct Body: Encodable {
             let person_name: String, person_contact: String?, due_date: String?, note: String?
-            let status: String
+            let status: DebtStatus
         }
         let remote: RemoteDebt = try await client
             .from("debts")
@@ -94,70 +86,54 @@ final class DebtService {
     /// Collecting on a loan is income; repaying what you borrowed is an expense —
     /// the direction follows the debt, never the wallet it is settled from.
     func recordPayment(
-        _ debt: LocalDebt, amount: Double, note: String?,
+        _ debt: LocalDebt, amount: Decimal, note: String?,
         date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_debt_id: String
-            let p_amount: Double
+            let p_amount: Decimal
             let p_date: String
             let p_wallet_id: String?
             let p_user_category_id: String?
             let p_note: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("record_debt_payment", params: Params(
-                    p_debt_id: debt.serverId.uuidString,
-                    p_amount: amount,
-                    p_date: LedgerDate.string(from: date),
-                    p_wallet_id: walletId?.uuidString,
-                    p_user_category_id: categoryId?.uuidString,
-                    p_note: note?.isEmpty == true ? nil : note
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("record_debt_payment", in: ctx) { _ in
+            Params(
+                p_debt_id: debt.serverId.uuidString,
+                p_amount: amount,
+                p_date: LedgerDate.string(from: date),
+                p_wallet_id: walletId?.uuidString,
+                p_user_category_id: categoryId?.uuidString,
+                p_note: note?.isEmpty == true ? nil : note
+            )
         }
     }
 
     /// Lending more / borrowing more: raises both the debt's total and what is
     /// still outstanding, and moves the wallet in the same breath.
     func addAmount(
-        to debt: LocalDebt, amount: Double, note: String?,
+        to debt: LocalDebt, amount: Decimal, note: String?,
         date: Date = Date(), walletId: UUID?, categoryId: UUID? = nil,
         in ctx: ModelContext
     ) async throws {
-        let mutation = try await LocalDataStore.beginMutation()
-        defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
         struct Params: Encodable {
             let p_debt_id: String
-            let p_amount: Double
+            let p_amount: Decimal
             let p_date: String
             let p_wallet_id: String?
             let p_user_category_id: String?
             let p_note: String?
         }
-        do {
-            let result: RPC.Envelope = try await client
-                .rpc("add_to_debt", params: Params(
-                    p_debt_id: debt.serverId.uuidString,
-                    p_amount: amount,
-                    p_date: LedgerDate.string(from: date),
-                    p_wallet_id: walletId?.uuidString,
-                    p_user_category_id: categoryId?.uuidString,
-                    p_note: note?.isEmpty == true ? nil : note
-                ))
-                .execute().value
-            try RPCResultApplier.apply(result, for: mutation.session, in: ctx)
-        } catch {
-            throw error.asDisplayableError()
+        try await RPCResultApplier.perform("add_to_debt", in: ctx) { _ in
+            Params(
+                p_debt_id: debt.serverId.uuidString,
+                p_amount: amount,
+                p_date: LedgerDate.string(from: date),
+                p_wallet_id: walletId?.uuidString,
+                p_user_category_id: categoryId?.uuidString,
+                p_note: note?.isEmpty == true ? nil : note
+            )
         }
     }
 }

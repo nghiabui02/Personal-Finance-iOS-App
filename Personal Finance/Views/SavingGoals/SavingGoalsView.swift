@@ -11,19 +11,20 @@ struct SavingGoalsView: View {
     @State private var contributing: LocalSavingGoal?
     @State private var pendingDeletion: LocalSavingGoal?
     @State private var showDeleteConfirmation = false
-    @State private var filterStatus: String = "active"
+    /// `nil` shows every goal.
+    @State private var filterStatus: GoalStatus? = .active
     @State private var errorMsg: String?
 
     private var filtered: [LocalSavingGoal] {
-        filterStatus == "all" ? goals : goals.filter { $0.status == filterStatus }
+        filterStatus.map { status in goals.filter { $0.status == status } } ?? goals
     }
 
     var body: some View {
         VStack(spacing: 0) {
                 Picker("Filter", selection: $filterStatus) {
-                    Text("Active").tag("active")
-                    Text("Completed").tag("completed")
-                    Text("All").tag("all")
+                    Text("Active").tag(GoalStatus?.some(.active))
+                    Text("Completed").tag(GoalStatus?.some(.completed))
+                    Text("All").tag(GoalStatus?.none)
                 }
                 .pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
                 .background(Color(.systemGroupedBackground))
@@ -33,7 +34,7 @@ struct SavingGoalsView: View {
                         GoalRow(goal: goal)
                             .onTapGesture { editing = goal }
                             .swipeActions(edge: .leading) {
-                                if goal.status == "active" {
+                                if goal.status == .active {
                                     Button { contributing = goal } label: {
                                         Label("Add", systemImage: "plus.circle")
                                     }.tint(.green)
@@ -93,12 +94,13 @@ private struct GoalRow: View {
                 ZStack {
                     Circle().fill(Color.yellow.opacity(0.15)).frame(width: 44, height: 44)
                     Text(goal.icon ?? "🎯").font(.system(size: 22))
+                        .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(goal.name).fontWeight(.medium)
                     if let dl = goal.deadline {
                         Text("Due \(dl.formatted(.dateTime.month(.abbreviated).day().year()))")
-                            .font(.caption).foregroundColor(.secondary)
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
@@ -106,13 +108,13 @@ private struct GoalRow: View {
                     Text(goal.currentAmount.formatted(currency: "VND"))
                         .fontWeight(.semibold)
                     Text("of \(goal.targetAmount.formatted(currency: "VND"))")
-                        .font(.caption).foregroundColor(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
             ProgressView(value: goal.progress)
-                .tint(goal.status == "completed" ? .green : .yellow)
+                .tint(goal.status == .completed ? .green : .yellow)
             Text("\(Int(goal.progress * 100))% complete")
-                .font(.caption2).foregroundColor(.secondary)
+                .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }
@@ -125,7 +127,7 @@ struct ContributionSheet: View {
     @Environment(\.dismiss) private var dismiss
     let goal: LocalSavingGoal
 
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var isSaving = false
     @State private var errorMsg: String?
@@ -142,19 +144,19 @@ struct ContributionSheet: View {
                             .onChange(of: amountText) { _, new in
                                 applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
                             }
-                        Text("₫").foregroundColor(.secondary)
+                        Text("₫").foregroundStyle(.secondary)
                     }
                 }
                 Section {
                     HStack {
                         Text("Current")
                         Spacer()
-                        Text(goal.currentAmount.formatted(currency: "VND")).foregroundColor(.secondary)
+                        Text(goal.currentAmount.formatted(currency: "VND")).foregroundStyle(.secondary)
                     }
                     HStack {
                         Text("Target")
                         Spacer()
-                        Text(goal.targetAmount.formatted(currency: "VND")).foregroundColor(.secondary)
+                        Text(goal.targetAmount.formatted(currency: "VND")).foregroundStyle(.secondary)
                     }
                 }
             }

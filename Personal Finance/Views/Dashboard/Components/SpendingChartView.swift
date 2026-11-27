@@ -6,13 +6,13 @@ struct CategorySpending: Identifiable {
     let name: String
     let icon: String
     let color: Color
-    let amount: Double
+    let amount: Decimal
     var percentage: Double = 0
 }
 
 struct SpendingChartView: View {
     let items: [CategorySpending]
-    let total: Double
+    let total: Decimal
     let currency: String
 
     var body: some View {
@@ -23,7 +23,7 @@ struct SpendingChartView: View {
             if items.isEmpty {
                 Text("No expenses recorded")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 24)
             } else {
@@ -31,21 +31,23 @@ struct SpendingChartView: View {
                     // Donut chart
                     Chart(items) { item in
                         SectorMark(
-                            angle: .value("Amount", item.amount),
+                            angle: .value("Amount", item.amount.doubleValue),
                             innerRadius: .ratio(0.58),
                             angularInset: 1.5
                         )
                         .foregroundStyle(item.color)
                         .cornerRadius(4)
+                        .accessibilityLabel(item.name)
+                        .accessibilityValue(item.amount.formatted(currency: currency))
                     }
                     .frame(width: 130, height: 130)
                     .overlay {
                         VStack(spacing: 2) {
                             Text("Total")
                                 .font(.caption2)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             Text(total.formatted(currency: currency))
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.caption2.weight(.semibold))
                                 .minimumScaleFactor(0.5)
                                 .lineLimit(1)
                                 .frame(maxWidth: 90)
@@ -67,7 +69,7 @@ struct SpendingChartView: View {
                                         .lineLimit(1)
                                     Text("\(Int(item.percentage))% · \(item.amount.formatted(currency: currency))")
                                         .font(.caption2)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }

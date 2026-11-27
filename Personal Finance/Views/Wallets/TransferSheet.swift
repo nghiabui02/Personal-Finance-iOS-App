@@ -15,7 +15,7 @@ struct TransferSheet: View {
 
     @State private var fromWalletId: UUID?
     @State private var toWalletId: UUID?
-    @State private var amount: Double = 0
+    @State private var amount: Decimal = 0
     @State private var amountText = ""
     @State private var date = Date()
     @State private var note = ""
@@ -99,7 +99,7 @@ struct TransferSheet: View {
                     Text("Wallet")
                     Spacer()
                     walletLabel(wallet)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             } else {
                 Picker("Wallet", selection: $fromWalletId) {
@@ -129,7 +129,7 @@ struct TransferSheet: View {
             if insufficientFunds {
                 Label("Insufficient funds", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
-                    .foregroundColor(.expense)
+                    .foregroundStyle(Color.expense)
             }
         }
     }
@@ -162,12 +162,12 @@ struct TransferSheet: View {
     }
 
     @ViewBuilder
-    private func balanceRow(label: LocalizedStringKey, amount: Double, highlight: Bool = false) -> some View {
+    private func balanceRow(label: LocalizedStringKey, amount: Decimal, highlight: Bool = false) -> some View {
         HStack {
-            Text(label).foregroundColor(.secondary)
+            Text(label).foregroundStyle(.secondary)
             Spacer()
             Text(amount.formatted(currency: "VND"))
-                .foregroundColor(highlight ? .expense : .secondary)
+                .foregroundStyle(highlight ? Color.expense : Color.secondary)
         }
         .font(.caption)
     }
@@ -185,6 +185,7 @@ struct TransferSheet: View {
                 note: note.isEmpty ? nil : note,
                 in: modelContext
             )
+            Haptics.moneyRecorded()
             dismiss()
         } catch {
             errorMsg = error.asDisplayableError().localizedDescription

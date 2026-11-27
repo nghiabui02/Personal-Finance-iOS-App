@@ -19,6 +19,8 @@ final class SyncManager {
     private(set) var netWorthSnapshots: [RemoteNetWorthSnapshot] = []
 
     private let logger = Logger(subsystem: "dev.nghiabui.personalfinance", category: "LedgerSync")
+    /// Intervals for Instruments' os_signpost track: "Download ledger" and "Apply ledger".
+    private let signposter = OSSignposter(subsystem: "dev.nghiabui.personalfinance", category: "LedgerSync")
     private let monitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.nghiabui.pf.network")
     @ObservationIgnored private var pendingContext: ModelContext?
@@ -79,7 +81,7 @@ final class SyncManager {
         let revision = LocalDataStore.revision
         do {
             let client = try await LocalDataStore.authenticatedClient(for: session)
-            let ledger = try await Ledger.fetch(client: client, userId: session.userId)
+            let download = try await download(for: session, using: client)
             try Task.checkCancellation()
             try LocalDataStore.validate(session)
             guard revision == LocalDataStore.revision, !LocalDataStore.isMutating else {
@@ -87,12 +89,10 @@ final class SyncManager {
                 return
             }
 
-            try ledger.apply(in: modelContext)
-            CategoryDirectory.shared.replace(with: ledger.categories)
-            netWorthSnapshots = ledger.snapshots
+            try apply(download, for: session, in: modelContext)
             lastSyncDate = Date()
             do {
-                try await recordSnapshot(ledger, for: session, using: client)
+                try await recordSnapshot(from: modelContext, for: session, using: client)
             } catch is CancellationError {
                 return
             } catch {
@@ -111,26 +111,85 @@ final class SyncManager {
         }
     }
 
+    /// Only what changed since the last sync, falling back to everything when there is no
+    /// cursor, the daily full download is due, or the server cannot answer a delta yet.
+    private func download(
+        for session: LocalDataStore.Session, using client: PostgrestClient
+    ) async throws -> LedgerDownload {
+        let interval = signposter.beginInterval("Download ledger")
+        defer { signposter.endInterval("Download ledger", interval) }
+        let clock = try await serverClock(using: client)
+        if let clock, let cursor = SyncCursor.load(for: session.userId), !cursor.isDueForFullSync {
+            do {
+                let changes = try await LedgerChanges.fetch(client: client, userId: session.userId, since: cursor.since)
+                return .delta(changes, clock: clock, previous: cursor)
+            } catch let error as PostgrestError {
+                logger.error("Delta sync failed (\(error.code ?? "no code", privacy: .public)), downloading all rows")
+            }
+        }
+        return .full(try await Ledger.fetch(client: client, userId: session.userId), clock: clock)
+    }
+
+    /// The server's time as this download starts, or `nil` while the delta-sync migration
+    /// has not reached the database — then no cursor is kept, so the first sync after it
+    /// lands is a full one and no deletion from before the log existed is missed.
+    private func serverClock(using client: PostgrestClient) async throws -> Date? {
+        do {
+            return try await client.rpc("sync_clock").execute().value
+        } catch let error as PostgrestError {
+            logger.error("sync_clock unavailable (\(error.code ?? "no code", privacy: .public))")
+            return nil
+        }
+    }
+
+    private func apply(_ download: LedgerDownload, for session: LocalDataStore.Session, in context: ModelContext) throws {
+        let interval = signposter.beginInterval("Apply ledger")
+        defer { signposter.endInterval("Apply ledger", interval) }
+        let cursor: SyncCursor?
+        switch download {
+        case .full(let ledger, let clock):
+            try ledger.apply(in: context)
+            CategoryDirectory.shared.replace(with: ledger.categories)
+            netWorthSnapshots = ledger.snapshots
+            cursor = clock.map { SyncCursor(since: $0, lastFullSync: Date()) }
+        case .delta(let changes, let clock, let previous):
+            try changes.apply(in: context)
+            CategoryDirectory.shared.merge(changes.categories)
+            netWorthSnapshots = changes.snapshots
+            cursor = SyncCursor(since: clock, lastFullSync: previous.lastFullSync)
+        }
+        do {
+            try cursor?.save(for: session.userId)
+        } catch {
+            // Losing the cursor only costs a full download next time.
+            logger.error("Unable to save the sync cursor: \(String(describing: error), privacy: .public)")
+        }
+    }
+
     private func recordSnapshot(
-        _ ledger: Ledger, for session: LocalDataStore.Session, using client: PostgrestClient
+        from context: ModelContext, for session: LocalDataStore.Session, using client: PostgrestClient
     ) async throws {
-        guard !ledger.wallets.isEmpty || !ledger.debts.isEmpty || !ledger.snapshots.isEmpty else { return }
+        let wallets = try context.fetch(FetchDescriptor<LocalWallet>())
+        let debts = try context.fetch(FetchDescriptor<LocalDebt>())
+        guard !wallets.isEmpty || !debts.isEmpty || !netWorthSnapshots.isEmpty else { return }
         try LocalDataStore.validate(session)
         let today = LedgerDate.string(from: Date())
-        let netWorth = NetWorth.calculate(wallets: ledger.wallets, debts: ledger.debts).total
-        guard ledger.snapshots.first(where: { $0.recordedDate == today })?.netWorth != netWorth else { return }
-        let body: [String: AnyJSON] = [
-            "user_id": .string(session.userId.uuidString),
-            "recorded_date": .string(today),
-            "net_worth": .double(netWorth),
-        ]
+        let netWorth = NetWorth.calculate(wallets: wallets, debts: debts).total
+        guard netWorthSnapshots.first(where: { $0.recordedDate.string == today })?.netWorth != netWorth else { return }
+        struct Body: Encodable { let user_id: UUID, recorded_date: String, net_worth: Decimal }
+        let body = Body(user_id: session.userId, recorded_date: today, net_worth: netWorth)
         let row: RemoteNetWorthSnapshot = try await client.from("net_worth_snapshots")
             .upsert(body, onConflict: "user_id,recorded_date").select().single().execute().value
         try LocalDataStore.validate(session)
-        netWorthSnapshots.removeAll { $0.recordedDate == today }
+        netWorthSnapshots.removeAll { $0.recordedDate.string == today }
         netWorthSnapshots.append(row)
     }
 
+}
+
+private enum LedgerDownload {
+    case full(Ledger, clock: Date?)
+    case delta(LedgerChanges, clock: Date, previous: SyncCursor)
 }
 
 private struct Ledger {
@@ -155,7 +214,7 @@ private struct Ledger {
         async let goals: [RemoteSavingGoal] = client.readOwnedRows("saving_goals", userId: userId)
         async let recurring: [RemoteRecurringTransaction] = client.readOwnedRows(
             "recurring_transactions", columns: CategoryProjection.withWallet, userId: userId)
-        async let snapshots: [RemoteNetWorthSnapshot] = client.readOwnedRows("net_worth_snapshots", userId: userId)
+        async let snapshots = client.readNetWorthHistory(userId: userId)
         return try await Self(
             wallets: wallets, categories: categories, transactions: transactions, budgets: budgets,
             debts: debts, goals: goals, recurring: recurring, snapshots: snapshots)
@@ -211,8 +270,15 @@ extension PostgrestClient {
         }
     }
 
+    func readNetWorthHistory(userId: UUID) async throws -> [RemoteNetWorthSnapshot] {
+        let firstDay = NetWorthHistory.firstDay()
+        return try await readRows {
+            from("net_worth_snapshots").select().eq("user_id", value: userId).gte("recorded_date", value: firstDay)
+        }
+    }
+
     func readRows<Row: Decodable & Identifiable>(
-        idColumn: String = "id", matching query: () -> PostgrestFilterBuilder
+        idColumn: String = "id", matching query: @Sendable () -> PostgrestFilterBuilder
     ) async throws -> [Row] where Row.ID: PostgrestFilterValue {
         let pageSize = 500
         var rows: [Row] = []

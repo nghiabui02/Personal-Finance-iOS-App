@@ -14,7 +14,7 @@ struct ReportPeriodSelectorView: View {
                 } label: {
                     Text(LocalizedStringKey(period.rawValue))
                         .font(.subheadline.weight(selectedPeriod == period ? .semibold : .regular))
-                        .foregroundColor(selectedPeriod == period ? .primary : .secondary)
+                        .foregroundStyle(selectedPeriod == period ? .primary : .secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(selectionBackground(for: period))

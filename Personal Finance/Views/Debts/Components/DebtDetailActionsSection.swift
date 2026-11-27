@@ -9,7 +9,7 @@ struct DebtDetailActionsSection: View {
         Section {
             Button(action: onRecordPayment) {
                 Label(
-                    debt.type == "lend" ? "Record Collection" : "Record Payment",
+                    debt.type == .lend ? "Record Collection" : "Record Payment",
                     systemImage: "checkmark.circle"
                 )
             }

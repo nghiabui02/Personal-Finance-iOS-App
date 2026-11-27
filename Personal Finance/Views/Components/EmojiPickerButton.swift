@@ -71,7 +71,7 @@ private struct EmojiPickerSheet: View {
                         } header: {
                             Text(section.title)
                                 .font(.caption).fontWeight(.semibold)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.top, 4)
                                 .background(Color(.systemGroupedBackground))

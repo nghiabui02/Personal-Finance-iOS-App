@@ -7,7 +7,7 @@ struct CategoriesView: View {
     @Query(sort: \LocalCategory.name) private var categories: [LocalCategory]
     private var sync: SyncManager { .shared }
 
-    @State private var selectedType = "expense"
+    @State private var selectedType = TransactionKind.expense
     @State private var showAdd = false
     @State private var showStore = false
     @State private var isSaving = false
@@ -26,8 +26,8 @@ struct CategoriesView: View {
         ScrollView {
             VStack(spacing: 0) {
                 Picker("Type", selection: $selectedType) {
-                    Text("Expense").tag("expense")
-                    Text("Income").tag("income")
+                    Text("Expense").tag(TransactionKind.expense)
+                    Text("Income").tag(TransactionKind.income)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -146,7 +146,7 @@ private struct CategoryDependencySheet: View {
                         ForEach(dependencies.recurring) { entry in
                             let note = entry.note ?? ""
                             let amount = entry.amount.formatted(currency: "VND")
-                            let scheduled = entry.nextRunDate ?? ""
+                            let scheduled = entry.nextRunDate?.string ?? ""
                             VStack(alignment: .leading) {
                                 Text(note.isEmpty ? amount : note)
                                 if !scheduled.isEmpty {
@@ -175,7 +175,7 @@ private struct CategorySection<Content: View>: View {
             Text(title)
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal)
 
             VStack(spacing: 8) {
@@ -207,16 +207,17 @@ private struct CategoryCard: View {
                     .frame(width: 48, height: 48)
                 Text(category.icon ?? "📦")
                     .font(.system(size: 24))
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(category.displayName)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 if category.isDefault && category.systemKey == nil {
                     Text("From Store")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -232,7 +233,7 @@ private struct CategoryCard: View {
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
@@ -241,7 +242,7 @@ private struct CategoryCard: View {
                 Button(action: onRemove) {
                     Image(systemName: "trash")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)

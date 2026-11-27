@@ -34,22 +34,23 @@ struct TransactionWalletPickerSheet: View {
                     .frame(width: 36, height: 36)
                 Text(wallet.displayIcon)
                     .font(.system(size: 18))
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(wallet.name)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .fontWeight(.medium)
                 Text(wallet.balance.formatted(currency: "VND"))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             if selected == wallet.serverId {
                 Image(systemName: "checkmark")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
             }
         }
         .padding(.vertical, 2)
