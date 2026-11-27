@@ -34,11 +34,31 @@ let maxAmountDigits = 12
 /// non-negative amount within `maxAmountDigits` (a pasted minus sign, letters, too many
 /// digits) is rejected and the text snaps back to the last accepted amount, so the form
 /// can never save a number other than the one on screen.
-func applyAmountFormat(new: String, amountText: inout String, amount: inout Decimal) {
-    if let parsed = parseAmountInput(new) {
+///
+/// `old` is the text before this edit. New input that ends in a separator and one or two
+/// digits is a fraction, not a thousands group: a pasted "1,500,000.00" means 1.500.000 ₫,
+/// and stripping the separator would store 150.000.000 ₫. Đồng has no minor unit, so the
+/// fraction is dropped. A backspace on "12.345" also leaves "12.34", which is why deletions
+/// are left alone.
+func applyAmountFormat(old: String = "", new: String, amountText: inout String, amount: inout Decimal) {
+    let input = isDeletion(from: old, to: new)
+        ? new
+        : new.replacingOccurrences(of: #"[.,][0-9]{1,2}$"#, with: "", options: .regularExpression)
+    if let parsed = parseAmountInput(input) {
         amount = parsed
     }
     amountText = amount.formattedDecimal()
+}
+
+/// True when `new` is `old` with characters removed (backspace, cut) rather than new input.
+private func isDeletion(from old: String, to new: String) -> Bool {
+    guard new.count < old.count else { return false }
+    var rest = Substring(old)
+    for character in new {
+        guard let index = rest.firstIndex(of: character) else { return false }
+        rest = rest[rest.index(after: index)...]
+    }
+    return true
 }
 
 /// 0 for an empty field, nil for input that is not a valid amount.

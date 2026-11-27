@@ -24,30 +24,39 @@ final class RecurringService {
     func create(_ draft: RecurringRuleDraft, in ctx: ModelContext) async throws {
         let mutation = try await LocalDataStore.beginMutation()
         defer { LocalDataStore.endMutation(mutation.session) }
-        let client = mutation.client
-        struct Body: Encodable {
-            let user_id: String, type: TransactionKind, amount: Decimal, frequency: RecurringFrequency
-            let start_date: String, end_date: String?, next_run_date: String
-            let wallet_id: String?, user_category_id: String?, note: String?
-            let bank_fee: Decimal?, active: Bool
-        }
-        let remote: RemoteRecurringTransaction = try await client
-            .from("recurring_transactions")
-            .insert(Body(
-                user_id: mutation.userId.uuidString, type: draft.type, amount: draft.amount,
-                frequency: draft.frequency,
-                start_date: LedgerDate.dayFormatter.string(from: draft.startDate),
-                end_date: draft.endDate.map { LedgerDate.dayFormatter.string(from: $0) },
-                next_run_date: LedgerDate.dayFormatter.string(from: draft.startDate),
-                wallet_id: draft.walletId?.uuidString, user_category_id: draft.categoryId?.uuidString,
-                note: draft.note?.isEmpty == true ? nil : draft.note,
-                bank_fee: draft.bankFee > 0 ? draft.bankFee : nil, active: true
-            ))
-            .select(CategoryProjection.withWallet)
-            .single().execute().value
+        let table = "recurring_transactions"
+        var body = NewRule(
+            id: nil, user_id: mutation.userId, type: draft.type, amount: draft.amount,
+            frequency: draft.frequency,
+            start_date: LedgerDate.string(from: draft.startDate),
+            end_date: draft.endDate.map { LedgerDate.string(from: $0) },
+            next_run_date: LedgerDate.string(from: draft.startDate),
+            wallet_id: draft.walletId, user_category_id: draft.categoryId,
+            note: draft.note?.isEmpty == true ? nil : draft.note,
+            bank_fee: draft.bankFee > 0 ? draft.bankFee : nil, active: true
+        )
+        // Fingerprinted before the id is set, so the content alone decides whether this is a retry.
+        let id = try ClientRequestID.reusableId(for: table, userId: mutation.userId, params: body)
+        body.id = id
+        let remote = try await insertOnce(body, id: id, into: table, using: mutation.client)
+        ClientRequestID.finish(table)
         try LocalDataStore.validate(mutation.session)
         ctx.insert(LocalRecurringTransaction(from: remote))
         try LocalDataStore.saveMutation(in: ctx)
+    }
+
+    /// A rule never written twice: if a lost response made the user retry, the id already
+    /// exists (`23505`) and the row that first attempt created is returned instead.
+    private func insertOnce(
+        _ body: NewRule, id: UUID, into table: String, using client: PostgrestClient
+    ) async throws -> RemoteRecurringTransaction {
+        do {
+            return try await client.from(table).insert(body)
+                .select(CategoryProjection.withWallet).single().execute().value
+        } catch let error as PostgrestError where error.code == "23505" {
+            return try await client.from(table).select(CategoryProjection.withWallet)
+                .eq("id", value: id).eq("user_id", value: body.user_id).single().execute().value
+        }
     }
 
     func update(_ rec: LocalRecurringTransaction, with draft: RecurringRuleDraft, in ctx: ModelContext) async throws {
@@ -143,4 +152,21 @@ private struct RuleUpdate: Encodable {
         try container.encode(note, forKey: .note)
         try container.encode(bank_fee, forKey: .bank_fee)
     }
+}
+
+/// A new rule's columns. `id` is chosen on the device so a retried insert is recognised.
+private struct NewRule: Encodable {
+    var id: UUID?
+    let user_id: UUID
+    let type: TransactionKind
+    let amount: Decimal
+    let frequency: RecurringFrequency
+    let start_date: String
+    let end_date: String?
+    let next_run_date: String
+    let wallet_id: UUID?
+    let user_category_id: UUID?
+    let note: String?
+    let bank_fee: Decimal?
+    let active: Bool
 }

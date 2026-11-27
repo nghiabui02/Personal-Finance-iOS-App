@@ -65,9 +65,13 @@ final class SavingGoalService {
             throw BusinessRuleError(message: "Enter a positive contribution.")
         }
         struct Params: Encodable { let p_goal_id: UUID; let p_amount: Decimal }
+        let function = "contribute_to_saving_goal"
+        let params = Params(p_goal_id: goal.serverId, p_amount: amount)
+        let requestId = try ClientRequestID.id(for: function, userId: mutation.userId, params: params)
         let remote: RemoteSavingGoal? = try await client
-            .rpc("contribute_to_saving_goal", params: Params(p_goal_id: goal.serverId, p_amount: amount))
+            .rpc(function, params: ClientRequestParams(params: params, clientRequestId: requestId))
             .execute().value
+        ClientRequestID.finish(function)
         guard let remote else {
             throw BusinessRuleError(message: "This goal is no longer active. Refresh and try again.")
         }

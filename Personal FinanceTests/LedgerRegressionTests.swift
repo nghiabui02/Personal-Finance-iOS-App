@@ -29,6 +29,21 @@ struct AmountInputTests {
         #expect(type("200,000", over: 0).amount == 200_000)
     }
 
+    @Test("should drop the fraction of a pasted amount instead of multiplying it by 100")
+    func dropsPastedFraction() {
+        #expect(type("1,500,000.00", over: 0).amount == 1_500_000)
+        #expect(type("1.500.000,5", over: 0).amount == 1_500_000)
+    }
+
+    @Test("should treat a backspace that leaves two digits after a separator as a deletion")
+    func keepsDigitsOnBackspace() {
+        var amount: Decimal = 12_345
+        var text = "12.345"
+        applyAmountFormat(old: "12.345", new: "12.34", amountText: &text, amount: &amount)
+        #expect(amount == 1_234)
+        #expect(text == "1.234")
+    }
+
     @Test("should reject a negative amount instead of dropping the minus sign")
     func rejectsNegative() {
         let result = type("-200000", over: 5_000)

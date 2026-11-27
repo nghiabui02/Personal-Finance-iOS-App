@@ -144,8 +144,8 @@ struct ContributionSheet: View {
                         Spacer()
                         TextField("0", text: $amountText)
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing).fontWeight(.semibold)
-                            .onChange(of: amountText) { _, new in
-                                applyAmountFormat(new: new, amountText: &amountText, amount: &amount)
+                            .onChange(of: amountText) { old, new in
+                                applyAmountFormat(old: old, new: new, amountText: &amountText, amount: &amount)
                             }
                         Text("₫").foregroundStyle(.secondary)
                     }

@@ -53,6 +53,7 @@
 		77E61E94AFC70DE5D2AA5E45 /* TransactionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B647D38742EC2C9E4A02C53 /* TransactionService.swift */; };
 		7BF792AC7D7D3592A3FCF511 /* ReconcileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D62E99E9AFDD0DEB3DA6AD2 /* ReconcileSheet.swift */; };
 		856B01A3584354A4DE54D6F2 /* BudgetProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66A6E140BBAF8A26C05F8ED /* BudgetProgressView.swift */; };
+		A1D17F0E5B2C4D6E8F90A1B2 /* AuditRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D17F0E5B2C4D6E8F90A1B3 /* AuditRegressionTests.swift */; };
 		85B6F719BBABA3667E0AC6D5 /* LedgerRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FAE4E8373F658692BB0ECC /* LedgerRegressionTests.swift */; };
 		873BA3254FD6C35712739509 /* ServerBacked.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9ABE70BD58C832FF5F86FF7 /* ServerBacked.swift */; };
 		6B872760CBDC4A81B8BCF390 /* NetWorth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE71F8EBF7449139C652FFE /* NetWorth.swift */; };
@@ -178,6 +179,7 @@
 		09C0B6954D1DEB10216CAFCB /* TransactionCategoryPickerSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionCategoryPickerSheet.swift; sourceTree = "<group>"; };
 		0C2F54E084ABB427FCF1ABCD /* My FinanceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "My FinanceUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EEF878BC087FB60122FF4A0 /* AddEditBudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditBudgetView.swift; sourceTree = "<group>"; };
+		A1D17F0E5B2C4D6E8F90A1B3 /* AuditRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditRegressionTests.swift; sourceTree = "<group>"; };
 		20FAE4E8373F658692BB0ECC /* LedgerRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerRegressionTests.swift; sourceTree = "<group>"; };
 		2150573043CA45CB8F2F1630 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		2643149D6A1D56075F73FF19 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
@@ -724,6 +726,7 @@
 		F87DCBF1F57ECE994792066F /* Personal FinanceTests */ = {
 			isa = PBXGroup;
 			children = (
+				A1D17F0E5B2C4D6E8F90A1B3 /* AuditRegressionTests.swift */,
 				20FAE4E8373F658692BB0ECC /* LedgerRegressionTests.swift */,
 				A6B6208EC3392C7F831BBBF3 /* AmountSuggestionsTests.swift */,
 			);
@@ -848,6 +851,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1D17F0E5B2C4D6E8F90A1B2 /* AuditRegressionTests.swift in Sources */,
 				85B6F719BBABA3667E0AC6D5 /* LedgerRegressionTests.swift in Sources */,
 				EF3DCF7373E1E803F62D5017 /* AmountSuggestionsTests.swift in Sources */,
 			);

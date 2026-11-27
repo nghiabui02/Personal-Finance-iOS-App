@@ -30,8 +30,9 @@ struct CurrencyAmountField: View {
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
                 .fontWeight(.semibold)
-                .onChange(of: amountText) { _, newValue in
+                .onChange(of: amountText) { oldValue, newValue in
                     applyAmountFormat(
+                        old: oldValue,
                         new: newValue,
                         amountText: &amountText,
                         amount: &amount
