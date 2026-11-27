@@ -54,7 +54,7 @@ struct DebtAdditionSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving {
@@ -69,6 +69,7 @@ struct DebtAdditionSheet: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
     }
 

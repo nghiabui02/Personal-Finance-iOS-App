@@ -26,6 +26,14 @@ struct EmojiPickerButton: View {
 
 // MARK: - Picker Sheet
 
+/// People type words, not emoji, so a search also matches the English Unicode name:
+/// "car" finds 🏎 RACING CAR and 🚓 POLICE CAR.
+func emojiMatches(_ emoji: String, _ search: String) -> Bool {
+    emoji.contains(search) || emoji.unicodeScalars.contains {
+        $0.properties.name?.localizedCaseInsensitiveContains(search) == true
+    }
+}
+
 private struct EmojiPickerSheet: View {
     @Binding var selected: String
     @Binding var isPresented: Bool
@@ -36,7 +44,7 @@ private struct EmojiPickerSheet: View {
     private var sections: [EmojiSection] {
         if search.isEmpty { return emojiData }
         let filtered = emojiData.compactMap { section -> EmojiSection? in
-            let hits = section.emojis.filter { $0.contains(search) }
+            let hits = section.emojis.filter { emojiMatches($0, search) }
             return hits.isEmpty ? nil : EmojiSection(title: section.title, emojis: hits)
         }
         return filtered

@@ -43,7 +43,7 @@ struct AddEditCategoryView: View {
             .navigationTitle(isEditing ? "Edit Category" : "New Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isSaving) }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
@@ -52,6 +52,7 @@ struct AddEditCategoryView: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
             if let cat = category {

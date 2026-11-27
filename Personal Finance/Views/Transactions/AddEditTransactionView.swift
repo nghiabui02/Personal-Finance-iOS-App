@@ -149,7 +149,7 @@ struct AddEditTransactionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving {
@@ -205,6 +205,7 @@ struct AddEditTransactionView: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear { prefill() }
     }

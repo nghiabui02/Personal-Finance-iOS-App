@@ -43,7 +43,7 @@ struct CreditPaymentSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving {
@@ -58,6 +58,7 @@ struct CreditPaymentSheet: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
             selectedWalletId = sourceWallets.first(where: { $0.isDefault })?.serverId

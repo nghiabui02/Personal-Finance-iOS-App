@@ -91,7 +91,7 @@ struct AddEditDebtView: View {
             .navigationTitle(isEditing ? "Edit Debt" : "New Debt")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isSaving) }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
@@ -100,6 +100,7 @@ struct AddEditDebtView: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
             if let d = debt {

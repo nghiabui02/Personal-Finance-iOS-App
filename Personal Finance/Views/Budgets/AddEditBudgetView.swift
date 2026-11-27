@@ -62,7 +62,7 @@ struct AddEditBudgetView: View {
             .navigationTitle(budget != nil ? "Edit Budget" : "New Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isSaving) }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
@@ -71,6 +71,7 @@ struct AddEditBudgetView: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
             if let b = budget {

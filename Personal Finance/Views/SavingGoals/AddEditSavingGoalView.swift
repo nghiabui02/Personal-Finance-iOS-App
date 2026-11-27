@@ -47,7 +47,7 @@ struct AddEditSavingGoalView: View {
             .navigationTitle(goal != nil ? "Edit Goal" : "New Goal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isSaving) }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
@@ -56,6 +56,7 @@ struct AddEditSavingGoalView: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
             if let g = goal {

@@ -167,7 +167,7 @@ struct ContributionSheet: View {
             .navigationTitle("Add Contribution")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(isSaving) }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
@@ -176,6 +176,7 @@ struct ContributionSheet: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
     }
 

@@ -25,8 +25,10 @@ struct AppScreenHeaderModifier: ViewModifier {
                 }
             }
             .sheet(isPresented: $showsProfile) {
-                SettingsView(onClose: { showsProfile = false })
-                    .environmentObject(authViewModel)
+                NavigationStack {
+                    SettingsView(onClose: { showsProfile = false })
+                }
+                .environmentObject(authViewModel)
             }
     }
 }

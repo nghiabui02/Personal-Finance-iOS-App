@@ -1,6 +1,9 @@
 import Foundation
+import OSLog
 import SwiftUI
 import Supabase
+
+private let avatarLogger = Logger(subsystem: "dev.nghiabui.personalfinance", category: "Avatar")
 
 enum AuthState: Equatable {
     case loading, authenticated, unauthenticated
@@ -85,7 +88,7 @@ final class AuthViewModel: ObservableObject {
         isLoading = true; errorMessage = nil; authNotice = nil
         defer { isLoading = false }
         do {
-            try await auth.signIn(email: email, password: password)
+            try await auth.signIn(email: Self.normalized(email), password: password)
         } catch {
             errorMessage = Self.message(for: error)
         }
@@ -99,7 +102,7 @@ final class AuthViewModel: ObservableObject {
         isLoading = true; errorMessage = nil; authNotice = nil
         defer { isLoading = false }
         do {
-            let response = try await auth.signUp(email: email, password: password)
+            let response = try await auth.signUp(email: Self.normalized(email), password: password)
             if response.session == nil {
                 authNotice = AppLocalization.shared.language.text("Check your email to confirm your account.")
             }
@@ -118,7 +121,7 @@ final class AuthViewModel: ObservableObject {
         let sentNotice = AppLocalization.shared.language.text(
             "If an account exists, password reset instructions have been sent.")
         do {
-            try await auth.resetPasswordForEmail(email, redirectTo: AppConfig.passwordResetRedirectURL)
+            try await auth.resetPasswordForEmail(Self.normalized(email), redirectTo: AppConfig.passwordResetRedirectURL)
             authNotice = sentNotice
         } catch let error where error.isOfflineError {
             errorMessage = AppLocalization.shared.language.text(
@@ -152,9 +155,17 @@ final class AuthViewModel: ObservableObject {
         isRecoveringPassword = false
     }
 
+    /// The SDK clears the local session before it calls the server, so this always signs the
+    /// device out; a failure only means the server could not revoke the session, and is
+    /// shown on the login screen that appears next.
     func signOut() async {
-        do { try await auth.signOut() }
-        catch { errorMessage = error.localizedDescription }
+        do { try await auth.signOut() } catch { errorMessage = Self.message(for: error) }
+    }
+
+    /// Autofill and paste often leave a trailing space, which the server treats as a
+    /// different address.
+    static func normalized(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Supabase words its auth errors in English for developers; these are the ones a
@@ -196,7 +207,7 @@ final class AuthViewModel: ObservableObject {
 
     func updateEmail(_ email: String) async throws {
         isUpdating = true; defer { isUpdating = false }
-        try await auth.update(user: UserAttributes(email: email))
+        try await auth.update(user: UserAttributes(email: Self.normalized(email)))
     }
 
     func updatePhone(_ phone: String) async throws {
@@ -237,10 +248,9 @@ final class AuthViewModel: ObservableObject {
         do {
             _ = try await storage.from(bucket).remove(paths: ["\(userId)/avatar.jpg"])
         } catch {
-            // Keep going so the avatar disappears from the app even if storage cleanup fails.
-            #if DEBUG
-            print("[AuthViewModel] avatar delete storage cleanup failed: \(error)")
-            #endif
+            // Keep going so the avatar disappears from the app even if storage cleanup fails,
+            // but leave a trace in release builds: the old file stays at its public URL.
+            avatarLogger.error("Avatar file not removed from storage: \(String(describing: error), privacy: .private)")
         }
         currentUser = try await auth.update(user: UserAttributes(data: ["avatar_url": .null]))
     }

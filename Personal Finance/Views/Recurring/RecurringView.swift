@@ -11,6 +11,8 @@ struct RecurringView: View {
     @State private var editing: LocalRecurringTransaction?
     @State private var pendingDeletion: LocalRecurringTransaction?
     @State private var showDeleteConfirmation = false
+    @State private var pendingSkip: LocalRecurringTransaction?
+    @State private var showSkipConfirmation = false
     @State private var errorMsg: String?
 
     var body: some View {
@@ -33,7 +35,8 @@ struct RecurringView: View {
                             .tint(rec.active ? .orange : .green)
 
                             Button {
-                                Task { await skip(rec) }
+                                pendingSkip = rec
+                                showSkipConfirmation = true
                             } label: {
                                 Label("Skip", systemImage: "forward.end")
                             }
@@ -64,6 +67,16 @@ struct RecurringView: View {
                 message: "The recurring rule will be permanently deleted."
             ) { recurring in
                 Task { await delete(recurring) }
+            }
+            // A skipped occurrence is never recorded and cannot be undone, so a stray swipe must not do it.
+            .deleteConfirmation(
+                item: $pendingSkip,
+                isPresented: $showSkipConfirmation,
+                title: "Skip Next Occurrence?",
+                message: "The next transaction from this rule will not be recorded.",
+                confirmLabel: "Skip"
+            ) { recurring in
+                Task { await skip(recurring) }
             }
             .errorAlert($errorMsg)
     }

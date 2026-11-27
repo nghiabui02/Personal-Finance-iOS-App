@@ -67,7 +67,8 @@ struct CategoriesView: View {
             item: $pendingDeletion,
             isPresented: $showDeleteConfirmation,
             title: "Remove Category?",
-            message: "Past records will keep this category."
+            message: "Past records will keep this category.",
+            confirmLabel: "Remove"
         ) { category in
             Task { await setActive(category, false) }
         }

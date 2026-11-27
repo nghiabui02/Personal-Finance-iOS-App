@@ -7,12 +7,16 @@ struct ReconcileSheet: View {
 
     let wallet: LocalWallet
 
-    @State private var actualBalance: Decimal = 0
-    @State private var actualBalanceText = ""
+    /// The amount field takes digits only, so the sign of an overdrawn balance (or a card
+    /// past its limit) is a separate toggle.
+    @State private var enteredAmount: Decimal = 0
+    @State private var enteredAmountText = ""
+    @State private var isNegative = false
     @State private var note = ""
     @State private var isSaving = false
     @State private var errorMsg: String?
 
+    private var actualBalance: Decimal { isNegative ? -enteredAmount : enteredAmount }
     private var delta: Decimal { actualBalance - wallet.balance }
     private var trackedLabel: LocalizedStringKey { wallet.type == .credit ? "Tracked Available Credit" : "Tracked Balance" }
     private var actualLabel: LocalizedStringKey { wallet.type == .credit ? "Actual Available Credit" : "Actual Balance" }
@@ -28,7 +32,8 @@ struct ReconcileSheet: View {
                     }
                 }
                 Section {
-                    CurrencyAmountField(title: actualLabel, amount: $actualBalance, amountText: $actualBalanceText)
+                    CurrencyAmountField(title: actualLabel, amount: $enteredAmount, amountText: $enteredAmountText)
+                    Toggle("Negative Balance", isOn: $isNegative)
                     if delta != 0 {
                         HStack {
                             Text(delta > 0 ? "Will record as income" : "Will record as expense")
@@ -49,7 +54,7 @@ struct ReconcileSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving {
@@ -61,10 +66,12 @@ struct ReconcileSheet: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isSaving)
         }
         .onAppear {
-            actualBalance = wallet.balance
-            actualBalanceText = wallet.balance.formattedDecimal()
+            isNegative = wallet.balance < 0
+            enteredAmount = abs(wallet.balance)
+            enteredAmountText = enteredAmount.formattedDecimal()
         }
     }
 

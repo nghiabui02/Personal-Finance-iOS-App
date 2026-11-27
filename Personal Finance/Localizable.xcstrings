@@ -335,6 +335,17 @@
         }
       }
     },
+    "Add Budget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm ngân sách"
+          }
+        }
+      }
+    },
     "Add Contribution" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2344,6 +2355,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tên"
+          }
+        }
+      }
+    },
+    "Negative Balance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Số dư âm"
           }
         }
       }
@@ -4702,6 +4724,17 @@
         }
       }
     },
+    "Remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gỡ"
+          }
+        }
+      }
+    },
     "This reset link has expired or was opened on another device. Request a new one." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4719,6 +4752,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đặt mật khẩu mới"
+          }
+        }
+      }
+    },
+    "Skip Next Occurrence?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua lần tới?"
+          }
+        }
+      }
+    },
+    "The next transaction from this rule will not be recorded." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giao dịch tới của quy tắc này sẽ không được ghi lại."
           }
         }
       }

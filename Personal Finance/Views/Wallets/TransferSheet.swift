@@ -63,7 +63,7 @@ struct TransferSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { dismiss() }.disabled(isTransferring)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isTransferring {
@@ -78,6 +78,7 @@ struct TransferSheet: View {
                 }
             }
             .errorAlert($errorMsg)
+            .interactiveDismissDisabled(isTransferring)
         }
         .onAppear {
             let requestedSource = wallets.first {

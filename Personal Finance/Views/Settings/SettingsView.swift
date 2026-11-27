@@ -17,25 +17,25 @@ struct SettingsView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var errorMsg: String?
 
+    /// No `NavigationStack` here: More pushes this screen onto its own stack, and nesting a
+    /// second one breaks the navigation bar. The profile sheet wraps it instead.
     var body: some View {
-        NavigationStack {
-            List {
-                profileSection
-                accountSection
-                avatarSection
-                appearanceSection
-                languageSection
-                signOutSection
-            }
-            .listStyle(.insetGrouped)
-            .refreshable { await authVM.fetchUser() }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                if let onClose {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close", action: onClose)
-                    }
+        List {
+            profileSection
+            accountSection
+            avatarSection
+            appearanceSection
+            languageSection
+            signOutSection
+        }
+        .listStyle(.insetGrouped)
+        .refreshable { await authVM.fetchUser() }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if let onClose {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close", action: onClose)
                 }
             }
         }
@@ -60,7 +60,8 @@ struct SettingsView: View {
             item: $pendingDeletion,
             isPresented: $showDeleteConfirmation,
             title: "Remove Avatar?",
-            message: "Your current avatar will be permanently removed."
+            message: "Your current avatar will be permanently removed.",
+            confirmLabel: "Remove"
         ) { deletion in
             guard deletion == .avatar else { return }
             Task { await deleteAvatar() }

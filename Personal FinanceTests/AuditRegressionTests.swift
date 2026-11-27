@@ -175,3 +175,27 @@ struct DayHeaderTotalsTests {
     }
 }
 
+struct FormRuleTests {
+
+    @Test("should not save a new budget without a category")
+    func budgetNeedsCategory() {
+        #expect(!AddEditBudgetView.canSave(amount: 500_000, isNew: true, categoryId: nil))
+        #expect(AddEditBudgetView.canSave(amount: 500_000, isNew: true, categoryId: UUID()))
+        #expect(AddEditBudgetView.canSave(amount: 500_000, isNew: false, categoryId: nil))
+        #expect(!AddEditBudgetView.canSave(amount: 0, isNew: true, categoryId: UUID()))
+    }
+
+    @Test("should trim spaces that autofill leaves around an email")
+    @MainActor
+    func trimsEmail() {
+        #expect(AuthViewModel.normalized("  an@example.com \n") == "an@example.com")
+    }
+
+    @Test("should find emoji by their English name")
+    func findsEmojiByName() {
+        #expect(emojiMatches("🚓", "car"))
+        #expect(emojiMatches("🚓", "POLICE"))
+        #expect(!emojiMatches("🍔", "car"))
+    }
+}
+

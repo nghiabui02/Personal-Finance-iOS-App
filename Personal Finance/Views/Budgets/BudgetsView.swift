@@ -13,6 +13,8 @@ struct BudgetsView: View {
     @State private var pendingDeletion: LocalBudget?
     @State private var showDeleteConfirmation = false
     @State private var errorMsg: String?
+    /// Suggestions whose insert is in flight; a second tap would create the budget twice.
+    @State private var addingSuggestions: Set<UUID> = []
 
     private var monthBudgets: [LocalBudget] {
         allBudgets.filter { LedgerDate.calendar.isDate($0.month, equalTo: selectedMonth, toGranularity: .month) }
@@ -101,7 +103,7 @@ struct BudgetsView: View {
         if !suggestions.isEmpty {
             Section {
                 ForEach(suggestions) { suggestion in
-                    SuggestionRow(suggestion: suggestion) {
+                    SuggestionRow(suggestion: suggestion, isAdding: addingSuggestions.contains(suggestion.id)) {
                         Task { await addSuggestion(suggestion) }
                     }
                 }
@@ -172,6 +174,8 @@ struct BudgetsView: View {
     }
 
     private func addSuggestion(_ suggestion: BudgetSuggestion) async {
+        guard addingSuggestions.insert(suggestion.id).inserted else { return }
+        defer { addingSuggestions.remove(suggestion.id) }
         do {
             try await BudgetService.shared.create(
                 categoryId: suggestion.categoryId, amount: suggestion.amount,
@@ -199,6 +203,7 @@ struct BudgetsView: View {
 
 private struct SuggestionRow: View {
     let suggestion: BudgetSuggestion
+    let isAdding: Bool
     let onAdd: () -> Void
 
     var body: some View {
@@ -213,10 +218,15 @@ private struct SuggestionRow: View {
             Spacer()
             Text(suggestion.amount.formatted(currency: "VND"))
                 .font(.subheadline).foregroundStyle(.secondary)
-            Button(action: onAdd) {
-                Image(systemName: "plus.circle.fill").foregroundStyle(.blue)
+            if isAdding {
+                ProgressView()
+            } else {
+                Button(action: onAdd) {
+                    Image(systemName: "plus.circle.fill").foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add Budget")
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 2)
     }
