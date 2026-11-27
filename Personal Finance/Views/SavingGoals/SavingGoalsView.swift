@@ -80,8 +80,11 @@ struct SavingGoalsView: View {
     }
 
     private func delete(_ goal: LocalSavingGoal) async {
-        do { try await SavingGoalService.shared.delete(goal, in: modelContext) }
-        catch { errorMsg = error.asDisplayableError().localizedDescription }
+        do {
+            try await SavingGoalService.shared.delete(goal, in: modelContext)
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 }
 
@@ -166,8 +169,7 @@ struct ContributionSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(amount <= 0)
                     }

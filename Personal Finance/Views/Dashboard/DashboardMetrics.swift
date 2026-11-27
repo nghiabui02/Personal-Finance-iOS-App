@@ -12,7 +12,7 @@ struct DashboardMetrics {
     var budgetUsage: [UUID: BudgetUsage] = [:]
     var currentBudgets: [LocalBudget] = []
     var alerts: [DashboardAlert] = []
-    var spendingPaceDeltaPct: Double? = nil
+    var spendingPaceDeltaPct: Double?
 
     var netBalance: Decimal { income - expense }
 }
@@ -219,7 +219,10 @@ enum DashboardMetricsCalculator {
             return DashboardAlert(
                 id: "budget-\(budget.serverId)",
                 title: exceeded ? "Budget exceeded" : "Budget almost used",
-                message: AppLocalization.shared.language.text("%@: %@ of %@", budget.categoryLabel, spent.formatted(currency: currency), limit.formatted(currency: currency)),
+                message: AppLocalization.shared.language.text(
+                    "%@: %@ of %@", budget.categoryLabel,
+                    spent.formatted(currency: currency), limit.formatted(currency: currency)
+                ),
                 symbol: exceeded ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill",
                 color: exceeded ? .red : .orange,
                 priority: exceeded ? 0 : 2

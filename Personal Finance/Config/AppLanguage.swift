@@ -12,8 +12,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     static var deviceLanguage: Self {
         for identifier in Locale.preferredLanguages {
             if let code = Locale(identifier: identifier).language.languageCode?.identifier,
-                let language = Self(rawValue: code)
-            {
+                let language = Self(rawValue: code) {
                 return language
             }
         }

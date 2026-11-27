@@ -11,10 +11,10 @@ struct ShimmerModifier: ViewModifier {
                 GeometryReader { geo in
                     LinearGradient(
                         stops: [
-                            .init(color: .clear,                   location: 0),
-                            .init(color: .white.opacity(0.55),     location: 0.4),
-                            .init(color: .white.opacity(0.55),     location: 0.6),
-                            .init(color: .clear,                   location: 1),
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.55), location: 0.4),
+                            .init(color: .white.opacity(0.55), location: 0.6),
+                            .init(color: .clear, location: 1)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -39,7 +39,7 @@ extension View {
 // MARK: - Skeleton shapes
 
 struct SkeletonLine: View {
-    var width: CGFloat? = nil
+    var width: CGFloat?
     var height: CGFloat = 12
     var cornerRadius: CGFloat = 6
 

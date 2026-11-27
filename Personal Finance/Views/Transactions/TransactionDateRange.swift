@@ -56,7 +56,7 @@ struct TransactionsInRange<Content: View>: View {
             filter: #Predicate { $0.transactionDate >= start && $0.transactionDate < end },
             sort: [
                 SortDescriptor(\LocalTransaction.transactionDate, order: .reverse),
-                SortDescriptor(\LocalTransaction.updatedAt, order: .reverse),
+                SortDescriptor(\LocalTransaction.updatedAt, order: .reverse)
             ]
         )
         self.content = content

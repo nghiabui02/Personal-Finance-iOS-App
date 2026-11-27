@@ -7,20 +7,30 @@ final class NotificationViewModel: ObservableObject {
     @Published var errorMsg: String?
 
     private var isMarkingRead = false
+    /// A save landed while a load was running, so that load may have read the ledger too early.
+    private var reloadRequested = false
 
     var unreadCount: Int { notifications.filter { !$0.isRead }.count }
 
     func load() async {
-        guard !isLoading, let session = LocalDataStore.session else { return }
+        guard let session = LocalDataStore.session else { return }
+        guard !isLoading else {
+            reloadRequested = true
+            return
+        }
         isLoading = true
         defer { isLoading = false }
-        do {
-            notifications = try await NotificationService.shared.fetchNotifications(for: session)
-        } catch is CancellationError {
-            return
-        } catch {
-            errorMsg = error.asDisplayableError().localizedDescription
-        }
+        repeat {
+            reloadRequested = false
+            do {
+                notifications = try await NotificationService.shared.fetchNotifications(for: session)
+            } catch is CancellationError {
+                return
+            } catch {
+                errorMsg = error.asDisplayableError().localizedDescription
+                return
+            }
+        } while reloadRequested
     }
 
     func markAllRead() async {

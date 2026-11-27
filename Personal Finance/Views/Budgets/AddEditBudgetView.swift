@@ -24,7 +24,9 @@ struct AddEditBudgetView: View {
         _month = State(initialValue: defaultMonth)
     }
 
-    private var expenseCategories: [LocalCategory] { allCategories.filter { $0.type == .expense && $0.systemKey == nil && $0.isActiveMembership } }
+    private var expenseCategories: [LocalCategory] {
+        allCategories.filter { $0.type == .expense && $0.systemKey == nil && $0.isActiveMembership }
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,8 +64,7 @@ struct AddEditBudgetView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(amount <= 0)
                     }
@@ -89,7 +90,8 @@ struct AddEditBudgetView: View {
             if let b = budget {
                 try await BudgetService.shared.update(b, amount: amount, rollover: rollover, active: active, in: modelContext)
             } else {
-                try await BudgetService.shared.create(categoryId: selectedCategoryId, amount: amount, month: month, rollover: rollover, in: modelContext)
+                try await BudgetService.shared.create(
+                    categoryId: selectedCategoryId, amount: amount, month: month, rollover: rollover, in: modelContext)
             }
             dismiss()
         } catch { errorMsg = error.asDisplayableError().localizedDescription }

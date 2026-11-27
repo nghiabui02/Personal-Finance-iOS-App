@@ -82,6 +82,7 @@ struct AddEditWalletView: View {
 
                 if isEditing {
                     Section {
+                        // swiftlint:disable:next line_length - a localized key has to stay one string literal
                         Text("Balance, type and credit settings are fixed after creation. Use Reconcile on the wallet to correct its balance.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -167,7 +168,7 @@ struct ColorSwatchPicker: View {
 
     static let swatches: [String] = [
         "EF4444", "F97316", "EAB308", "22C55E", "06B6D4",
-        "3B82F6", "8B5CF6", "EC4899", "64748B", "14B8A6",
+        "3B82F6", "8B5CF6", "EC4899", "64748B", "14B8A6"
     ]
 
     private let columns = Array(repeating: GridItem(.flexible()), count: 5)

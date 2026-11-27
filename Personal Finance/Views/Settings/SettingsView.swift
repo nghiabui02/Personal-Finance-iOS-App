@@ -165,9 +165,13 @@ struct SettingsView: View {
     }
 
     private func saveLanguage(_ language: AppLanguage) async {
-        do { try await authVM.updateLanguage(language) }
-        catch is CancellationError { return }
-        catch { errorMsg = error.asDisplayableError().localizedDescription }
+        do {
+            try await authVM.updateLanguage(language)
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 
     private var signOutSection: some View {

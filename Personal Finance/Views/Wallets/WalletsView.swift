@@ -45,13 +45,14 @@ struct WalletsView: View {
             }
             .sheet(
                 isPresented: $showTransfer,
-                onDismiss: { transferSourceWalletId = nil }
-            ) {
-                TransferSheet(
-                    wallets: wallets,
-                    initialFromWalletId: transferSourceWalletId
-                )
-            }
+                onDismiss: { transferSourceWalletId = nil },
+                content: {
+                    TransferSheet(
+                        wallets: wallets,
+                        initialFromWalletId: transferSourceWalletId
+                    )
+                }
+            )
             .sheet(item: $payingCreditWallet) { wallet in
                 CreditPaymentSheet(creditWallet: wallet, wallets: wallets)
             }

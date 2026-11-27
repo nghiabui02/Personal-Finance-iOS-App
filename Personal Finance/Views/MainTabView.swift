@@ -64,10 +64,10 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .networkRestored)) { _ in
             sync.requestSync(modelContext: modelContext)
         }
-        // Notices are derived from the ledger, so they are refetched whenever it syncs;
-        // opening the sheet refetches too, covering changes made since.
-        .onChange(of: sync.lastSyncDate) { _, synced in
-            if synced != nil { Task { await notifications.load() } }
+        // Notices are derived from the ledger, so they are refetched whenever the local copy
+        // saves: after every sync and after every change recorded on this device.
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+            Task { await notifications.load() }
         }
     }
 }

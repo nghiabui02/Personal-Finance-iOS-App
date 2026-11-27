@@ -17,7 +17,7 @@ struct AddEditSavingGoalView: View {
     @State private var errorMsg: String?
 
     var body: some View {
-        NavigationStack {   
+        NavigationStack {
             Form {
                 Section {
                     HStack {
@@ -49,8 +49,7 @@ struct AddEditSavingGoalView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || targetAmount <= 0)
                     }

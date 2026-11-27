@@ -45,10 +45,10 @@ struct TransactionListSection: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 0, trailing: 32))
                             .listRowBackground(
                                 UnevenRoundedRectangle(
-                                    topLeadingRadius:     idx == 0              ? 12 : 0,
-                                    bottomLeadingRadius:  idx == txs.count - 1 ? 12 : 0,
+                                    topLeadingRadius: idx == 0              ? 12 : 0,
+                                    bottomLeadingRadius: idx == txs.count - 1 ? 12 : 0,
                                     bottomTrailingRadius: idx == txs.count - 1 ? 12 : 0,
-                                    topTrailingRadius:    idx == 0              ? 12 : 0
+                                    topTrailingRadius: idx == 0              ? 12 : 0
                                 )
                                 .fill(Color(.secondarySystemGroupedBackground))
                                 .padding(.horizontal, 16)

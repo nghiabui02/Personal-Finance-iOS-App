@@ -40,21 +40,24 @@ struct CategoryCatalogTemplate: Decodable, Identifiable {
 }
 
 enum CategoryCollection {
+    /// English source text per catalog key; `AppLanguage.text` translates it.
+    private static let labels: [String: String] = [
+        "food_drink": "Food and drink",
+        "transport": "Transport and vehicles",
+        "home": "Home and utilities",
+        "shopping": "Shopping and personal care",
+        "health": "Health",
+        "education": "Education and work",
+        "entertainment": "Entertainment and subscriptions",
+        "travel": "Travel",
+        "family_pets": "Family and pets",
+        "giving": "Gifts and giving",
+        "fees": "Fees and obligations",
+        "income": "Income"
+    ]
+
     static func label(_ key: String, in language: AppLanguage) -> String {
-        switch key {
-        case "food_drink": language.text("Food and drink")
-        case "transport": language.text("Transport and vehicles")
-        case "home": language.text("Home and utilities")
-        case "shopping": language.text("Shopping and personal care")
-        case "health": language.text("Health")
-        case "education": language.text("Education and work")
-        case "entertainment": language.text("Entertainment and subscriptions")
-        case "travel": language.text("Travel")
-        case "family_pets": language.text("Family and pets")
-        case "giving": language.text("Gifts and giving")
-        case "fees": language.text("Fees and obligations")
-        case "income": language.text("Income")
-        default: key.replacingOccurrences(of: "_", with: " ").capitalized
-        }
+        guard let label = labels[key] else { return key.replacingOccurrences(of: "_", with: " ").capitalized }
+        return language.text(label)
     }
 }

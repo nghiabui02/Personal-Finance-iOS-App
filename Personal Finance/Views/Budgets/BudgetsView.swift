@@ -181,13 +181,19 @@ struct BudgetsView: View {
     }
 
     private func delete(_ budget: LocalBudget) async {
-        do { try await BudgetService.shared.delete(budget, in: modelContext) }
-        catch { errorMsg = error.asDisplayableError().localizedDescription }
+        do {
+            try await BudgetService.shared.delete(budget, in: modelContext)
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 
     private func toggleActive(_ budget: LocalBudget, active: Bool) async {
-        do { try await BudgetService.shared.toggleActive(budget, active: active, in: modelContext) }
-        catch { errorMsg = error.asDisplayableError().localizedDescription }
+        do {
+            try await BudgetService.shared.toggleActive(budget, active: active, in: modelContext)
+        } catch {
+            errorMsg = error.asDisplayableError().localizedDescription
+        }
     }
 }
 

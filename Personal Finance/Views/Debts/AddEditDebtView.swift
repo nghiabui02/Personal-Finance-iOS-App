@@ -93,8 +93,7 @@ struct AddEditDebtView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(personName.trimmingCharacters(in: .whitespaces).isEmpty || (!isEditing && amount <= 0))
                     }

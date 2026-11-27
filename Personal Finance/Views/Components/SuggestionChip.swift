@@ -3,7 +3,7 @@ import SwiftUI
 /// Tappable capsule used by the one-tap suggestion rows (amount shortcuts,
 /// frequent transactions). Optional leading emoji, then a label.
 struct SuggestionChip: View {
-    var icon: String? = nil
+    var icon: String?
     let label: String
     let action: () -> Void
 

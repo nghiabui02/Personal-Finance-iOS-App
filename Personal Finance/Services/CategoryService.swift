@@ -71,7 +71,7 @@ final class CategoryService {
         defer { LocalDataStore.endMutation(mutation.session) }
         let values: [String: AnyJSON] = [
             "user_id": .string(mutation.userId.uuidString), "name": .string(name), "type": .string(type.rawValue),
-            "icon": icon.map(AnyJSON.string) ?? .null, "color": color.map(AnyJSON.string) ?? .null,
+            "icon": icon.map(AnyJSON.string) ?? .null, "color": color.map(AnyJSON.string) ?? .null
         ]
         let row: RemoteCategory = try await mutation.client
             .from("user_categories").insert(values)
@@ -80,13 +80,12 @@ final class CategoryService {
     }
 
     func update(_ category: LocalCategory, name: String?, icon: String?, color: String?, in context: ModelContext)
-        async throws
-    {
+        async throws {
         try await patch(
             category,
             values: [
                 "name": name.map(AnyJSON.string) ?? .null, "icon": icon.map(AnyJSON.string) ?? .null,
-                "color": color.map(AnyJSON.string) ?? .null,
+                "color": color.map(AnyJSON.string) ?? .null
             ], in: context)
     }
 
@@ -105,8 +104,7 @@ final class CategoryService {
         try apply([row], for: mutation, in: context)
     }
 
-    private func apply(_ rows: [RemoteCategory], for mutation: LocalDataStore.Mutation, in context: ModelContext) throws
-    {
+    private func apply(_ rows: [RemoteCategory], for mutation: LocalDataStore.Mutation, in context: ModelContext) throws {
         try LocalDataStore.validate(mutation.session)
         let ids = rows.map(\.id)
         let cached = try context.fetch(

@@ -58,6 +58,11 @@ final class NotificationService {
 
         await clearExpiredStates(states, currentIds: Set(notifications.map(\.id)), session: session, using: dataClient)
         try LocalDataStore.validate(session)
+        return applying(states, to: notifications)
+    }
+
+    /// Drops dismissed notices, marks read ones, and puts unread and most severe first.
+    private func applying(_ states: [NotificationState], to notifications: [AppNotification]) -> [AppNotification] {
         let grouped = Dictionary(grouping: states) { $0.id.lowercased() }
         return notifications.compactMap { notice in
             let marks = grouped[notice.id, default: []]
@@ -216,7 +221,7 @@ final class NotificationService {
     ) async {
         let families: Set<Substring> = [
             "budget_over", "budget_near", "debt_overdue", "debt_due", "recurring", "goal_reached", "goal_deadline",
-            "credit",
+            "credit"
         ]
         let stale = states.map(\.id).filter { id in
             guard let family = id.split(separator: ":", maxSplits: 1).first else { return false }

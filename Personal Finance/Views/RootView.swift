@@ -56,6 +56,7 @@ struct RootView: View {
             ChangePasswordSheet(isRecovery: true)
                 .environmentObject(authVM)
         }
+        .errorAlert($authVM.resetLinkError)
         .onChange(of: cacheIdentity, initial: true) { _, identity in
             switch identity {
             case .waiting: break

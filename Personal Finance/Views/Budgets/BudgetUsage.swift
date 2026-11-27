@@ -78,8 +78,7 @@ enum BudgetUsageCalculator {
             var current = row
             while current.active, current.rollover,
                 let previousMonth = shiftedMonth(current.budgetMonth, by: -1),
-                let previous = activeByCategory[categoryId]?[previousMonth]
-            {
+                let previous = activeByCategory[categoryId]?[previousMonth] {
                 earliest = min(earliest, previousMonth)
                 current = previous
             }

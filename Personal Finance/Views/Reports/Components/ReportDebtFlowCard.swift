@@ -8,7 +8,7 @@ struct ReportDebtFlowCard: View {
 
     private let columns = [
         GridItem(.flexible(), alignment: .leading),
-        GridItem(.flexible(), alignment: .leading),
+        GridItem(.flexible(), alignment: .leading)
     ]
 
     var body: some View {
@@ -36,6 +36,7 @@ struct ReportDebtFlowCard: View {
                     .foregroundStyle(netIncludingDebt >= 0 ? Color.income : Color.expense)
             }
 
+            // swiftlint:disable:next line_length - a localized key has to stay one string literal
             Text("Loan principal and balance adjustments are excluded from income, spending and savings rate. Transfers and credit card principal payments stay in wallet history.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)

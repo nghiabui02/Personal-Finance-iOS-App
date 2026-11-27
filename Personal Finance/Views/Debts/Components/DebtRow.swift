@@ -2,8 +2,8 @@ import SwiftUI
 
 struct DebtRow: View {
     let debt: LocalDebt
-    var onPay: (() -> Void)? = nil
-    var onAdd: (() -> Void)? = nil
+    var onPay: (() -> Void)?
+    var onAdd: (() -> Void)?
 
     private var paidAmount: Decimal { debt.amount - debt.remainingAmount }
     private var progress: Double { debt.amount > 0 ? max(0, min(1, (paidAmount / debt.amount).doubleValue)) : 0 }

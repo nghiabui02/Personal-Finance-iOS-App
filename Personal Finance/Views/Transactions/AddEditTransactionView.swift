@@ -5,7 +5,7 @@ struct AddEditTransactionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     let transaction: LocalTransaction?
-    var defaultDate: Date? = nil
+    var defaultDate: Date?
 
     @Query(sort: \LocalCategory.name) private var allCategories: [LocalCategory]
     @Query(sort: \LocalWallet.name) private var wallets: [LocalWallet]
@@ -29,7 +29,7 @@ struct AddEditTransactionView: View {
     @State private var hasBankFee = false
     @State private var bankFee: Decimal = 0
     @State private var bankFeeText = ""
-    @State private var linkedDebtId: UUID? = nil
+    @State private var linkedDebtId: UUID?
     @State private var showDebtPicker = false
     private var isEditing: Bool { transaction != nil }
 

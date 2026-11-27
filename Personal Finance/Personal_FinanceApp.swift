@@ -14,7 +14,7 @@ struct PersonalFinanceApp: App {
             LocalBudget.self,
             LocalDebt.self,
             LocalSavingGoal.self,
-            LocalRecurringTransaction.self,
+            LocalRecurringTransaction.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         Self.excludeCachesFromBackup()

@@ -45,8 +45,7 @@ struct AddEditCategoryView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
@@ -76,9 +75,11 @@ struct AddEditCategoryView: View {
             if let cat = category {
                 let membership = CategoryDirectory.shared.memberships[cat.serverId]
                 let storedName = trimmed == initialName && membership != nil ? membership?.name : trimmed
-                try await CategoryService.shared.update(cat, name: storedName, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
+                try await CategoryService.shared.update(
+                    cat, name: storedName, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             } else {
-                try await CategoryService.shared.create(name: trimmed, type: type, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
+                try await CategoryService.shared.create(
+                    name: trimmed, type: type, icon: icon.isEmpty ? nil : icon, color: color, in: modelContext)
             }
             dismiss()
         } catch { errorMsg = error.asDisplayableError().localizedDescription }

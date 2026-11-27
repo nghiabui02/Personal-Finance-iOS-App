@@ -22,6 +22,9 @@ final class AuthViewModel: ObservableObject {
     @Published var authNotice: String?
     /// Set once a password-reset link has signed the user in, so the app asks for a new password.
     @Published var isRecoveringPassword = false
+    /// Shown as an alert from the root view, since a reset link can be opened while signed in,
+    /// where the login form's inline error is not on screen.
+    @Published var resetLinkError: String?
 
     private let auth = SupabaseService.shared.client.auth
     private let storage = SupabaseService.shared.client.storage
@@ -133,12 +136,12 @@ final class AuthViewModel: ObservableObject {
     func handlePasswordResetLink(_ url: URL) async {
         let redirect = AppConfig.passwordResetRedirectURL
         guard url.scheme == redirect.scheme, url.host() == redirect.host() else { return }
-        errorMessage = nil; authNotice = nil
+        resetLinkError = nil
         do {
             try await auth.session(from: url)
             isRecoveringPassword = true
         } catch {
-            errorMessage = AppLocalization.shared.language.text(
+            resetLinkError = AppLocalization.shared.language.text(
                 "This reset link has expired or was opened on another device. Request a new one.")
         }
     }

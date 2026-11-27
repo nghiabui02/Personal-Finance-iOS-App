@@ -32,7 +32,6 @@ struct AddEditRecurringView: View {
         return category.isActiveMembership && category.systemKey.map { !SystemCategory.debtKeys.contains($0) } != false
     } }
 
-
     var body: some View {
         NavigationStack {
             Form {
@@ -94,8 +93,7 @@ struct AddEditRecurringView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving { ProgressView().scaleEffect(0.8) }
-                    else {
+                    if isSaving { ProgressView().scaleEffect(0.8) } else {
                         Button("Save") { Task { await save() } }
                             .disabled(amount <= 0)
                     }

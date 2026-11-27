@@ -16,7 +16,7 @@ struct TransactionHeaderSection: View {
         Section {
             VStack(spacing: 16) {
                 HStack(spacing: 8) {
-                    TxStatBox(label: "Income",  amount: income,  color: .income)
+                    TxStatBox(label: "Income", amount: income, color: .income)
                     TxStatBox(label: "Expense", amount: expense, color: .expense)
                     let net = income - expense
                     TxStatBox(label: "Net", amount: net, color: .indigo)

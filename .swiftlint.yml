@@ -22,6 +22,16 @@ identifier_name:
   min_length: 1
   allowed_symbols: ["_"]
 
+# Labeled arguments keep six to eight parameters readable at the call site. Past
+# that, group the form fields into a draft struct (see `RecurringRuleDraft`).
+function_parameter_count:
+  warning: 8
+  error: 10
+
+# `CodingKeys` has to sit inside the type it decodes, however deep that type is.
+nesting:
+  ignore_coding_keys: true
+
 large_tuple:
   warning: 4
   error: 5

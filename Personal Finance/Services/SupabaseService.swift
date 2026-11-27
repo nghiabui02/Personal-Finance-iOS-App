@@ -28,6 +28,16 @@ struct BusinessRuleError: LocalizedError {
     var errorDescription: String? { message }
 }
 
+/// English source text for the custom SQLSTATE codes the category and debt rules raise.
+private let postgrestRuleMessages: [String: String] = [
+    "UC001": "Choose a valid category for this operation.",
+    "UC002": "This category was removed.",
+    "UC003": "Pause the active budget or recurring rule before removing this category.",
+    "UC004": "This change is not allowed for this category.",
+    "UC005": "This category is no longer available.",
+    "DC001": "Select a debt for this category."
+]
+
 extension Error {
     /// Turns a failure into something worth showing.
     ///
@@ -44,18 +54,12 @@ extension Error {
             return BusinessRuleError(message: language.text(error.message))
         }
         if let postgrest = self as? PostgrestError {
-            let message: String? = switch postgrest.code {
-            case "P0001": postgrest.message
-            case "UC001": "Choose a valid category for this operation."
-            case "UC002": "This category was removed."
-            case "UC003": "Pause the active budget or recurring rule before removing this category."
-            case "UC004": "This change is not allowed for this category."
-            case "UC005": "This category is no longer available."
-            case "DC001": "Select a debt for this category."
-            default: nil
+            // P0001 is a `raise exception` whose message the database already wrote for people.
+            if postgrest.code == "P0001" {
+                return BusinessRuleError(message: postgrest.message)
             }
-            if let message {
-                return BusinessRuleError(message: postgrest.code == "P0001" ? message : language.text(message))
+            if let message = postgrest.code.flatMap({ postgrestRuleMessages[$0] }) {
+                return BusinessRuleError(message: language.text(message))
             }
         }
         if isOfflineError {
